@@ -25,7 +25,7 @@ class PetSpriteRenderer {
   // Tries {stage}_v{variant}_{mood}.bin first, falls back to {stage}_{mood}.bin, then built-in art.
   static void drawPet(GfxRenderer& renderer, int x, int y, PetStage stage, PetMood mood,
                       int scale = 1, uint8_t variant = 0, uint8_t petType = 0,
-                      uint8_t animFrame = 0);
+                      uint8_t animFrame = 0, bool forceHat = false, bool forceGlasses = false);
   // Built-in grid is 24x24 logical pixels; each pixel renders as (2*scale) physical pixels.
   // At scale=3: 24*2*3 = 144px (same as old 12*4*3).
   static constexpr int BUILTIN_GRID = 24;

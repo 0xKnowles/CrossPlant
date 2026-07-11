@@ -76,9 +76,9 @@ void VirtualPetActivity::renderAlive() const {
   const int contentTop = metrics.topPadding + metrics.headerHeight + metrics.verticalSpacing;
   const int contentBottom = pageHeight - metrics.buttonHintsHeight - metrics.verticalSpacing;
 
-  // --- Left Column ---
-  const int col1W = 340;
-  const int col1X = 20;
+  // --- Left Column (Pet, Status Icons, Name, Reading Stats) ---
+  const int col1W = 240;
+  const int col1X = 15;
 
   // Pet sprite (scale 3 = 144x144)
   constexpr int PET_SCALE = 3;
@@ -100,7 +100,7 @@ void VirtualPetActivity::renderAlive() const {
 
   // Draw action feedback icon next to sprite (top-right)
   if (actionIcon != PetAnimIcon::NONE) {
-    drawPetActionIcon(renderer, actionIcon, spriteX + petSize + 8, contentTop + 8);
+    drawPetActionIcon(renderer, actionIcon, spriteX + petSize + 4, contentTop + 8);
   }
 
   // Status icons
@@ -115,15 +115,48 @@ void VirtualPetActivity::renderAlive() const {
   snprintf(nameStage, sizeof(nameStage), "%s (%s)", petName, stageName);
   renderer.drawText(UI_10_FONT_ID, col1X + 10, infoY, nameStage, true, EpdFontFamily::BOLD);
 
-  // Compact Stat Bars (Hunger, Happiness, Health, Discipline)
-  const int barYStart = infoY + renderer.getLineHeight(UI_10_FONT_ID) + 8;
+  // Reading Stats (moved under the pet in the left column)
+  const int rStatsY = infoY + renderer.getLineHeight(UI_10_FONT_ID) + 12;
+  renderer.drawText(UI_10_FONT_ID, col1X + 10, rStatsY, "READING STATS", true, EpdFontFamily::BOLD);
+  renderer.fillRect(col1X + 10, rStatsY + renderer.getLineHeight(UI_10_FONT_ID) + 2, col1W - 20, 1);
+
   const int rowSpacing = renderer.getLineHeight(SMALL_FONT_ID) + 4;
+  const int rStatsLinesY = rStatsY + renderer.getLineHeight(UI_10_FONT_ID) + 8;
+
+  char streakText[64];
+  snprintf(streakText, sizeof(streakText), "Streak: %u days (Best: %u)", state.currentStreak, state.longestReadingStreak);
+  renderer.drawText(SMALL_FONT_ID, col1X + 10, rStatsLinesY, streakText);
+
+  char booksText[64];
+  snprintf(booksText, sizeof(booksText), "Books Completed: %u", state.booksFinished);
+  renderer.drawText(SMALL_FONT_ID, col1X + 10, rStatsLinesY + rowSpacing, booksText);
+
+  char pagesText[64];
+  snprintf(pagesText, sizeof(pagesText), "Total Pages: %lu", (unsigned long)state.totalPagesRead);
+  renderer.drawText(SMALL_FONT_ID, col1X + 10, rStatsLinesY + rowSpacing * 2, pagesText);
+
+  char sessionsText[64];
+  snprintf(sessionsText, sizeof(sessionsText), "Sessions: %lu", (unsigned long)state.lastKnownSessions);
+  renderer.drawText(SMALL_FONT_ID, col1X + 10, rStatsLinesY + rowSpacing * 3, sessionsText);
+
+  // --- Vertical Divider ---
+  renderer.drawLine(265, contentTop, 265, contentBottom, true);
+
+  // --- Right Column (Pet Status, Compact Bars, Pet Actions Menu) ---
+  const int col2X = 280;
+  const int col2W = pageWidth - col2X - 15;
+
+  // 1. Pet Vitals Vitals Box
+  renderer.drawText(UI_10_FONT_ID, col2X, contentTop, "PET STATUS", true, EpdFontFamily::BOLD);
+  renderer.fillRect(col2X, contentTop + renderer.getLineHeight(UI_10_FONT_ID) + 2, col2W, 1);
+
+  const int barYStart = contentTop + renderer.getLineHeight(UI_10_FONT_ID) + 8;
 
   auto drawCompactBar = [&](const char* label, uint8_t val, int yOffset) {
-    renderer.drawText(SMALL_FONT_ID, col1X + 10, yOffset, label);
+    renderer.drawText(SMALL_FONT_ID, col2X + 10, yOffset, label);
     int labelW = renderer.getTextWidth(SMALL_FONT_ID, label);
-    int barX = col1X + 10 + labelW + 6;
-    int barW = col1W - 20 - labelW - 6;
+    int barX = col2X + 10 + labelW + 6;
+    int barW = col2W - 20 - labelW - 6;
     renderer.drawRect(barX, yOffset + 2, barW, 8);
     if (val > 0) {
       int fillW = (barW - 2) * val / 100;
@@ -136,45 +169,18 @@ void VirtualPetActivity::renderAlive() const {
   drawCompactBar("Health: ", state.health, barYStart + rowSpacing * 2);
   drawCompactBar("Discip: ", state.discipline, barYStart + rowSpacing * 3);
 
-  // Weight, Age, and Ink Points
+  // Weight, Age
   char weightAgeLine[80];
   snprintf(weightAgeLine, sizeof(weightAgeLine), "Wt: %ug  |  Age: %lu days", state.weight, (unsigned long)PET_MANAGER.getDaysAlive());
-  renderer.drawText(SMALL_FONT_ID, col1X + 10, barYStart + rowSpacing * 4 + 2, weightAgeLine);
+  renderer.drawText(SMALL_FONT_ID, col2X + 10, barYStart + rowSpacing * 4 + 2, weightAgeLine);
 
+  // Ink Points
   char ipLine[64];
   snprintf(ipLine, sizeof(ipLine), "Points: %lu IP", (unsigned long)state.inkPoints);
-  renderer.drawText(UI_10_FONT_ID, col1X + 10, barYStart + rowSpacing * 5 + 4, ipLine, true, EpdFontFamily::BOLD);
-
-  // --- Vertical Divider ---
-  renderer.drawLine(380, contentTop, 380, contentBottom, true);
-
-  // --- Right Column ---
-  const int col2X = 400;
-  const int col2W = pageWidth - col2X - 20;
-
-  // 1. Reading Stats Box
-  renderer.drawText(UI_10_FONT_ID, col2X, contentTop, "READING PARTNER STATS", true, EpdFontFamily::BOLD);
-  renderer.fillRect(col2X, contentTop + renderer.getLineHeight(UI_10_FONT_ID) + 2, col2W, 1);
-
-  int rStatsY = contentTop + renderer.getLineHeight(UI_10_FONT_ID) + 8;
-  char streakText[64];
-  snprintf(streakText, sizeof(streakText), "Streak: %u days (Best: %u days)", state.currentStreak, state.longestReadingStreak);
-  renderer.drawText(SMALL_FONT_ID, col2X + 10, rStatsY, streakText);
-
-  char booksText[64];
-  snprintf(booksText, sizeof(booksText), "Books Completed: %u", state.booksFinished);
-  renderer.drawText(SMALL_FONT_ID, col2X + 10, rStatsY + rowSpacing, booksText);
-
-  char pagesText[64];
-  snprintf(pagesText, sizeof(pagesText), "Total Pages Read: %lu", (unsigned long)state.totalPagesRead);
-  renderer.drawText(SMALL_FONT_ID, col2X + 10, rStatsY + rowSpacing * 2, pagesText);
-
-  char sessionsText[64];
-  snprintf(sessionsText, sizeof(sessionsText), "Reading Sessions: %lu", (unsigned long)state.lastKnownSessions);
-  renderer.drawText(SMALL_FONT_ID, col2X + 10, rStatsY + rowSpacing * 3, sessionsText);
+  renderer.drawText(UI_10_FONT_ID, col2X + 10, barYStart + rowSpacing * 5 + 4, ipLine, true, EpdFontFamily::BOLD);
 
   // 2. Pet Actions Menu
-  const int menuHeaderY = rStatsY + rowSpacing * 4 + 10;
+  const int menuHeaderY = barYStart + rowSpacing * 5 + 24;
   renderer.drawText(UI_10_FONT_ID, col2X, menuHeaderY, "PET ACTIONS", true, EpdFontFamily::BOLD);
   renderer.fillRect(col2X, menuHeaderY + renderer.getLineHeight(UI_10_FONT_ID) + 2, col2W, 1);
 

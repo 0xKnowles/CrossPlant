@@ -560,37 +560,11 @@ void SleepActivity::renderPetSleepScreen() const {
 
   const auto& state = PET_MANAGER.getState();
 
-  // Left half: sleeping pet
-  constexpr int PET_SCALE = 3;
-  const int petSize = PetSpriteRenderer::displaySize(PET_SCALE);
-  const int spriteX = (pageWidth / 2 - petSize) / 2;
-  const int spriteY = (pageHeight - petSize) / 2 - 30;
-
-  PetSpriteRenderer::drawPet(renderer, spriteX, spriteY, state.stage, PetMood::SLEEPING, PET_SCALE,
-                             state.evolutionVariant, state.petType);
-
-  const char* stageName = PetEvolution::variantStageName(state.stage, state.evolutionVariant);
-  const int nameY = spriteY + petSize + 16;
-  const char* petName = state.petName[0] ? state.petName : PetTypeNames::get(state.petType);
-
-  const int nameW = renderer.getTextWidth(UI_10_FONT_ID, petName, EpdFontFamily::BOLD);
-  renderer.drawText(UI_10_FONT_ID, spriteX + petSize / 2 - nameW / 2, nameY, petName, true, EpdFontFamily::BOLD);
-
-  const int stageW = renderer.getTextWidth(SMALL_FONT_ID, stageName);
-  renderer.drawText(SMALL_FONT_ID, spriteX + petSize / 2 - stageW / 2, nameY + renderer.getLineHeight(UI_10_FONT_ID) + 4, stageName);
-
-  renderer.drawCenteredText(SMALL_FONT_ID, pageHeight - 40, tr(STR_SLEEPING));
-
-  // Right half: Diary Page
-  const int rectX = 390;
+  // 1. Diary Page Card (above the pet)
+  const int rectW = 460;
+  const int rectH = 320;
+  const int rectX = (pageWidth - rectW) / 2;
   const int rectY = 40;
-  const int rectW = 370;
-  const int rectH = 380;
-
-  // Ruled lines first
-  for (int ly = rectY + 95; ly < rectY + 360; ly += 40) {
-    renderer.drawLine(rectX + 10, ly, rectX + rectW - 10, ly, true);
-  }
 
   // Ruled page outline
   renderer.drawRoundedRect(rectX, rectY, rectW, rectH, 1, 8, true);
@@ -599,6 +573,11 @@ void SleepActivity::renderPetSleepScreen() const {
   const char* diaryTitle = "PET DIARY";
   const int titleW = renderer.getTextWidth(UI_10_FONT_ID, diaryTitle, EpdFontFamily::BOLD);
   renderer.drawText(UI_10_FONT_ID, rectX + (rectW - titleW) / 2, rectY + 12, diaryTitle, true, EpdFontFamily::BOLD);
+
+  // Ruled lines inside the diary
+  for (int ly = rectY + 80; ly < rectY + 310; ly += 45) {
+    renderer.drawLine(rectX + 10, ly, rectX + rectW - 10, ly, true);
+  }
 
   char line1[64];
   char line2[64];
@@ -630,11 +609,32 @@ void SleepActivity::renderPetSleepScreen() const {
     snprintf(line5, sizeof(line5), "Slept soundly tonight.");
   }
 
-  renderer.drawText(SMALL_FONT_ID, rectX + 15, rectY + 70, line1);
-  renderer.drawText(SMALL_FONT_ID, rectX + 15, rectY + 110, line2);
-  renderer.drawText(SMALL_FONT_ID, rectX + 15, rectY + 150, line3);
-  renderer.drawText(SMALL_FONT_ID, rectX + 15, rectY + 190, line4);
-  renderer.drawText(SMALL_FONT_ID, rectX + 15, rectY + 230, line5);
+  renderer.drawText(SMALL_FONT_ID, rectX + 15, rectY + 68, line1);
+  renderer.drawText(SMALL_FONT_ID, rectX + 15, rectY + 113, line2);
+  renderer.drawText(SMALL_FONT_ID, rectX + 15, rectY + 158, line3);
+  renderer.drawText(SMALL_FONT_ID, rectX + 15, rectY + 203, line4);
+  renderer.drawText(SMALL_FONT_ID, rectX + 15, rectY + 248, line5);
+
+  // 2. Sleeping Pet (centered below the diary card)
+  constexpr int PET_SCALE = 3;
+  const int petSize = PetSpriteRenderer::displaySize(PET_SCALE);
+  const int spriteX = (pageWidth - petSize) / 2;
+  const int spriteY = rectY + rectH + 40;
+
+  PetSpriteRenderer::drawPet(renderer, spriteX, spriteY, state.stage, PetMood::SLEEPING, PET_SCALE,
+                             state.evolutionVariant, state.petType);
+
+  const char* stageName = PetEvolution::variantStageName(state.stage, state.evolutionVariant);
+  const int nameY = spriteY + petSize + 16;
+  const char* petName = state.petName[0] ? state.petName : PetTypeNames::get(state.petType);
+
+  const int nameW = renderer.getTextWidth(UI_10_FONT_ID, petName, EpdFontFamily::BOLD);
+  renderer.drawText(UI_10_FONT_ID, spriteX + petSize / 2 - nameW / 2, nameY, petName, true, EpdFontFamily::BOLD);
+
+  const int stageW = renderer.getTextWidth(SMALL_FONT_ID, stageName);
+  renderer.drawText(SMALL_FONT_ID, spriteX + petSize / 2 - stageW / 2, nameY + renderer.getLineHeight(UI_10_FONT_ID) + 4, stageName);
+
+  renderer.drawCenteredText(SMALL_FONT_ID, pageHeight - 40, tr(STR_SLEEPING));
 
   renderer.displayBuffer(HalDisplay::FULL_REFRESH, TURN_OFF_SCREEN_AFTER_SLEEP_REFRESH);
 }

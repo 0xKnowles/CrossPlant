@@ -15,16 +15,16 @@ void BootActivity::onEnter() {
 
   renderer.clearScreen();
 
-  constexpr int PET_SCALE = 3;
+  constexpr int PET_SCALE = 4;
   const int petSize = PetSpriteRenderer::displaySize(PET_SCALE);
   const int spriteX = (pageWidth - petSize) / 2;
-  const int spriteY = (pageHeight - petSize) / 2 - 20;
+  const int spriteY = (pageHeight - petSize) / 2 - 40;
 
   PetSpriteRenderer::drawPet(renderer, spriteX, spriteY, PetStage::COMPANION, PetMood::HAPPY, PET_SCALE,
-                             0, 0, 0);
+                             0, 0, 0, true, false);
 
-  renderer.drawCenteredText(UI_10_FONT_ID, spriteY + petSize + 16, "CrossMerge", true, EpdFontFamily::BOLD);
-  renderer.drawCenteredText(SMALL_FONT_ID, spriteY + petSize + 16 + 25, tr(STR_BOOTING));
-  renderer.drawCenteredText(SMALL_FONT_ID, pageHeight - 30, "v0.1.0");
+  renderer.drawCenteredText(UI_12_FONT_ID, spriteY + petSize + 24, "CrossMerge", true, EpdFontFamily::BOLD);
+  renderer.drawCenteredText(UI_10_FONT_ID, spriteY + petSize + 24 + 30, tr(STR_BOOTING));
+  renderer.drawCenteredText(UI_10_FONT_ID, pageHeight - 50, "v0.1.2");
   renderer.displayBuffer();
 }
