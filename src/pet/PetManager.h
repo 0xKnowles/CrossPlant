@@ -10,6 +10,7 @@ struct PetMission {
   uint8_t     progress;
   uint8_t     goal;
   bool        done;
+  uint16_t    reward;
 };
 
 // Manages virtual pet game logic, stat decay, evolution, and persistence.
@@ -37,6 +38,7 @@ class PetManager {
   // of the lazy syncFromReadingStats() sync (which only runs when the pet
   // screen is opened).
   void onPageTurned();
+  void onChapterFinished();
 
   // User interaction — petting gives happiness (with cooldown)
   bool pet();
@@ -84,8 +86,8 @@ class PetManager {
   uint32_t getDaysAlive() const;
   const char* getLastFeedback() const { return lastFeedback; }
 
-  // Daily missions — returns 3 missions for today
-  void getMissions(PetMission out[3]) const;
+  // Daily missions — returns 6 missions for today
+  void getMissions(PetMission out[6]) const;
 
  private:
   PetManager() = default;
@@ -103,6 +105,7 @@ class PetManager {
   uint16_t getDayOfYear() const;
   void resetMissionsIfNewDay();
   void feedFromPages(uint32_t pages);
+  void updateSleepState();
 
   static uint8_t clampSub(uint8_t val, uint8_t amount);
   static uint8_t clampAdd(uint8_t val, uint8_t amount);

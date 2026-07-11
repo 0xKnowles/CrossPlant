@@ -37,7 +37,6 @@
 #include "components/themes/dashboard/DashboardTheme.h"
 #include "components/themes/lyra/LyraCarouselTheme.h"
 #include "components/themes/minimal/MinimalTheme.h"
-#include "components/themes/coverpet/CoverPetTheme.h"
 #include "fontIds.h"
 #include "pet/PetManager.h"
 
@@ -351,7 +350,7 @@ bool isDashboardTheme() {
 }
 
 bool isCoverPetTheme() {
-  return static_cast<CrossPointSettings::UI_THEME>(SETTINGS.uiTheme) == CrossPointSettings::UI_THEME::COVER_PET;
+  return false;
 }
 
 bool usesMinimalHomeInteraction() { return isMinimalTheme() || isDashboardTheme() || isCoverPetTheme(); }
@@ -410,12 +409,12 @@ std::string dashboardHomeCoverPath(const RecentBook& book, int coverHeight) {
 
 int coverPetHomeCoverWidth(int coverHeight) {
   (void)coverHeight;
-  return CoverPetMetrics::homeCoverImageWidth;
+  return 146;
 }
 
 int coverPetHomeCoverHeight(int coverHeight) {
   (void)coverHeight;
-  return CoverPetMetrics::homeCoverImageHeight;
+  return 220;
 }
 
 std::string coverPetHomeCoverPath(const RecentBook& book, int coverHeight) {

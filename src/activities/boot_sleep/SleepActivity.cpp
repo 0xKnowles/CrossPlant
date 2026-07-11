@@ -30,6 +30,7 @@
 #include "components/themes/minimal/MinimalTheme.h"
 #include "fontIds.h"
 #include "images/Logo120.h"
+#include "images/Seed144.h"
 #include "images/MoonIcon.h"
 #include "pet/PetEvolution.h"
 #include "pet/PetManager.h"
@@ -522,9 +523,9 @@ void SleepActivity::renderDefaultSleepScreen() const {
   const auto pageHeight = renderer.getScreenHeight();
 
   renderer.clearScreen();
-  renderer.drawImage(Logo120, (pageWidth - 120) / 2, (pageHeight - 120) / 2, 120, 120);
-  renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2 + 70, tr(STR_CROSSINK), true, EpdFontFamily::BOLD);
-  renderer.drawCenteredText(SMALL_FONT_ID, pageHeight / 2 + 95, tr(STR_SLEEPING));
+  renderer.drawImage(Seed, (pageWidth - 144) / 2, (pageHeight - 144) / 2, 144, 144);
+  renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2 + 82, tr(STR_CROSSINK), true, EpdFontFamily::BOLD);
+  renderer.drawCenteredText(SMALL_FONT_ID, pageHeight / 2 + 107, tr(STR_SLEEPING));
 
   // Make sleep screen dark unless light is selected in settings
   const bool lightSleepScreen = SETTINGS.sleepScreen == CrossPointSettings::SLEEP_SCREEN_MODE::LIGHT;
@@ -536,7 +537,7 @@ void SleepActivity::renderDefaultSleepScreen() const {
   const std::string buildInfo = std::string(CROSSINK_BUILD_ENV) + " " + CROSSINK_VERSION;
   const std::string visibleBuildInfo =
       renderer.truncatedText(SMALL_FONT_ID, buildInfo.c_str(), pageWidth - sleepBuildInfoSideMargin * 2);
-  renderer.drawCenteredText(SMALL_FONT_ID, pageHeight / 2 + 118, visibleBuildInfo.c_str(), lightSleepScreen);
+  renderer.drawCenteredText(SMALL_FONT_ID, pageHeight / 2 + 130, visibleBuildInfo.c_str(), lightSleepScreen);
 #endif
 
   renderer.displayBuffer(HalDisplay::FULL_REFRESH, TURN_OFF_SCREEN_AFTER_SLEEP_REFRESH);
@@ -553,62 +554,79 @@ void SleepActivity::renderPetSleepScreen() const {
   renderer.clearScreen();
 
   if (!hasPet) {
-    renderer.drawImage(Logo120, (pageWidth - 120) / 2, (pageHeight - 120) / 2, 120, 120);
-    renderer.drawCenteredText(SMALL_FONT_ID, pageHeight / 2 + 70, tr(STR_SLEEPING));
+    renderer.drawImage(Seed, (pageWidth - 144) / 2, (pageHeight - 144) / 2, 144, 144);
+    renderer.drawCenteredText(SMALL_FONT_ID, pageHeight / 2 + 82, tr(STR_SLEEPING));
     renderer.displayBuffer(HalDisplay::FULL_REFRESH, TURN_OFF_SCREEN_AFTER_SLEEP_REFRESH);
     return;
   }
 
   const auto& state = PET_MANAGER.getState();
 
-  // Coordinates based on resolution
-  int spriteX, spriteY, nameY;
+  // Layout variables
   int rectX, rectY, rectW, rectH;
+  int spriteX, spriteY, nameY;
+  int frameX, frameY, frameW, frameH;
 
   if (isX3) {
-    spriteX = 60;
-    spriteY = 204;
-    nameY = spriteY + 144 + 16;
+    // X3 Stacked: Diary on top, Pet on bottom
+    rectW = 460;
+    rectH = 320;
+    rectX = (pageWidth - rectW) / 2;
+    rectY = 40;
 
-    rectX = 275;
-    rectY = 180;
-    rectW = 238;
-    rectH = 400;
+    frameW = 240;
+    frameH = 245;
+    frameX = (pageWidth - frameW) / 2;
+    frameY = rectY + rectH + 30;
+
+    constexpr int PET_SCALE = 3;
+    const int petSize = PetSpriteRenderer::displaySize(PET_SCALE);
+    spriteX = frameX + (frameW - petSize) / 2;
+    spriteY = frameY + 20;
+    nameY = spriteY + petSize + 12;
   } else {
-    // X4 (800x480)
-    spriteX = 128;
-    spriteY = 138;
-    nameY = spriteY + 144 + 16;
-
+    // X4 2-Column: Left Pet, Right Diary
     rectX = 390;
     rectY = 40;
     rectW = 370;
     rectH = 380;
+
+    frameW = 240;
+    frameH = 380;
+    frameX = 60;
+    frameY = 40;
+
+    constexpr int PET_SCALE = 3;
+    const int petSize = PetSpriteRenderer::displaySize(PET_SCALE);
+    spriteX = frameX + (frameW - petSize) / 2;
+    spriteY = frameY + 60;
+    nameY = spriteY + petSize + 16;
   }
 
-  // Draw sleeping pet
-  constexpr int PET_SCALE = 3;
-  const int petSize = PetSpriteRenderer::displaySize(PET_SCALE);
+  // 1. Draw Sleeping Pet in its Cozy Frame
+  renderer.drawRoundedRect(frameX, frameY, frameW, frameH, 1, 8, true);
+  
+  // Draw a cozy frame title "RESTING"
+  renderer.drawLine(frameX, frameY + 30, frameX + frameW - 1, frameY + 30, true);
+  renderer.drawCenteredText(SMALL_FONT_ID, frameY + 8, "RESTING", true, EpdFontFamily::BOLD);
 
-  PetSpriteRenderer::drawPet(renderer, spriteX, spriteY, state.stage, PetMood::SLEEPING, PET_SCALE,
+  PetSpriteRenderer::drawPet(renderer, spriteX, spriteY, state.stage, PetMood::SLEEPING, 3,
                              state.evolutionVariant, state.petType);
 
   const char* stageName = PetEvolution::variantStageName(state.stage, state.evolutionVariant);
   const char* petName = state.petName[0] ? state.petName : PetTypeNames::get(state.petType);
 
   const int nameW = renderer.getTextWidth(UI_10_FONT_ID, petName, EpdFontFamily::BOLD);
-  renderer.drawText(UI_10_FONT_ID, spriteX + petSize / 2 - nameW / 2, nameY, petName, true, EpdFontFamily::BOLD);
+  renderer.drawText(UI_10_FONT_ID, spriteX + 72 - nameW / 2, nameY, petName, true, EpdFontFamily::BOLD);
 
   const int stageW = renderer.getTextWidth(SMALL_FONT_ID, stageName);
-  renderer.drawText(SMALL_FONT_ID, spriteX + petSize / 2 - stageW / 2, nameY + renderer.getLineHeight(UI_10_FONT_ID) + 4, stageName);
+  renderer.drawText(SMALL_FONT_ID, spriteX + 72 - stageW / 2, nameY + renderer.getLineHeight(UI_10_FONT_ID) + 2, stageName);
 
-  renderer.drawCenteredText(SMALL_FONT_ID, pageHeight - 40, tr(STR_SLEEPING));
-
-  // Draw Diary Page
+  // 2. Draw Diary Page Card
   renderer.drawRoundedRect(rectX, rectY, rectW, rectH, 1, 8, true);
   renderer.drawLine(rectX, rectY + 40, rectX + rectW - 1, rectY + 40, true);
 
-  const char* diaryTitle = "PET DIARY";
+  const char* diaryTitle = "PLANT DIARY";
   const int titleW = renderer.getTextWidth(UI_10_FONT_ID, diaryTitle, EpdFontFamily::BOLD);
   renderer.drawText(UI_10_FONT_ID, rectX + (rectW - titleW) / 2, rectY + 12, diaryTitle, true, EpdFontFamily::BOLD);
 
@@ -621,22 +639,16 @@ void SleepActivity::renderPetSleepScreen() const {
   char line4[64];
   char line5[64];
 
-  if (isX3) {
-    snprintf(line1, sizeof(line1), "Day %lu of life", (unsigned long)(PET_MANAGER.getDaysAlive() + 1));
-    snprintf(line2, sizeof(line2), "Read: %d pages", state.missionPagesRead);
-    snprintf(line3, sizeof(line3), "Petted: %d times", state.missionPetCount);
-  } else {
-    snprintf(line1, sizeof(line1), "Dear Diary, today is Day %lu.", (unsigned long)(PET_MANAGER.getDaysAlive() + 1));
-    snprintf(line2, sizeof(line2), "My reader read %d pages today.", state.missionPagesRead);
-    snprintf(line3, sizeof(line3), "I was petted %d times.", state.missionPetCount);
-  }
+  snprintf(line1, sizeof(line1), "Dear Diary, today is Day %lu.", (unsigned long)(PET_MANAGER.getDaysAlive() + 1));
+  snprintf(line2, sizeof(line2), "My reader read %d pages today.", state.missionPagesRead);
+  snprintf(line3, sizeof(line3), "I was tended %d times.", state.missionPetCount);
 
   if (state.isSick) {
-    snprintf(line4, sizeof(line4), isX3 ? "Status: Sick" : "I felt sick... took meds.");
+    snprintf(line4, sizeof(line4), "I felt sick... took medicine.");
   } else if (state.hunger < 30) {
-    snprintf(line4, sizeof(line4), isX3 ? "Status: Hungry" : "I was very hungry today!");
+    snprintf(line4, sizeof(line4), "I was very hungry today! Nom nom.");
   } else {
-    snprintf(line4, sizeof(line4), isX3 ? "Status: Healthy!" : "I felt happy & healthy!");
+    snprintf(line4, sizeof(line4), "I felt happy and healthy!");
   }
 
   uint16_t year;
@@ -646,18 +658,14 @@ void SleepActivity::renderPetSleepScreen() const {
     const char* ampm = (h >= 12) ? "PM" : "AM";
     if (h > 12) h -= 12;
     if (h == 0) h = 12;
-    if (isX3) {
-      snprintf(line5, sizeof(line5), "Slept: %d:%02d %s", h, (int)minute, ampm);
-    } else {
-      snprintf(line5, sizeof(line5), "Slept at %d:%02d %s.", h, (int)minute, ampm);
-    }
+    snprintf(line5, sizeof(line5), "Slept at %d:%02d %s.", h, (int)minute, ampm);
   } else {
-    snprintf(line5, sizeof(line5), isX3 ? "Slept soundly" : "Slept soundly tonight.");
+    snprintf(line5, sizeof(line5), "Slept soundly tonight.");
   }
 
   // Draw bullet list entries with spacing
   auto drawDiaryEntry = [&](int index, const char* text) {
-    const int textYPos = rectY + 65 + index * (isX3 ? 60 : 48);
+    const int textYPos = rectY + 65 + index * (isX3 ? 48 : 56);
     const int bulletX = rectX + 32;
     const int bulletY = textYPos + 6;
     
@@ -673,6 +681,8 @@ void SleepActivity::renderPetSleepScreen() const {
   drawDiaryEntry(2, line3);
   drawDiaryEntry(3, line4);
   drawDiaryEntry(4, line5);
+
+  renderer.drawCenteredText(SMALL_FONT_ID, pageHeight - 20, tr(STR_SLEEPING));
 
   renderer.displayBuffer(HalDisplay::FULL_REFRESH, TURN_OFF_SCREEN_AFTER_SLEEP_REFRESH);
 }

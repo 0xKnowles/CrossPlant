@@ -428,6 +428,7 @@ void XtcReaderActivity::recordForwardPageTurn(uint32_t seconds) {
   stats.totalPagesTurned++;
   globalStats.totalPagesTurned++;
   if (SETTINGS.shouldTrackReadingStats()) {
+    PET_MANAGER.syncFromReadingStats(globalStats);
     PET_MANAGER.onPageTurned();
   }
 }

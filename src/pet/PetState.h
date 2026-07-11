@@ -37,9 +37,9 @@ enum class PetNeed : uint8_t {
 // Pet species types — cosmetic label for the pet
 namespace PetTypeNames {
   constexpr const char* NAMES[] = {
-    "Chicken", "Cat", "Dog", "Dragon", "Bunny"
+    "Monstera", "Begonia", "Alocasia"
   };
-  constexpr uint8_t COUNT = 5;
+  constexpr uint8_t COUNT = 3;
   inline const char* get(uint8_t t) { return (t < COUNT) ? NAMES[t] : NAMES[0]; }
 }
 
@@ -65,8 +65,19 @@ struct PetState {
 
   // Daily mission progress — reset each new day
   uint16_t missionDay = 0;       // day-of-year when missions last reset
-  uint8_t  missionPagesRead = 0; // pages read today (for Read 20 Pages mission)
-  uint8_t  missionPetCount = 0;  // times petted today (for Pet 3x mission)
+  uint8_t  missionPagesRead = 0; // pages read today
+  uint8_t  missionPetCount = 0;  // times tended today
+  uint8_t  missionWaterCount = 0;
+  uint8_t  missionPruneCount = 0;
+  uint8_t  missionWeedCount = 0;
+  uint8_t  missionFertilizerCount = 0;
+
+  bool     questReadClaimed = false;
+  bool     questPetClaimed = false;
+  bool     questWaterClaimed = false;
+  bool     questPruneClaimed = false;
+  bool     questWeedClaimed = false;
+  bool     questFertilizerClaimed = false;
 
   // Weight system (0-100, normal=50, overweight>80, underweight<20)
   uint8_t weight = 50;

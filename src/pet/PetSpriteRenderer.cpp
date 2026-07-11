@@ -4,7 +4,135 @@
 
 #include "PetSpriteData.h"
 #include "fontIds.h"
+#include "PetState.h"
+#include <Bitmap.h>
 #include "PetManager.h"
+
+namespace {
+static bool drawBmpSprite(GfxRenderer& renderer, int x, int y, int size,
+                          const char* stage, int variant, const char* mood) {
+  char path[128];
+  FsFile file;
+
+  // Try paths in order of specificity:
+  // 1. {stage}_v{variant}_{mood}.bmp
+  // 2. {stage}_{mood}.bmp
+  // 3. {stage}_v{variant}.bmp
+  // 4. {stage}.bmp
+
+  if (variant > 0) {
+    snprintf(path, sizeof(path), "/.crosspoint/pet/sprites/%s_v%d_%s.bmp", stage, variant, mood);
+    if (Storage.openFileForRead("HOME", path, file)) {
+      Bitmap bitmap(file);
+      if (bitmap.parseHeaders() == BmpReaderError::Ok) {
+        renderer.drawBitmap(bitmap, x, y, size, size);
+        file.close();
+        return true;
+      }
+      file.close();
+    }
+  }
+
+  snprintf(path, sizeof(path), "/.crosspoint/pet/sprites/%s_%s.bmp", stage, mood);
+  if (Storage.openFileForRead("HOME", path, file)) {
+    Bitmap bitmap(file);
+    if (bitmap.parseHeaders() == BmpReaderError::Ok) {
+      renderer.drawBitmap(bitmap, x, y, size, size);
+      file.close();
+      return true;
+    }
+    file.close();
+  }
+
+  if (variant > 0) {
+    snprintf(path, sizeof(path), "/.crosspoint/pet/sprites/%s_v%d.bmp", stage, variant);
+    if (Storage.openFileForRead("HOME", path, file)) {
+      Bitmap bitmap(file);
+      if (bitmap.parseHeaders() == BmpReaderError::Ok) {
+        renderer.drawBitmap(bitmap, x, y, size, size);
+        file.close();
+        return true;
+      }
+      file.close();
+    }
+  }
+
+  snprintf(path, sizeof(path), "/.crosspoint/pet/sprites/%s.bmp", stage);
+  if (Storage.openFileForRead("HOME", path, file)) {
+    Bitmap bitmap(file);
+    if (bitmap.parseHeaders() == BmpReaderError::Ok) {
+      renderer.drawBitmap(bitmap, x, y, size, size);
+      file.close();
+      return true;
+    }
+    file.close();
+  }
+
+  return false;
+}
+
+static bool drawBmpMini(GfxRenderer& renderer, int x, int y, int size,
+                        const char* stage, int variant, const char* mood) {
+  char path[128];
+  FsFile file;
+
+  // Try paths:
+  // 1. mini/{stage}_v{variant}_{mood}.bmp
+  // 2. mini/{stage}_{mood}.bmp
+  // 3. mini/{stage}_v{variant}.bmp
+  // 4. mini/{stage}.bmp
+
+  if (variant > 0) {
+    snprintf(path, sizeof(path), "/.crosspoint/pet/sprites/mini/%s_v%d_%s.bmp", stage, variant, mood);
+    if (Storage.openFileForRead("HOME", path, file)) {
+      Bitmap bitmap(file);
+      if (bitmap.parseHeaders() == BmpReaderError::Ok) {
+        renderer.drawBitmap(bitmap, x, y, size, size);
+        file.close();
+        return true;
+      }
+      file.close();
+    }
+  }
+
+  snprintf(path, sizeof(path), "/.crosspoint/pet/sprites/mini/%s_%s.bmp", stage, mood);
+  if (Storage.openFileForRead("HOME", path, file)) {
+    Bitmap bitmap(file);
+    if (bitmap.parseHeaders() == BmpReaderError::Ok) {
+      renderer.drawBitmap(bitmap, x, y, size, size);
+      file.close();
+      return true;
+    }
+    file.close();
+  }
+
+  if (variant > 0) {
+    snprintf(path, sizeof(path), "/.crosspoint/pet/sprites/mini/%s_v%d.bmp", stage, variant);
+    if (Storage.openFileForRead("HOME", path, file)) {
+      Bitmap bitmap(file);
+      if (bitmap.parseHeaders() == BmpReaderError::Ok) {
+        renderer.drawBitmap(bitmap, x, y, size, size);
+        file.close();
+        return true;
+      }
+      file.close();
+    }
+  }
+
+  snprintf(path, sizeof(path), "/.crosspoint/pet/sprites/mini/%s.bmp", stage);
+  if (Storage.openFileForRead("HOME", path, file)) {
+    Bitmap bitmap(file);
+    if (bitmap.parseHeaders() == BmpReaderError::Ok) {
+      renderer.drawBitmap(bitmap, x, y, size, size);
+      file.close();
+      return true;
+    }
+    file.close();
+  }
+
+  return false;
+}
+} // namespace
 
 // Static buffer shared across all sprite loads (saves heap, one-at-a-time use)
 uint8_t PetSpriteRenderer::spriteBuffer[PetSpriteRenderer::SPRITE_BYTES];
@@ -83,8 +211,15 @@ void PetSpriteRenderer::drawPet(GfxRenderer& renderer, int x, int y, PetStage st
                                  uint8_t animFrame, bool forceHat, bool forceGlasses) {
   char path[80];
   bool drawn = false;
+
+  // 1. Try BMP files first at display size!
+  int size = displaySize(scale);
+  if (drawBmpSprite(renderer, x, y, size, stageName(stage), (int)variant, moodName(mood))) {
+    drawn = true;
+  }
+
   // SD card sprites are 48x48 binary — only used at scale==1, no animFrame
-  if (variant > 0) {
+  if (!drawn && variant > 0) {
     snprintf(path, sizeof(path), "/.crosspoint/pet/sprites/%s_v%d_%s.bin",
              stageName(stage), (int)variant, moodName(mood));
     if (loadSprite(path, SPRITE_BYTES) == SPRITE_BYTES && scale == 1) {
@@ -182,6 +317,11 @@ void PetSpriteRenderer::drawPet(GfxRenderer& renderer, int x, int y, PetStage st
 
 void PetSpriteRenderer::drawMini(GfxRenderer& renderer, int x, int y, PetStage stage,
                                   PetMood mood, uint8_t variant, uint8_t petType) {
+  // 1. Try BMP mini files first!
+  if (drawBmpMini(renderer, x, y, MINI_W, stageName(stage), (int)variant, moodName(mood))) {
+    return;
+  }
+
   char path[88];
   // Try variant-specific mini file first
   if (variant > 0) {

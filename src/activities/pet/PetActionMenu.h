@@ -15,6 +15,7 @@ enum class PetAction : uint8_t {
   IGNORE_CRY,
   TOGGLE_LIGHTS,
   PET_PET,
+  DAILY_QUESTS,
   RENAME,
   CHANGE_TYPE,
   SHOP,

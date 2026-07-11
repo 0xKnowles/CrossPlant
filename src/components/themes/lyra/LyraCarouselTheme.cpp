@@ -480,7 +480,7 @@ void LyraCarouselTheme::drawRecentBookCover(GfxRenderer& renderer, Rect rect,
       const char* stageName = PetEvolution::variantStageName(state.stage, state.evolutionVariant);
 
       char petStatus[64];
-      snprintf(petStatus, sizeof(petStatus), "%s (%s) | Hu:%u%% Ha:%u%% %lu IP",
+      snprintf(petStatus, sizeof(petStatus), "%s (%s) | Mo:%u%% Su:%u%% %lu DD",
                petName, stageName, state.hunger, state.happiness, (unsigned long)state.inkPoints);
 
       const int centerY = infoY + footerLabelLineHeight / 2;

@@ -20,7 +20,7 @@ void PetStatsPanel::renderStatusIcons(GfxRenderer& renderer, const PetState& sta
   };
 
   if (state.isSleeping)    drawIcon("ZZ");
-  if (state.isSick)        drawIcon("+");
+  if (state.isSick)        drawIcon("xx");
   if (state.wasteCount > 0) drawIcon("**");
   if (state.attentionCall) drawIcon("!");
   if (state.hunger > 70 && state.happiness > 70) drawIcon("<3");

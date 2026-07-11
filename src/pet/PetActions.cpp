@@ -24,6 +24,15 @@ bool PetManager::feedMeal() {
     if (state.wasteCount < PetConfig::MAX_WASTE) state.wasteCount++;
   }
 
+  resetMissionsIfNewDay();
+  if (state.missionWaterCount < 3) {
+    state.missionWaterCount++;
+    if (state.missionWaterCount >= 3 && !state.questWaterClaimed) {
+      state.inkPoints += 20;
+      state.questWaterClaimed = true;
+    }
+  }
+
   lastFeedback = tr(STR_PET_FED_MEAL);
   LOG_DBG("PET", "feedMeal: hunger=%d weight=%d", state.hunger, state.weight);
   save();
@@ -37,6 +46,16 @@ bool PetManager::feedSnack() {
 
   state.happiness = clampAdd(state.happiness, PetConfig::HAPPINESS_PER_SNACK);
   state.weight    = clampAdd(state.weight, PetConfig::WEIGHT_PER_SNACK);
+
+  resetMissionsIfNewDay();
+  if (state.missionWaterCount < 3) {
+    state.missionWaterCount++;
+    if (state.missionWaterCount >= 3 && !state.questWaterClaimed) {
+      state.inkPoints += 20;
+      state.questWaterClaimed = true;
+    }
+  }
+
   lastFeedback = tr(STR_PET_FED_SNACK);
   save();
   return true;
@@ -69,6 +88,16 @@ bool PetManager::exercise() {
   lastExerciseMs = now;
   state.weight    = clampSub(state.weight, PetConfig::WEIGHT_PER_EXERCISE);
   state.happiness = clampAdd(state.happiness, 10);
+
+  resetMissionsIfNewDay();
+  if (state.missionPruneCount < 1) {
+    state.missionPruneCount++;
+    if (state.missionPruneCount >= 1 && !state.questPruneClaimed) {
+      state.inkPoints += 30;
+      state.questPruneClaimed = true;
+    }
+  }
+
   lastFeedback = tr(STR_PET_EXERCISED);
   LOG_DBG("PET", "exercise: weight=%d", state.weight);
   save();
@@ -79,6 +108,15 @@ bool PetManager::cleanBathroom() {
   if (!state.exists() || !state.isAlive()) { lastFeedback = tr(STR_PET_NO_PET_ERR); return false; }
   if (state.wasteCount == 0) { lastFeedback = tr(STR_PET_ALREADY_CLEAN); return false; }
 
+  resetMissionsIfNewDay();
+  if (state.missionWeedCount < 1) {
+    state.missionWeedCount++;
+    if (state.missionWeedCount >= 1 && !state.questWeedClaimed) {
+      state.inkPoints += 20;
+      state.questWeedClaimed = true;
+    }
+  }
+
   lastFeedback = tr(STR_PET_CLEANED);
   LOG_DBG("PET", "cleanBathroom: removed %d waste piles", state.wasteCount);
   state.wasteCount = 0;
@@ -88,6 +126,15 @@ bool PetManager::cleanBathroom() {
 
 bool PetManager::disciplinePet() {
   if (!state.exists() || !state.isAlive()) { lastFeedback = tr(STR_PET_NO_PET_ERR); return false; }
+
+  resetMissionsIfNewDay();
+  if (state.missionFertilizerCount < 1) {
+    state.missionFertilizerCount++;
+    if (state.missionFertilizerCount >= 1 && !state.questFertilizerClaimed) {
+      state.inkPoints += 20;
+      state.questFertilizerClaimed = true;
+    }
+  }
 
   if (state.attentionCall) {
     if (state.isFakeCall) {

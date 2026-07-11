@@ -401,7 +401,7 @@ void BaseTheme::drawHeader(const GfxRenderer& renderer, Rect rect, const char* t
                                 petState.evolutionVariant, petState.petType);
 
     char shortStatus[32];
-    snprintf(shortStatus, sizeof(shortStatus), "%lu IP", (unsigned long)petState.inkPoints);
+    snprintf(shortStatus, sizeof(shortStatus), "%lu DD", (unsigned long)petState.inkPoints);
     renderer.drawText(SMALL_FONT_ID, petX + 28, petY + (BaseMetrics::values.batteryHeight - renderer.getLineHeight(SMALL_FONT_ID)) / 2,
                       shortStatus, true);
   }
@@ -886,7 +886,7 @@ void BaseTheme::drawStatusBar(GfxRenderer& renderer, const float bookProgress, c
   if (PET_MANAGER.exists() && PET_MANAGER.isAlive()) {
     const auto& state = PET_MANAGER.getState();
     char ipBuf[32];
-    snprintf(ipBuf, sizeof(ipBuf), "%lu IP", (unsigned long)state.inkPoints);
+    snprintf(ipBuf, sizeof(ipBuf), "%lu DD", (unsigned long)state.inkPoints);
     const bool hasLeftItem = leftClusterWidth > 0;
     const int ipX = leftClusterX + leftClusterWidth + (hasLeftItem ? statusItemGap : 0);
     renderer.drawText(SMALL_FONT_ID, ipX, textY, ipBuf, foregroundBlack);
@@ -945,19 +945,6 @@ void BaseTheme::drawTopStatusBarClock(const GfxRenderer& renderer, int topY, con
   const int effectiveTextYOffset = textYOffset + (readerContext ? homeHeaderClockTextYOffset(renderer) : 0);
   const int baseTopY = topY >= 0 ? topY : orientedMarginTop + metrics.topPadding;
   const int textY = baseTopY + (statusBarHeight - lineHeight) / 2 + effectiveTextYOffset;
-
-  // Draw IP counter in reader context if pet exists
-  if (readerContext) {
-    PET_MANAGER.load();
-    if (PET_MANAGER.exists() && PET_MANAGER.isAlive()) {
-      const auto& state = PET_MANAGER.getState();
-      char ipBuf[32];
-      snprintf(ipBuf, sizeof(ipBuf), "%lu IP", (unsigned long)state.inkPoints);
-      const int ipWidth = renderer.getTextWidth(SMALL_FONT_ID, ipBuf);
-      const int ipX = renderer.getScreenWidth() - metrics.statusBarHorizontalMargin - orientedMarginRight - ipWidth - 10;
-      renderer.drawText(SMALL_FONT_ID, ipX, textY, ipBuf, !darkMode);
-    }
-  }
 
   if (!(readerContext ? SETTINGS.shouldShowClockInReader() : SETTINGS.shouldShowClockOutsideReader())) {
     return;

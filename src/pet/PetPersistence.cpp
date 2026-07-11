@@ -58,6 +58,16 @@ bool PetManager::load() {
   state.missionDay      = doc["missionDay"]      | (uint16_t)0;
   state.missionPagesRead = doc["missionPagesRead"] | (uint8_t)0;
   state.missionPetCount = doc["missionPetCount"] | (uint8_t)0;
+  state.missionWaterCount = doc["missionWaterCount"] | (uint8_t)0;
+  state.missionPruneCount = doc["missionPruneCount"] | (uint8_t)0;
+  state.missionWeedCount = doc["missionWeedCount"] | (uint8_t)0;
+  state.missionFertilizerCount = doc["missionFertilizerCount"] | (uint8_t)0;
+  state.questReadClaimed = doc["questReadClaimed"] | false;
+  state.questPetClaimed = doc["questPetClaimed"] | false;
+  state.questWaterClaimed = doc["questWaterClaimed"] | false;
+  state.questPruneClaimed = doc["questPruneClaimed"] | false;
+  state.questWeedClaimed = doc["questWeedClaimed"] | false;
+  state.questFertilizerClaimed = doc["questFertilizerClaimed"] | false;
 
   // New fields — backward-compat: missing keys use struct defaults
   state.weight           = doc["weight"]           | (uint8_t)50;
@@ -110,9 +120,10 @@ bool PetManager::load() {
     }
   }
 
+  updateSleepState();
   loaded = true;
-  LOG_DBG("PET", "Loaded pet: stage=%d hunger=%d happy=%d health=%d",
-          (int)state.stage, state.hunger, state.happiness, state.health);
+  LOG_DBG("PET", "Loaded pet: stage=%d hunger=%d happy=%d health=%d isSleeping=%d",
+          (int)state.stage, state.hunger, state.happiness, state.health, state.isSleeping);
   return true;
 }
 
@@ -139,6 +150,16 @@ bool PetManager::save() {
   doc["missionDay"]     = state.missionDay;
   doc["missionPagesRead"] = state.missionPagesRead;
   doc["missionPetCount"]  = state.missionPetCount;
+  doc["missionWaterCount"] = state.missionWaterCount;
+  doc["missionPruneCount"] = state.missionPruneCount;
+  doc["missionWeedCount"] = state.missionWeedCount;
+  doc["missionFertilizerCount"] = state.missionFertilizerCount;
+  doc["questReadClaimed"] = state.questReadClaimed;
+  doc["questPetClaimed"] = state.questPetClaimed;
+  doc["questWaterClaimed"] = state.questWaterClaimed;
+  doc["questPruneClaimed"] = state.questPruneClaimed;
+  doc["questWeedClaimed"] = state.questWeedClaimed;
+  doc["questFertilizerClaimed"] = state.questFertilizerClaimed;
 
   // New fields
   doc["weight"]           = state.weight;

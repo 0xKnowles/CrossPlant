@@ -66,6 +66,16 @@ void VirtualPetActivity::loop() {
     return;
   }
 
+  // Quests mode: any button returns to normal
+  if (screenMode == ScreenMode::QUESTS) {
+    if (mappedInput.wasReleased(MappedInputManager::Button::Back) ||
+        mappedInput.wasReleased(MappedInputManager::Button::Confirm)) {
+      screenMode = ScreenMode::NORMAL;
+      requestUpdate();
+    }
+    return;
+  }
+
   if (mappedInput.wasReleased(MappedInputManager::Button::Back)) {
     PET_MANAGER.save();
     finish();
@@ -111,6 +121,7 @@ void VirtualPetActivity::executeSelectedAction() {
     case PetAction::IGNORE_CRY:    PET_MANAGER.ignoreCry();     break;
     case PetAction::TOGGLE_LIGHTS: PET_MANAGER.toggleLights();  triggerActionIcon(PetAnimIcon::SLEEP);    break;
     case PetAction::PET_PET:       PET_MANAGER.pet();           triggerActionIcon(PetAnimIcon::HEART);    break;
+    case PetAction::DAILY_QUESTS:  screenMode = ScreenMode::QUESTS; return;
     case PetAction::RENAME:        startRenameFlow();           return;
     case PetAction::CHANGE_TYPE:   startTypeSelectForChange();  return;
     case PetAction::SHOP:          typeSelectIndex = 0; screenMode = ScreenMode::SHOP; return;
@@ -211,7 +222,7 @@ void VirtualPetActivity::confirmTypeSelect() {
 void VirtualPetActivity::buyShopItem(int index) {
   const auto& state = PET_MANAGER.getState();
   if (index == 0) {
-    // Treat Box (20 IP)
+    // Premium Fertilizer (20 DD)
     if (state.inkPoints >= 20) {
       if (PET_MANAGER.feedMeal()) {
         PET_MANAGER.deductPoints(20);
@@ -219,13 +230,13 @@ void VirtualPetActivity::buyShopItem(int index) {
       }
     }
   } else if (index == 1) {
-    // Reading Toy (50 IP)
+    // Self-Watering Pot (50 DD)
     if (!state.hasToy && state.inkPoints >= 50) {
       PET_MANAGER.deductPoints(50);
       PET_MANAGER.setHasToy(true);
     }
   } else if (index == 2) {
-    // Round Glasses (100 IP)
+    // Cute Ladybugs (100 DD)
     if (!state.hasGlasses) {
       if (state.inkPoints >= 100) {
         PET_MANAGER.deductPoints(100);
@@ -236,7 +247,7 @@ void VirtualPetActivity::buyShopItem(int index) {
       PET_MANAGER.setEquipGlasses(!state.equipGlasses);
     }
   } else if (index == 3) {
-    // Wizard Hat (150 IP)
+    // Mini Umbrella (150 DD)
     if (!state.hasHat) {
       if (state.inkPoints >= 150) {
         PET_MANAGER.deductPoints(150);
@@ -247,7 +258,7 @@ void VirtualPetActivity::buyShopItem(int index) {
       PET_MANAGER.setEquipHat(!state.equipHat);
     }
   } else if (index == 4) {
-    // Golden Crown (200 IP)
+    // Fairy Lights (200 DD)
     if (!state.hasCrown) {
       if (state.inkPoints >= 200) {
         PET_MANAGER.deductPoints(200);
@@ -258,7 +269,7 @@ void VirtualPetActivity::buyShopItem(int index) {
       PET_MANAGER.setEquipCrown(!state.equipCrown);
     }
   } else if (index == 5) {
-    // Cozy Scarf (250 IP)
+    // Plant Ribbon (250 DD)
     if (!state.hasScarf) {
       if (state.inkPoints >= 250) {
         PET_MANAGER.deductPoints(250);

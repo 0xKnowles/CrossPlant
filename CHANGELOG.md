@@ -2,23 +2,35 @@
 
 ### Added
 
-- Virtual Pet: a reading companion that hatches from an egg and evolves (hatchling → youngster → companion → elder) as you read, with hunger, happiness, health, weight, and discipline to tend. Choose from five species (chicken, cat, dog, dragon, bunny), feed/clean/play with it, and watch it grow from real page turns. Open it from Settings → System → My Pet.
-- Virtual Pet can be opened with the power button: added "My Pet" as a Controls → Power button short-press and long-press action, so a press opens the pet from the home screen or while reading.
-- Pet sleep screen: a new sleep-screen mode that shows your pet and its name/stage while the device sleeps.
-- My Pet home screen menu option: added the "My Pet" option to the dashboard home menu list (for both standard and minimal layouts) when a pet is hatched and alive, routing click events directly to the pet's main screen activity.
-- Ink Points system: earn 1 Ink Point (IP) per page read and 100 IP per book completed, stored in the pet's persistent state.
-- Ink Points Shop: buy items in a scrollable menu using earned Ink Points: Treat Box (20 IP, feeds meal), Reading Toy (50 IP, halves happiness decay rate), Round Glasses (100 IP, cosmetic accessory), and Wizard Hat (150 IP, cosmetic accessory).
-- Cosmetic equipment: equip and toggle round glasses and wizard hats on the pet, rendering them dynamically on top of the pet sprite at any scale.
-- Long press shortcuts: allow opening "My Pet" by holding down any of the front bezel buttons (Confirm, Left, or Right) for the configured long-press duration, globally suppressed to prevent standard click actions.
-- Reading statistics cache: sync and display longest reading streak and total reading sessions on the pet UI, fully persisted.
+- Gardening Overhaul: Transformed the "My Pet" feature into a tropical plant-growing game named "My Plants".
+- Plant Types: Choose from three tropical species: Monstera, Begonia, and Alocasia.
+- Plant Vitals & Actions: Replaced pet vitals and actions with Moisture (Water Plant), Sunlight (Mist Leaves / Move to Sun), Health (organic Pest Treatment), Nutrients (Fertilize), and Height.
+- Dew Drops Currency: Changed Ink Points (IP) currency to Dew Drops (DD).
+- Garden Shop: Replaced shop items with gardening-themed items: Premium Fertilizer (20 DD), Self-Watering Pot (50 DD), Cute Ladybugs (100 DD), Mini Umbrella (150 DD), Fairy Lights (200 DD), and Plant Ribbon (250 DD).
+- Custom 1-Bit Plant Sprites: Hand-crafted 1-bit plant pixel art for all stages (Seed, Sprout, Sapling, Mature/Prized Monstera/Begonia/Alocasia, and withered twigs).
 
 ### Changed
 
-- Virtual Pet UI Overhaul: split the layout into a clean two-column grid. The left column shows the animated pet sprite, compact progress meters for vitals (hunger, happiness, health, discipline), age/weight, and Ink Points balance. The right column displays detailed reading partner statistics and the scrollable pet action menu.
-- Dashboard Theme Shortcuts: mapped the physical Settings button to open "My Pet" directly. Relocated the "Settings" menu item inside the Back-button Menu so settings are still accessible.
-- Boot Logo: replaced the default CrossInk logo and brand text with a happy chicken pet companion sprite, the brand name "CrossMerge", and version "v0.1.0" at the bottom of the screen.
-- Dashboard theme home screen footer: replaced the reading streak and reader type (time-of-day reader bucket) labels with a compact pet status layout (displaying the pet's mini sprite, name, stage, hunger, happiness, health, and weight) when a pet is alive.
-- Pet sleep screen: replaced the basic centered pet sleep screen with a dual-pane "Pet Diary" sleep screen. The left side displays the sleeping pet with name and stage, and the right side renders a simulated ruled notebook diary page with entries describing the pet's day (age, pages read, petted count, mood, and sleep time).
+- Reverted and completely removed the experimental "Cover Pet" UI theme.
+- Redesigned the main screen into a beautiful card layout with rounded borders: Top Left card for plant vitals, Bottom Left card for the plant sprite frame, and Right card for plant actions.
+- Redesigned the sleep screen to display the sleeping/dormant plant in a cozy rounded frame on the left, and a detailed lined notebook diary page on the right.
+- Updated all UI and reader themes (Base, Dashboard, Minimal, Lyra Carousel) to print DD currency, height, and moisture/sunlight vitals.
+- Updated daily quests from "pets" to "tends".
+
+### Fixed
+
+- Fixed UI alignment issues on the "My Plants" screen where section headers overlapped each other and reading progress text was shifted.
+- Fixed Dew Drops (DD) currency not updating during reading sessions by dynamically calculating the plant's sleep state from the RTC time on page turns, resolving cases where the plant remained locked in a stale sleeping state.
+- Removed duplicate DD counter from the top status bar in the reader, leaving the single counter near the task bar at the bottom.
+- Fixed plant sleep and daily rollover schedules operating on UTC time instead of the user's configured local timezone, which caused plants to sleep during local daytime hours (e.g., afternoon/evening for Pacific time users).
+- Fixed UI overlapping issues on the Dashboard Theme footer where the plant name/stage and 'Moisture'/'Health' text would collide on narrower screens by shifting the name/stage text closer to the mini-sprite icon and applying dynamic truncation.
+- Added a "Daily Quests" menu option to the "My Plants" action menu to view detailed progress bars for all active daily missions.
+- Fixed Cozy Frame box height on the sleep screen to prevent the bottom border from overlapping the plant stage text on X3 stacked layouts.
+- Replaced remaining hardcoded "Pet" references on the sleep screen and plant details cards with "Plant" (e.g. "PET DIARY" -> "PLANT DIARY", "PET STATUS" -> "PLANT STATUS", and "PET ACTIONS" -> "PLANT ACTIONS").
+- Added support for loading custom `.bmp` plant images from the SD card (`/.crosspoint/pet/sprites/`) at full display sizes and scales, enabling high-fidelity plant graphics instead of only raw binary pixels.
+- Renamed the OS name from "CrossInk" / "CrossMerge" to "CrossPlant" across all boot screens, sleep screens, version footers, and system settings tabs.
+- Updated the boot screen to display the custom Monstera Seed graphic (instead of the legacy companion sprite) and aligned it with the new OS name.
+- Updated the default sleep screen to display the new custom Seed logo instead of the legacy CrossInk logo.
 
 ## [v1.4.0] - 2026-07-10
 

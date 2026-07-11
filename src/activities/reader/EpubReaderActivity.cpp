@@ -3711,6 +3711,9 @@ void EpubReaderActivity::pageTurn(bool isForwardTurn, const char* source) {
         nextPageNumber = 0;
         currentSpineIndex++;
         section.reset();
+        if (SETTINGS.shouldTrackReadingStats()) {
+          PET_MANAGER.onChapterFinished();
+        }
       }
     }
     if (shouldRecordForwardRead) {
@@ -3720,11 +3723,15 @@ void EpubReaderActivity::pageTurn(bool isForwardTurn, const char* source) {
       stats.totalPagesTurned++;
       globalStats.totalPagesTurned++;
       if (SETTINGS.shouldTrackReadingStats()) {
+        PET_MANAGER.syncFromReadingStats(globalStats);
         PET_MANAGER.onPageTurned();
       }
     }
   } else {
     recordCurrentPageReadingTime(source);
+    if (SETTINGS.shouldTrackReadingStats()) {
+      PET_MANAGER.syncFromReadingStats(globalStats);
+    }
     armReadingPaceWarmup("back_page");
     if (section->currentPage > 0) {
       section->currentPage--;
