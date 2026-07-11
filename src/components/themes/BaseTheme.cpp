@@ -16,6 +16,9 @@
 #include "activities/reader/BookReadingStats.h"
 #include "components/UITheme.h"
 #include "fontIds.h"
+#include "pet/PetManager.h"
+#include "pet/PetSpriteRenderer.h"
+#include "pet/PetEvolution.h"
 
 // Internal constants
 namespace {
@@ -386,6 +389,22 @@ void BaseTheme::drawHeader(const GfxRenderer& renderer, Rect rect, const char* t
   drawBatteryRight(renderer,
                    Rect{batteryX, batteryY, BaseMetrics::values.batteryWidth, BaseMetrics::values.batteryHeight},
                    showBatteryPercentage);
+
+  PET_MANAGER.load();
+  if (!readerContext && PET_MANAGER.exists() && PET_MANAGER.isAlive()) {
+    const auto& petState = PET_MANAGER.getState();
+    const PetMood mood = PET_MANAGER.getMood();
+    const int petX = batteryX - 120;
+    const int petY = rect.y + homeHeaderTopInset;
+
+    PetSpriteRenderer::drawMini(const_cast<GfxRenderer&>(renderer), petX, petY, petState.stage, mood,
+                                petState.evolutionVariant, petState.petType);
+
+    char shortStatus[32];
+    snprintf(shortStatus, sizeof(shortStatus), "%lu IP", (unsigned long)petState.inkPoints);
+    renderer.drawText(SMALL_FONT_ID, petX + 28, petY + (BaseMetrics::values.batteryHeight - renderer.getLineHeight(SMALL_FONT_ID)) / 2,
+                      shortStatus, true);
+  }
 
   if (title) {
     int padding = rect.width - batteryX + BaseMetrics::values.batteryWidth;

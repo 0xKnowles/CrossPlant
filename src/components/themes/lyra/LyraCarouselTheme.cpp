@@ -19,6 +19,9 @@
 #include "components/UITheme.h"
 #include "components/icons/cover.h"
 #include "fontIds.h"
+#include "pet/PetManager.h"
+#include "pet/PetSpriteRenderer.h"
+#include "pet/PetEvolution.h"
 
 namespace {
 // Cover layout — keep Lyra Carousel's general geometry, but render the books
@@ -467,7 +470,30 @@ void LyraCarouselTheme::drawRecentBookCover(GfxRenderer& renderer, Rect rect,
     const int footerWidth = std::min(footerMaxWidth, centerCoverRect.width);
     const int footerX = centerCoverRect.x + (centerCoverRect.width - footerWidth) / 2;
 
-    if (hasStats) {
+    PET_MANAGER.load();
+    const bool petAlive = PET_MANAGER.exists() && PET_MANAGER.isAlive();
+
+    if (petAlive) {
+      const auto& state = PET_MANAGER.getState();
+      const PetMood mood = PET_MANAGER.getMood();
+      const char* petName = state.petName[0] ? state.petName : PetTypeNames::get(state.petType);
+      const char* stageName = PetEvolution::variantStageName(state.stage, state.evolutionVariant);
+
+      char petStatus[64];
+      snprintf(petStatus, sizeof(petStatus), "%s (%s) | Hu:%u%% Ha:%u%% %lu IP",
+               petName, stageName, state.hunger, state.happiness, (unsigned long)state.inkPoints);
+
+      const int centerY = infoY + footerLabelLineHeight / 2;
+      const int textW = renderer.getTextWidth(SMALL_FONT_ID, petStatus);
+      const int spriteW = 24;
+      const int totalW = spriteW + 8 + textW;
+      const int startX = footerX + (footerWidth - totalW) / 2;
+
+      PetSpriteRenderer::drawMini(const_cast<GfxRenderer&>(renderer), startX, centerY - 12, state.stage, mood,
+                                  state.evolutionVariant, state.petType);
+      renderer.drawText(SMALL_FONT_ID, startX + spriteW + 8, centerY - renderer.getLineHeight(SMALL_FONT_ID) / 2,
+                        petStatus, true);
+    } else if (hasStats) {
       char buf[48];
       formatCompactReadingTime(stats->totalReadingSeconds, buf, sizeof(buf));
       const auto timeLabel = renderer.truncatedText(footerLabelFontId, buf, footerWidth, EpdFontFamily::REGULAR);

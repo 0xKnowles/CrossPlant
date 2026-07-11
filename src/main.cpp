@@ -984,6 +984,7 @@ void loop() {
     static bool otherButtonLongHandled[MappedInputManager::BUTTON_COUNT] = {false};
 
     MappedInputManager::Button longPressButtons[] = {
+      MappedInputManager::Button::Back,
       MappedInputManager::Button::Confirm,
       MappedInputManager::Button::Left,
       MappedInputManager::Button::Right
@@ -998,7 +999,8 @@ void loop() {
                    (millis() - otherButtonPressStart[idx] >= SETTINGS.getPowerButtonLongPressDuration())) {
           otherButtonLongHandled[idx] = true;
 
-          if (btn == MappedInputManager::Button::Confirm) mappedInputManager.suppressNextConfirmRelease();
+          if (btn == MappedInputManager::Button::Back) mappedInputManager.suppressNextBackRelease();
+          else if (btn == MappedInputManager::Button::Confirm) mappedInputManager.suppressNextConfirmRelease();
           else if (btn == MappedInputManager::Button::Left) mappedInputManager.suppressNextLeftRelease();
           else if (btn == MappedInputManager::Button::Right) mappedInputManager.suppressNextRightRelease();
 
