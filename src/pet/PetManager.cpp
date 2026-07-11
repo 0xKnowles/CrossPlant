@@ -188,6 +188,7 @@ void PetManager::syncFromReadingStats(const GlobalReadingStats& stats) {
 }
 
 void PetManager::onPageTurned() {
+  load();
   if (!state.exists() || !state.isAlive()) return;
   if (state.isSleeping || state.isSick) return;
 

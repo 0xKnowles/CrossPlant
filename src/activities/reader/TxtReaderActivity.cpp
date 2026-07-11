@@ -19,6 +19,7 @@
 #include "SdCardFontSystem.h"
 #include "activities/boot_sleep/SleepCoverAssets.h"
 #include "components/UITheme.h"
+#include "pet/PetManager.h"
 #include "fontIds.h"
 
 namespace {
@@ -103,6 +104,8 @@ void TxtReaderActivity::onEnter() {
     return;
   }
 
+  PET_MANAGER.load();
+
   ReaderUtils::applyOrientation(renderer, SETTINGS.orientation);
 
   // Activate reader-specific front button mapping (if configured).
@@ -125,6 +128,10 @@ void TxtReaderActivity::onEnter() {
 
 void TxtReaderActivity::onExit() {
   Activity::onExit();
+
+  if (SETTINGS.shouldTrackReadingStats()) {
+    PET_MANAGER.save();
+  }
 
   // Deactivate reader-specific front button mapping.
   mappedInput.setReaderMode(false);
@@ -256,6 +263,9 @@ void TxtReaderActivity::loop() {
   } else if (nextTriggered) {
     if (currentPage < totalPages - 1) {
       currentPage++;
+      if (SETTINGS.shouldTrackReadingStats()) {
+        PET_MANAGER.onPageTurned();
+      }
       requestUpdate();
     }
   }

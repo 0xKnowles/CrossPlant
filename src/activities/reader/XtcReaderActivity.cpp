@@ -25,6 +25,7 @@
 #include "XtcReaderMenuActivity.h"
 #include "activities/boot_sleep/SleepCoverAssets.h"
 #include "activities/util/ConfirmationActivity.h"
+#include "pet/PetManager.h"
 #include "components/UITheme.h"
 #include "components/themes/lyra/LyraCarouselTheme.h"
 #include "fontIds.h"
@@ -71,6 +72,7 @@ void XtcReaderActivity::onEnter() {
 
   stats = BookReadingStats::load(xtc->getCachePath());
   globalStats = GlobalReadingStats::load();
+  PET_MANAGER.load();
   sessionReadingSeconds = 0;
   hasSessionStartLocalDateTime = getCurrentLocalReadingStatsDateTime(sessionStartLocalDateTime);
 
@@ -425,6 +427,9 @@ void XtcReaderActivity::recordForwardPageTurn(uint32_t seconds) {
   (void)seconds;
   stats.totalPagesTurned++;
   globalStats.totalPagesTurned++;
+  if (SETTINGS.shouldTrackReadingStats()) {
+    PET_MANAGER.onPageTurned();
+  }
 }
 
 void XtcReaderActivity::commitReadingStats() {
@@ -451,6 +456,11 @@ void XtcReaderActivity::commitReadingStats() {
   }
   stats.save(xtc->getCachePath());
   globalStats.save();
+
+  if (PET_MANAGER.load()) {
+    PET_MANAGER.syncFromReadingStats(globalStats);
+    PET_MANAGER.save();
+  }
 }
 
 void XtcReaderActivity::resetCurrentBookStatsAfterDelete() {
