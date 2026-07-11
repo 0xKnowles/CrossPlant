@@ -574,10 +574,8 @@ void SleepActivity::renderPetSleepScreen() const {
   const int titleW = renderer.getTextWidth(UI_10_FONT_ID, diaryTitle, EpdFontFamily::BOLD);
   renderer.drawText(UI_10_FONT_ID, rectX + (rectW - titleW) / 2, rectY + 12, diaryTitle, true, EpdFontFamily::BOLD);
 
-  // Ruled lines inside the diary
-  for (int ly = rectY + 80; ly < rectY + 310; ly += 45) {
-    renderer.drawLine(rectX + 10, ly, rectX + rectW - 10, ly, true);
-  }
+  // Red/solid notebook margin line
+  renderer.drawLine(rectX + 30, rectY + 40, rectX + 30, rectY + rectH - 1, true);
 
   char line1[64];
   char line2[64];
@@ -609,11 +607,24 @@ void SleepActivity::renderPetSleepScreen() const {
     snprintf(line5, sizeof(line5), "Slept soundly tonight.");
   }
 
-  renderer.drawText(SMALL_FONT_ID, rectX + 15, rectY + 68, line1);
-  renderer.drawText(SMALL_FONT_ID, rectX + 15, rectY + 113, line2);
-  renderer.drawText(SMALL_FONT_ID, rectX + 15, rectY + 158, line3);
-  renderer.drawText(SMALL_FONT_ID, rectX + 15, rectY + 203, line4);
-  renderer.drawText(SMALL_FONT_ID, rectX + 15, rectY + 248, line5);
+  // Draw bullet list entries with spacing
+  auto drawDiaryEntry = [&](int index, const char* text) {
+    const int textYPos = rectY + 65 + index * 48;
+    const int bulletX = rectX + 42;
+    const int bulletY = textYPos + 6;
+    
+    // Draw a neat solid square bullet point
+    renderer.fillRect(bulletX, bulletY + 1, 4, 4, true);
+    
+    // Draw text next to the bullet
+    renderer.drawText(SMALL_FONT_ID, rectX + 54, textYPos, text);
+  };
+
+  drawDiaryEntry(0, line1);
+  drawDiaryEntry(1, line2);
+  drawDiaryEntry(2, line3);
+  drawDiaryEntry(3, line4);
+  drawDiaryEntry(4, line5);
 
   // 2. Sleeping Pet (centered below the diary card)
   constexpr int PET_SCALE = 3;
