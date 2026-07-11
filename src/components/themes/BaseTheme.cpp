@@ -881,6 +881,19 @@ void BaseTheme::drawStatusBar(GfxRenderer& renderer, const float bookProgress, c
     leftClusterWidth += (hasLeftItem ? statusItemGap : 0) + timeLeftWidth;
   }
 
+  // Draw IP counter
+  PET_MANAGER.load();
+  if (PET_MANAGER.exists() && PET_MANAGER.isAlive()) {
+    const auto& state = PET_MANAGER.getState();
+    char ipBuf[32];
+    snprintf(ipBuf, sizeof(ipBuf), "%lu IP", (unsigned long)state.inkPoints);
+    const bool hasLeftItem = leftClusterWidth > 0;
+    const int ipX = leftClusterX + leftClusterWidth + (hasLeftItem ? statusItemGap : 0);
+    renderer.drawText(SMALL_FONT_ID, ipX, textY, ipBuf, foregroundBlack);
+    const int ipWidth = renderer.getTextWidth(SMALL_FONT_ID, ipBuf);
+    leftClusterWidth += (hasLeftItem ? statusItemGap : 0) + ipWidth;
+  }
+
   // Draw Title
   if (!title.empty()) {
     textY -= textYOffset;
@@ -918,6 +931,34 @@ void BaseTheme::drawStatusBar(GfxRenderer& renderer, const float bookProgress, c
 
 void BaseTheme::drawTopStatusBarClock(const GfxRenderer& renderer, int topY, const char* previewTime,
                                       const bool readerContext, const int textYOffset, const bool darkMode) const {
+  const auto& metrics = UITheme::getInstance().getMetrics();
+  const int statusBarHeight = std::max(UITheme::getStatusBarHeight(), metrics.statusBarVerticalMargin);
+  if (statusBarHeight <= 0) {
+    return;
+  }
+
+  int orientedMarginTop, orientedMarginRight, orientedMarginBottom, orientedMarginLeft;
+  renderer.getOrientedViewableTRBL(&orientedMarginTop, &orientedMarginRight, &orientedMarginBottom,
+                                   &orientedMarginLeft);
+
+  const int lineHeight = renderer.getLineHeight(SMALL_FONT_ID);
+  const int effectiveTextYOffset = textYOffset + (readerContext ? homeHeaderClockTextYOffset(renderer) : 0);
+  const int baseTopY = topY >= 0 ? topY : orientedMarginTop + metrics.topPadding;
+  const int textY = baseTopY + (statusBarHeight - lineHeight) / 2 + effectiveTextYOffset;
+
+  // Draw IP counter in reader context if pet exists
+  if (readerContext) {
+    PET_MANAGER.load();
+    if (PET_MANAGER.exists() && PET_MANAGER.isAlive()) {
+      const auto& state = PET_MANAGER.getState();
+      char ipBuf[32];
+      snprintf(ipBuf, sizeof(ipBuf), "%lu IP", (unsigned long)state.inkPoints);
+      const int ipWidth = renderer.getTextWidth(SMALL_FONT_ID, ipBuf);
+      const int ipX = renderer.getScreenWidth() - metrics.statusBarHorizontalMargin - orientedMarginRight - ipWidth - 10;
+      renderer.drawText(SMALL_FONT_ID, ipX, textY, ipBuf, !darkMode);
+    }
+  }
+
   if (!(readerContext ? SETTINGS.shouldShowClockInReader() : SETTINGS.shouldShowClockOutsideReader())) {
     return;
   }
@@ -934,25 +975,8 @@ void BaseTheme::drawTopStatusBarClock(const GfxRenderer& renderer, int topY, con
     timeText = timeBuf;
   }
 
-  const auto& metrics = UITheme::getInstance().getMetrics();
-  const int statusBarHeight = std::max(UITheme::getStatusBarHeight(), metrics.statusBarVerticalMargin);
-  if (statusBarHeight <= 0) {
-    return;
-  }
-
-  int orientedMarginTop, orientedMarginRight, orientedMarginBottom, orientedMarginLeft;
-  renderer.getOrientedViewableTRBL(&orientedMarginTop, &orientedMarginRight, &orientedMarginBottom,
-                                   &orientedMarginLeft);
-  (void)orientedMarginRight;
-  (void)orientedMarginBottom;
-  (void)orientedMarginLeft;
-
   const int textWidth = renderer.getTextWidth(SMALL_FONT_ID, timeText);
-  const int lineHeight = renderer.getLineHeight(SMALL_FONT_ID);
   const int textX = (renderer.getScreenWidth() - textWidth) / 2;
-  const int effectiveTextYOffset = textYOffset + (readerContext ? homeHeaderClockTextYOffset(renderer) : 0);
-  const int baseTopY = topY >= 0 ? topY : orientedMarginTop + metrics.topPadding;
-  const int textY = baseTopY + (statusBarHeight - lineHeight) / 2 + effectiveTextYOffset;
   renderer.drawText(SMALL_FONT_ID, textX, textY, timeText, !darkMode);
 }
 
