@@ -1,4 +1,4 @@
-# CrossPlant (CrossPet Fork🌿🐣
+# CrossPlant (CrossPet Fork) 🌿🐣
 
 **CrossPlant** is an open-source custom firmware fork for the **XTEink X3** and **X4** e-ink readers. It merges the advanced typography, performance optimizations, and stable base of **CrossInk** with the virtual plant mechanics of **CrossPet**, adding a collection of enhancements, modern UI layouts, and deep reading integrations.
 
