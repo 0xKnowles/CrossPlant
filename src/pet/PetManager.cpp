@@ -262,10 +262,19 @@ void PetManager::getMissions(PetMission out[3]) const {
 
 // --- Helpers ---
 
+// Fill `out` with the current local time. Returns false if the clock is
+// clearly unset (year < 2025), mirroring Arduino's getLocalTime() validity
+// check. Uses portable C time calls (not Arduino's getLocalTime) so this
+// builds on both hardware and the simulator.
+static bool localTimeNow(struct tm& out) {
+  time_t now = time(nullptr);
+  localtime_r(&now, &out);
+  return out.tm_year >= 125;  // tm_year is years since 1900; 125 => 2025
+}
+
 bool PetManager::isTimeValid() const {
   struct tm timeinfo;
-  if (!getLocalTime(&timeinfo, 0)) return false;
-  return timeinfo.tm_year >= 125;
+  return localTimeNow(timeinfo);
 }
 
 uint32_t PetManager::getCurrentTime() const {
@@ -274,8 +283,7 @@ uint32_t PetManager::getCurrentTime() const {
 
 uint16_t PetManager::getDayOfYear() const {
   struct tm timeinfo;
-  if (!getLocalTime(&timeinfo, 0)) return 0;
-  if (timeinfo.tm_year < 125) return 0;
+  if (!localTimeNow(timeinfo)) return 0;
   return static_cast<uint16_t>(timeinfo.tm_yday + 1);
 }
 
