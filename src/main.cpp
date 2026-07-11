@@ -516,6 +516,12 @@ bool handleGlobalPowerButtonAction(const CrossPointSettings::SHORT_PWRBTN action
       }
       activityManager.goToHotspotFileTransfer();
       return true;
+    case CrossPointSettings::SHORT_PWRBTN::VIRTUAL_PET:
+      if (activityManager.canSnapshotForSleepOverlay()) {
+        return false;
+      }
+      activityManager.goToVirtualPet();
+      return true;
     default:
       return false;
   }

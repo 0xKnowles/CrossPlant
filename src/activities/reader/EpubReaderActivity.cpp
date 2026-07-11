@@ -3242,6 +3242,9 @@ void EpubReaderActivity::executeReaderQuickAction(CrossPointSettings::LONG_PRESS
     case CrossPointSettings::LONG_MENU_FILE_BROWSER:
       activityManager.goToFileBrowser(epub ? epub->getPath() : "");
       break;
+    case CrossPointSettings::LONG_MENU_VIRTUAL_PET:
+      activityManager.goToVirtualPet();
+      break;
     case CrossPointSettings::LONG_MENU_CREATE_CLIPPING:
       startClipSelection();
       break;
@@ -3370,6 +3373,9 @@ bool EpubReaderActivity::executeShortPowerButtonAction() {
     case CrossPointSettings::SHORT_PWRBTN::FILE_BROWSER:
       executeReaderQuickAction(CrossPointSettings::LONG_MENU_FILE_BROWSER);
       return true;
+    case CrossPointSettings::SHORT_PWRBTN::VIRTUAL_PET:
+      executeReaderQuickAction(CrossPointSettings::LONG_MENU_VIRTUAL_PET);
+      return true;
     case CrossPointSettings::SHORT_PWRBTN::CREATE_CLIPPING:
       mappedInput.suppressNextPowerConfirmRelease();
       executeReaderQuickAction(CrossPointSettings::LONG_MENU_CREATE_CLIPPING);
@@ -3462,6 +3468,9 @@ bool EpubReaderActivity::executeLongPowerButtonAction() {
       return true;
     case CrossPointSettings::SHORT_PWRBTN::FILE_BROWSER:
       executeReaderQuickAction(CrossPointSettings::LONG_MENU_FILE_BROWSER);
+      return true;
+    case CrossPointSettings::SHORT_PWRBTN::VIRTUAL_PET:
+      executeReaderQuickAction(CrossPointSettings::LONG_MENU_VIRTUAL_PET);
       return true;
     case CrossPointSettings::SHORT_PWRBTN::CREATE_CLIPPING:
       mappedInput.suppressNextPowerConfirmRelease();

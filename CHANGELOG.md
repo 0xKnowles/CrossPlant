@@ -1,3 +1,11 @@
+## [Unreleased]
+
+### Added
+
+- Virtual Pet: a reading companion that hatches from an egg and evolves (hatchling → youngster → companion → elder) as you read, with hunger, happiness, health, weight, and discipline to tend. Choose from five species (chicken, cat, dog, dragon, bunny), feed/clean/play with it, and watch it grow from real page turns. Open it from Settings → System → My Pet.
+- Virtual Pet can be opened with the power button: added "My Pet" as a Controls → Power button short-press and long-press action, so a press opens the pet from the home screen or while reading.
+- Pet sleep screen: a new sleep-screen mode that shows your pet and its name/stage while the device sleeps.
+
 ## [v1.4.0] - 2026-07-10
 
 ### Added

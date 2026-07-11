@@ -97,6 +97,7 @@ class ActivityManager {
   void goToNearbyStatsSync();
   void goToSettings();
   void goToFileBrowser(std::string path = {});
+  void goToVirtualPet();
   void goToRecentBooks();
   void goToBrowser();
   void goToReader(std::string path, bool suppressBackRelease = false);

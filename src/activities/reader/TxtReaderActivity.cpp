@@ -312,6 +312,9 @@ bool TxtReaderActivity::executePowerButtonAction() {
       case CrossPointSettings::SHORT_PWRBTN::FILE_BROWSER:
         activityManager.goToFileBrowser(txt ? txt->getPath() : "");
         return true;
+      case CrossPointSettings::SHORT_PWRBTN::VIRTUAL_PET:
+        activityManager.goToVirtualPet();
+        return true;
       case CrossPointSettings::SHORT_PWRBTN::CREATE_CLIPPING:
         return false;
       default:
