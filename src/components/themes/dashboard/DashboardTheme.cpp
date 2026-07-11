@@ -522,9 +522,9 @@ void drawFooterStats(const GfxRenderer& renderer, const Rect& coverRect, const G
                tr(STR_PET_STAT_HAPPY), state.happiness);
     }
 
-    snprintf(statsLine2, sizeof(statsLine2), "%s: %u%%  Wt: %ug",
+    snprintf(statsLine2, sizeof(statsLine2), "%s: %u%%  Wt: %ug  %lu IP",
              tr(STR_PET_HEALTH), state.health,
-             state.weight);
+             state.weight, (unsigned long)state.inkPoints);
 
     const int rightX = renderer.getScreenWidth() - inset - (gpio.deviceIsX3() ? kPairInwardShiftX3 : 0);
     drawRightAlignedText(renderer, UI_10_FONT_ID, rightX, textY, statsLine1, true, !inverted);

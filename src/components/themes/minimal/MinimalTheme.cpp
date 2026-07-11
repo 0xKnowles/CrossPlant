@@ -30,6 +30,9 @@
 #include "components/icons/night.h"
 #include "components/icons/streak.h"
 #include "fontIds.h"
+#include "pet/PetManager.h"
+#include "pet/PetSpriteRenderer.h"
+#include "pet/PetEvolution.h"
 
 namespace {
 struct MinimalQuote {
@@ -182,6 +185,43 @@ int progressLabelBottomY(const GfxRenderer& renderer, const Rect& coverRect, con
 void drawStatsOverlay(const GfxRenderer& renderer, const GlobalReadingStats& globalStats, const Rect& coverRect,
                       const float progressPercent, const bool inverted) {
   if (!gpio.deviceIsX3()) {
+    return;
+  }
+
+  PET_MANAGER.load();
+  if (PET_MANAGER.exists() && PET_MANAGER.isAlive()) {
+    const auto& state = PET_MANAGER.getState();
+    const PetMood mood = PET_MANAGER.getMood();
+    const char* petName = state.petName[0] ? state.petName : PetTypeNames::get(state.petType);
+    const char* stageName = PetEvolution::variantStageName(state.stage, state.evolutionVariant);
+
+    // Draw pet header on the top row
+    char petHeader[64];
+    snprintf(petHeader, sizeof(petHeader), "%s (%s)", petName, stageName);
+    const int readerRegionTop = 0;
+    const int readerRegionBottom = coverImageRectForFrame(coverRect).y;
+    drawCenteredStatsRow(renderer, nullptr, 0, petHeader, readerRegionTop, readerRegionBottom, inverted);
+
+    // Draw pet vitals + IP on the bottom row
+    char petStatus[64];
+    snprintf(petStatus, sizeof(petStatus), "Hu: %u%%  Ha: %u%%  He: %u%%  %lu IP",
+             state.hunger, state.happiness, state.health, (unsigned long)state.inkPoints);
+
+    const int streakRegionTop = progressLabelBottomY(renderer, coverRect, progressPercent);
+    const int streakRegionBottom = renderer.getScreenHeight();
+
+    const int centerY = (streakRegionTop + streakRegionBottom) / 2;
+    const int textW = renderer.getTextWidth(SMALL_FONT_ID, petStatus);
+    const int spriteW = 24;
+    const int totalW = spriteW + 8 + textW;
+    const int startX = (renderer.getScreenWidth() - totalW) / 2;
+
+    // Draw mini pet sprite
+    PetSpriteRenderer::drawMini(const_cast<GfxRenderer&>(renderer), startX, centerY - 12, state.stage, mood,
+                                state.evolutionVariant, state.petType);
+
+    // Draw status text next to the mini sprite
+    renderer.drawText(SMALL_FONT_ID, startX + spriteW + 8, centerY - renderer.getLineHeight(SMALL_FONT_ID) / 2, petStatus, !inverted);
     return;
   }
 
