@@ -52,11 +52,11 @@ void VirtualPetActivity::loop() {
       return;
     }
     buttonNavigator.onPrevious([this] {
-      typeSelectIndex = (typeSelectIndex > 0) ? typeSelectIndex - 1 : 3;
+      typeSelectIndex = (typeSelectIndex > 0) ? typeSelectIndex - 1 : 5;
       requestUpdate();
     });
     buttonNavigator.onNext([this] {
-      typeSelectIndex = (typeSelectIndex + 1) % 4;
+      typeSelectIndex = (typeSelectIndex + 1) % 6;
       requestUpdate();
     });
     if (mappedInput.wasReleased(MappedInputManager::Button::Confirm)) {
@@ -245,6 +245,28 @@ void VirtualPetActivity::buyShopItem(int index) {
       }
     } else {
       PET_MANAGER.setEquipHat(!state.equipHat);
+    }
+  } else if (index == 4) {
+    // Golden Crown (200 IP)
+    if (!state.hasCrown) {
+      if (state.inkPoints >= 200) {
+        PET_MANAGER.deductPoints(200);
+        PET_MANAGER.setHasCrown(true);
+        PET_MANAGER.setEquipCrown(true);
+      }
+    } else {
+      PET_MANAGER.setEquipCrown(!state.equipCrown);
+    }
+  } else if (index == 5) {
+    // Cozy Scarf (250 IP)
+    if (!state.hasScarf) {
+      if (state.inkPoints >= 250) {
+        PET_MANAGER.deductPoints(250);
+        PET_MANAGER.setHasScarf(true);
+        PET_MANAGER.setEquipScarf(true);
+      }
+    } else {
+      PET_MANAGER.setEquipScarf(!state.equipScarf);
     }
   }
 }

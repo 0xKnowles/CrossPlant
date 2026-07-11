@@ -84,6 +84,10 @@ bool PetManager::load() {
   state.equipGlasses     = doc["equipGlasses"]     | false;
   state.hasHat           = doc["hasHat"]           | false;
   state.equipHat         = doc["equipHat"]         | false;
+  state.hasCrown         = doc["hasCrown"]         | false;
+  state.equipCrown       = doc["equipCrown"]       | false;
+  state.hasScarf         = doc["hasScarf"]         | false;
+  state.equipScarf       = doc["equipScarf"]       | false;
   state.hasToy           = doc["hasToy"]           | false;
   state.longestReadingStreak = doc["longestReadingStreak"] | (uint16_t)0;
   state.lastKnownSessions = doc["lastKnownSessions"] | (uint32_t)0;
@@ -161,6 +165,10 @@ bool PetManager::save() {
   doc["equipGlasses"]     = state.equipGlasses;
   doc["hasHat"]           = state.hasHat;
   doc["equipHat"]         = state.equipHat;
+  doc["hasCrown"]         = state.hasCrown;
+  doc["equipCrown"]       = state.equipCrown;
+  doc["hasScarf"]         = state.hasScarf;
+  doc["equipScarf"]       = state.equipScarf;
   doc["hasToy"]           = state.hasToy;
   doc["longestReadingStreak"] = state.longestReadingStreak;
   doc["lastKnownSessions"] = state.lastKnownSessions;

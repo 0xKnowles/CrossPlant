@@ -498,19 +498,20 @@ void drawFooterStats(const GfxRenderer& renderer, const Rect& coverRect, const G
     // Draw pet name & stage
     const int lineH10 = renderer.getLineHeight(UI_10_FONT_ID);
     const int lineH8 = renderer.getLineHeight(SMALL_FONT_ID);
-    const int totalTextH = lineH10 + 2 + lineH8;
+    const int totalTextH = lineH10 + 4 + lineH8 + 4 + lineH8;
     const int textY = centerY - totalTextH / 2;
     const int textX = iconX + kFooterIconSize + kFooterIconTextGap;
 
     const char* petName = state.petName[0] ? state.petName : PetTypeNames::get(state.petType);
     const char* stageName = PetEvolution::variantStageName(state.stage, state.evolutionVariant);
 
-    renderer.drawText(UI_10_FONT_ID, textX, textY, petName, !inverted, EpdFontFamily::BOLD);
-    renderer.drawText(SMALL_FONT_ID, textX, textY + lineH10 + 2, stageName, !inverted);
+    renderer.drawText(UI_10_FONT_ID, textX, textY + 2, petName, !inverted, EpdFontFamily::BOLD);
+    renderer.drawText(SMALL_FONT_ID, textX, textY + 2 + lineH10 + 4, stageName, !inverted);
 
     // Draw pet stats right-aligned
     char statsLine1[64];
     char statsLine2[64];
+    char statsLine3[64];
 
     if (state.isSick) {
       snprintf(statsLine1, sizeof(statsLine1), "SICK!");
@@ -526,9 +527,18 @@ void drawFooterStats(const GfxRenderer& renderer, const Rect& coverRect, const G
              tr(STR_PET_HEALTH), state.health,
              state.weight, (unsigned long)state.inkPoints);
 
+    bool pagesDone = (state.missionPagesRead >= 20);
+    bool petDone = (state.missionPetCount >= 3);
+    if (pagesDone && petDone) {
+      snprintf(statsLine3, sizeof(statsLine3), "Quest: Completed! ");
+    } else {
+      snprintf(statsLine3, sizeof(statsLine3), "Quest: %u/20 pgs  %u/3 pets", state.missionPagesRead, state.missionPetCount);
+    }
+
     const int rightX = renderer.getScreenWidth() - inset - (gpio.deviceIsX3() ? kPairInwardShiftX3 : 0);
-    drawRightAlignedText(renderer, UI_10_FONT_ID, rightX, textY, statsLine1, true, !inverted);
-    drawRightAlignedText(renderer, SMALL_FONT_ID, rightX, textY + lineH10 + 2, statsLine2, false, !inverted);
+    drawRightAlignedText(renderer, UI_10_FONT_ID, rightX, textY + 2, statsLine1, true, !inverted);
+    drawRightAlignedText(renderer, SMALL_FONT_ID, rightX, textY + 2 + lineH10 + 4, statsLine2, false, !inverted);
+    drawRightAlignedText(renderer, SMALL_FONT_ID, rightX, textY + 2 + lineH10 + 4 + lineH8 + 4, statsLine3, false, !inverted);
     return;
   }
 

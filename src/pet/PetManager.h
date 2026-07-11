@@ -61,6 +61,10 @@ class PetManager {
   void setEquipGlasses(bool val) { state.equipGlasses = val; save(); }
   void setHasHat(bool val) { state.hasHat = val; save(); }
   void setEquipHat(bool val) { state.equipHat = val; save(); }
+  void setHasCrown(bool val) { state.hasCrown = val; save(); }
+  void setEquipCrown(bool val) { state.equipCrown = val; save(); }
+  void setHasScarf(bool val) { state.hasScarf = val; save(); }
+  void setEquipScarf(bool val) { state.equipScarf = val; save(); }
 
   // --- User actions (PetActions.cpp) ---
   bool feedMeal();       // fill hunger + add weight + waste tracking

@@ -108,12 +108,16 @@ void PetSpriteRenderer::drawPet(GfxRenderer& renderer, int x, int y, PetStage st
   if (stage != PetStage::EGG && stage != PetStage::DEAD) {
     bool drawHat = forceHat;
     bool drawGlasses = forceGlasses;
+    bool drawCrown = false;
+    bool drawScarf = false;
 
     PET_MANAGER.load();
     if (PET_MANAGER.exists() && PET_MANAGER.isAlive()) {
       const auto& petState = PET_MANAGER.getState();
       if (petState.equipHat) drawHat = true;
       if (petState.equipGlasses) drawGlasses = true;
+      if (petState.equipCrown) drawCrown = true;
+      if (petState.equipScarf) drawScarf = true;
     }
 
     const int cell = (scale == 1) ? 2 : 2 * scale; // size of logical pixel
@@ -146,6 +150,32 @@ void PetSpriteRenderer::drawPet(GfxRenderer& renderer, int x, int y, PetStage st
       for (int col = 10; col <= 12; col++) {
         renderer.fillRect(x + col * cell, y + 8 * cell, cell, cell);
       }
+    }
+
+    if (drawCrown) {
+      // Peaks
+      renderer.fillRect(x + 9 * cell, y + 1 * cell, cell, cell);
+      renderer.fillRect(x + 12 * cell, y + 1 * cell, cell, cell);
+      renderer.fillRect(x + 15 * cell, y + 1 * cell, cell, cell);
+      // Mid peaks
+      renderer.fillRect(x + 9 * cell, y + 2 * cell, cell, cell);
+      renderer.fillRect(x + 12 * cell, y + 2 * cell, cell, cell);
+      renderer.fillRect(x + 15 * cell, y + 2 * cell, cell, cell);
+      // Band base
+      for (int col = 8; col <= 16; col++) {
+        renderer.fillRect(x + col * cell, y + 3 * cell, cell, cell);
+      }
+    }
+
+    if (drawScarf) {
+      // Main neck band
+      for (int col = 8; col <= 16; col++) {
+        renderer.fillRect(x + col * cell, y + 12 * cell, cell, cell);
+      }
+      // Hanging tail
+      renderer.fillRect(x + 15 * cell, y + 13 * cell, cell, cell);
+      renderer.fillRect(x + 15 * cell, y + 14 * cell, cell, cell);
+      renderer.fillRect(x + 15 * cell, y + 15 * cell, cell, cell);
     }
   }
 }

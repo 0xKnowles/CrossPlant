@@ -107,6 +107,10 @@ struct PetState {
   bool equipGlasses = false;
   bool hasHat = false;
   bool equipHat = false;
+  bool hasCrown = false;
+  bool equipCrown = false;
+  bool hasScarf = false;
+  bool equipScarf = false;
   bool hasToy = false;
 
   // Extra Reading Stats Cache

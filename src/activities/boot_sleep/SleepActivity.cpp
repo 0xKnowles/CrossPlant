@@ -545,6 +545,7 @@ void SleepActivity::renderDefaultSleepScreen() const {
 void SleepActivity::renderPetSleepScreen() const {
   const auto pageWidth = renderer.getScreenWidth();
   const auto pageHeight = renderer.getScreenHeight();
+  const bool isX3 = (pageWidth == 528);
 
   PET_MANAGER.load();
   const bool hasPet = PET_MANAGER.exists() && PET_MANAGER.isAlive();
@@ -560,83 +561,39 @@ void SleepActivity::renderPetSleepScreen() const {
 
   const auto& state = PET_MANAGER.getState();
 
-  // 1. Diary Page Card (above the pet)
-  const int rectW = 460;
-  const int rectH = 320;
-  const int rectX = (pageWidth - rectW) / 2;
-  const int rectY = 40;
+  // Coordinates based on resolution
+  int spriteX, spriteY, nameY;
+  int rectX, rectY, rectW, rectH;
 
-  // Ruled page outline
-  renderer.drawRoundedRect(rectX, rectY, rectW, rectH, 1, 8, true);
-  renderer.drawLine(rectX, rectY + 40, rectX + rectW - 1, rectY + 40, true);
+  if (isX3) {
+    spriteX = 60;
+    spriteY = 204;
+    nameY = spriteY + 144 + 16;
 
-  const char* diaryTitle = "PET DIARY";
-  const int titleW = renderer.getTextWidth(UI_10_FONT_ID, diaryTitle, EpdFontFamily::BOLD);
-  renderer.drawText(UI_10_FONT_ID, rectX + (rectW - titleW) / 2, rectY + 12, diaryTitle, true, EpdFontFamily::BOLD);
-
-  // Red/solid notebook margin line
-  renderer.drawLine(rectX + 30, rectY + 40, rectX + 30, rectY + rectH - 1, true);
-
-  char line1[64];
-  char line2[64];
-  char line3[64];
-  char line4[64];
-  char line5[64];
-
-  snprintf(line1, sizeof(line1), "Dear Diary, today is Day %lu.", (unsigned long)(PET_MANAGER.getDaysAlive() + 1));
-  snprintf(line2, sizeof(line2), "My reader read %d pages today.", state.missionPagesRead);
-  snprintf(line3, sizeof(line3), "I was petted %d times.", state.missionPetCount);
-
-  if (state.isSick) {
-    snprintf(line4, sizeof(line4), "I felt sick... had to take medicine.");
-  } else if (state.hunger < 30) {
-    snprintf(line4, sizeof(line4), "I was very hungry today! Nom nom.");
+    rectX = 275;
+    rectY = 180;
+    rectW = 238;
+    rectH = 400;
   } else {
-    snprintf(line4, sizeof(line4), "I felt happy and healthy!");
+    // X4 (800x480)
+    spriteX = 128;
+    spriteY = 138;
+    nameY = spriteY + 144 + 16;
+
+    rectX = 390;
+    rectY = 40;
+    rectW = 370;
+    rectH = 380;
   }
 
-  uint16_t year;
-  uint8_t month, day, hour, minute;
-  if (halClock.isAvailable() && halClock.getDateTime(year, month, day, hour, minute)) {
-    int h = hour;
-    const char* ampm = (h >= 12) ? "PM" : "AM";
-    if (h > 12) h -= 12;
-    if (h == 0) h = 12;
-    snprintf(line5, sizeof(line5), "Slept at %d:%02d %s.", h, (int)minute, ampm);
-  } else {
-    snprintf(line5, sizeof(line5), "Slept soundly tonight.");
-  }
-
-  // Draw bullet list entries with spacing
-  auto drawDiaryEntry = [&](int index, const char* text) {
-    const int textYPos = rectY + 65 + index * 48;
-    const int bulletX = rectX + 42;
-    const int bulletY = textYPos + 6;
-    
-    // Draw a neat solid square bullet point
-    renderer.fillRect(bulletX, bulletY + 1, 4, 4, true);
-    
-    // Draw text next to the bullet
-    renderer.drawText(SMALL_FONT_ID, rectX + 54, textYPos, text);
-  };
-
-  drawDiaryEntry(0, line1);
-  drawDiaryEntry(1, line2);
-  drawDiaryEntry(2, line3);
-  drawDiaryEntry(3, line4);
-  drawDiaryEntry(4, line5);
-
-  // 2. Sleeping Pet (centered below the diary card)
+  // Draw sleeping pet
   constexpr int PET_SCALE = 3;
   const int petSize = PetSpriteRenderer::displaySize(PET_SCALE);
-  const int spriteX = (pageWidth - petSize) / 2;
-  const int spriteY = rectY + rectH + 40;
 
   PetSpriteRenderer::drawPet(renderer, spriteX, spriteY, state.stage, PetMood::SLEEPING, PET_SCALE,
                              state.evolutionVariant, state.petType);
 
   const char* stageName = PetEvolution::variantStageName(state.stage, state.evolutionVariant);
-  const int nameY = spriteY + petSize + 16;
   const char* petName = state.petName[0] ? state.petName : PetTypeNames::get(state.petType);
 
   const int nameW = renderer.getTextWidth(UI_10_FONT_ID, petName, EpdFontFamily::BOLD);
@@ -646,6 +603,76 @@ void SleepActivity::renderPetSleepScreen() const {
   renderer.drawText(SMALL_FONT_ID, spriteX + petSize / 2 - stageW / 2, nameY + renderer.getLineHeight(UI_10_FONT_ID) + 4, stageName);
 
   renderer.drawCenteredText(SMALL_FONT_ID, pageHeight - 40, tr(STR_SLEEPING));
+
+  // Draw Diary Page
+  renderer.drawRoundedRect(rectX, rectY, rectW, rectH, 1, 8, true);
+  renderer.drawLine(rectX, rectY + 40, rectX + rectW - 1, rectY + 40, true);
+
+  const char* diaryTitle = "PET DIARY";
+  const int titleW = renderer.getTextWidth(UI_10_FONT_ID, diaryTitle, EpdFontFamily::BOLD);
+  renderer.drawText(UI_10_FONT_ID, rectX + (rectW - titleW) / 2, rectY + 12, diaryTitle, true, EpdFontFamily::BOLD);
+
+  // Red/solid notebook margin line
+  renderer.drawLine(rectX + 24, rectY + 40, rectX + 24, rectY + rectH - 1, true);
+
+  char line1[64];
+  char line2[64];
+  char line3[64];
+  char line4[64];
+  char line5[64];
+
+  if (isX3) {
+    snprintf(line1, sizeof(line1), "Day %lu of life", (unsigned long)(PET_MANAGER.getDaysAlive() + 1));
+    snprintf(line2, sizeof(line2), "Read: %d pages", state.missionPagesRead);
+    snprintf(line3, sizeof(line3), "Petted: %d times", state.missionPetCount);
+  } else {
+    snprintf(line1, sizeof(line1), "Dear Diary, today is Day %lu.", (unsigned long)(PET_MANAGER.getDaysAlive() + 1));
+    snprintf(line2, sizeof(line2), "My reader read %d pages today.", state.missionPagesRead);
+    snprintf(line3, sizeof(line3), "I was petted %d times.", state.missionPetCount);
+  }
+
+  if (state.isSick) {
+    snprintf(line4, sizeof(line4), isX3 ? "Status: Sick" : "I felt sick... took meds.");
+  } else if (state.hunger < 30) {
+    snprintf(line4, sizeof(line4), isX3 ? "Status: Hungry" : "I was very hungry today!");
+  } else {
+    snprintf(line4, sizeof(line4), isX3 ? "Status: Healthy!" : "I felt happy & healthy!");
+  }
+
+  uint16_t year;
+  uint8_t month, day, hour, minute;
+  if (halClock.isAvailable() && halClock.getDateTime(year, month, day, hour, minute)) {
+    int h = hour;
+    const char* ampm = (h >= 12) ? "PM" : "AM";
+    if (h > 12) h -= 12;
+    if (h == 0) h = 12;
+    if (isX3) {
+      snprintf(line5, sizeof(line5), "Slept: %d:%02d %s", h, (int)minute, ampm);
+    } else {
+      snprintf(line5, sizeof(line5), "Slept at %d:%02d %s.", h, (int)minute, ampm);
+    }
+  } else {
+    snprintf(line5, sizeof(line5), isX3 ? "Slept soundly" : "Slept soundly tonight.");
+  }
+
+  // Draw bullet list entries with spacing
+  auto drawDiaryEntry = [&](int index, const char* text) {
+    const int textYPos = rectY + 65 + index * (isX3 ? 60 : 48);
+    const int bulletX = rectX + 32;
+    const int bulletY = textYPos + 6;
+    
+    // Draw a neat solid square bullet point
+    renderer.fillRect(bulletX, bulletY + 1, 4, 4, true);
+    
+    // Draw text next to the bullet
+    renderer.drawText(SMALL_FONT_ID, rectX + 42, textYPos, text);
+  };
+
+  drawDiaryEntry(0, line1);
+  drawDiaryEntry(1, line2);
+  drawDiaryEntry(2, line3);
+  drawDiaryEntry(3, line4);
+  drawDiaryEntry(4, line5);
 
   renderer.displayBuffer(HalDisplay::FULL_REFRESH, TURN_OFF_SCREEN_AFTER_SLEEP_REFRESH);
 }

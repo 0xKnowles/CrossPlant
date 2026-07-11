@@ -276,17 +276,19 @@ void VirtualPetActivity::renderShop() const {
     bool equipped;
   };
 
-  ShopItem items[4] = {
+  ShopItem items[6] = {
     {"Treat Box (Fills Hunger & Hp)", 20, false, false},
     {"Reading Toy (Passive: Halves Decay)", 50, state.hasToy, false},
     {"Round Glasses (Cosmetic)", 100, state.hasGlasses, state.equipGlasses},
-    {"Wizard Hat (Cosmetic)", 150, state.hasHat, state.equipHat}
+    {"Wizard Hat (Cosmetic)", 150, state.hasHat, state.equipHat},
+    {"Golden Crown (Cosmetic)", 200, state.hasCrown, state.equipCrown},
+    {"Cozy Scarf (Cosmetic)", 250, state.hasScarf, state.equipScarf}
   };
 
   const int listX = metrics.contentSidePadding + 10;
   const int listW = pageWidth - listX * 2;
 
-  for (int i = 0; i < 4; i++) {
+  for (int i = 0; i < 6; i++) {
     const int rowY = listTop + i * rowH;
     const bool selected = (i == typeSelectIndex);
     const auto& item = items[i];
@@ -318,9 +320,10 @@ void VirtualPetActivity::renderShop() const {
   if (typeSelectIndex == 1) desc = "A cute wooden toy. Halves your pet's happiness decay rate.";
   if (typeSelectIndex == 2) desc = "Cute round glasses. Buy or toggle equipping them.";
   if (typeSelectIndex == 3) desc = "A magical top hat. Buy or toggle equipping it.";
+  if (typeSelectIndex == 4) desc = "A royal golden crown. Buy or toggle equipping it.";
+  if (typeSelectIndex == 5) desc = "A warm cozy scarf. Buy or toggle equipping it.";
 
-  const int descY = contentBottom - 30;
-  renderer.drawCenteredText(SMALL_FONT_ID, descY, desc);
+  renderer.drawCenteredText(SMALL_FONT_ID, contentBottom - 18, desc);
 
   const auto labels = mappedInput.mapLabels(tr(STR_BACK), "Buy/Toggle", tr(STR_DIR_UP), tr(STR_DIR_DOWN));
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
