@@ -559,23 +559,82 @@ void SleepActivity::renderPetSleepScreen() const {
   }
 
   const auto& state = PET_MANAGER.getState();
+
+  // Left half: sleeping pet
   constexpr int PET_SCALE = 3;
   const int petSize = PetSpriteRenderer::displaySize(PET_SCALE);
-  const int spriteX = (pageWidth - petSize) / 2;
-  const int spriteY = (pageHeight - petSize) / 2 - 20;
+  const int spriteX = (pageWidth / 2 - petSize) / 2;
+  const int spriteY = (pageHeight - petSize) / 2 - 30;
 
   PetSpriteRenderer::drawPet(renderer, spriteX, spriteY, state.stage, PetMood::SLEEPING, PET_SCALE,
                              state.evolutionVariant, state.petType);
 
   const char* stageName = PetEvolution::variantStageName(state.stage, state.evolutionVariant);
-  const int nameY = spriteY + petSize + 12;
-  if (state.petName[0]) {
-    renderer.drawCenteredText(UI_10_FONT_ID, nameY, state.petName, true, EpdFontFamily::BOLD);
-    renderer.drawCenteredText(SMALL_FONT_ID, nameY + renderer.getLineHeight(UI_10_FONT_ID) + 4, stageName);
-  } else {
-    renderer.drawCenteredText(UI_10_FONT_ID, nameY, stageName, true, EpdFontFamily::BOLD);
-  }
+  const int nameY = spriteY + petSize + 16;
+  const char* petName = state.petName[0] ? state.petName : PetTypeNames::get(state.petType);
+
+  const int nameW = renderer.getTextWidth(UI_10_FONT_ID, petName, EpdFontFamily::BOLD);
+  renderer.drawText(UI_10_FONT_ID, spriteX + petSize / 2 - nameW / 2, nameY, petName, true, EpdFontFamily::BOLD);
+
+  const int stageW = renderer.getTextWidth(SMALL_FONT_ID, stageName);
+  renderer.drawText(SMALL_FONT_ID, spriteX + petSize / 2 - stageW / 2, nameY + renderer.getLineHeight(UI_10_FONT_ID) + 4, stageName);
+
   renderer.drawCenteredText(SMALL_FONT_ID, pageHeight - 40, tr(STR_SLEEPING));
+
+  // Right half: Diary Page
+  const int rectX = 390;
+  const int rectY = 40;
+  const int rectW = 370;
+  const int rectH = 380;
+
+  // Ruled lines first
+  for (int ly = rectY + 95; ly < rectY + 360; ly += 40) {
+    renderer.drawLine(rectX + 10, ly, rectX + rectW - 10, ly, true);
+  }
+
+  // Ruled page outline
+  renderer.drawRoundedRect(rectX, rectY, rectW, rectH, 1, 8, true);
+  renderer.drawLine(rectX, rectY + 40, rectX + rectW - 1, rectY + 40, true);
+
+  const char* diaryTitle = "PET DIARY";
+  const int titleW = renderer.getTextWidth(UI_10_FONT_ID, diaryTitle, EpdFontFamily::BOLD);
+  renderer.drawText(UI_10_FONT_ID, rectX + (rectW - titleW) / 2, rectY + 12, diaryTitle, true, EpdFontFamily::BOLD);
+
+  char line1[64];
+  char line2[64];
+  char line3[64];
+  char line4[64];
+  char line5[64];
+
+  snprintf(line1, sizeof(line1), "Dear Diary, today is Day %lu.", (unsigned long)(PET_MANAGER.getDaysAlive() + 1));
+  snprintf(line2, sizeof(line2), "My reader read %d pages today.", state.missionPagesRead);
+  snprintf(line3, sizeof(line3), "I was petted %d times.", state.missionPetCount);
+
+  if (state.isSick) {
+    snprintf(line4, sizeof(line4), "I felt sick... had to take medicine.");
+  } else if (state.hunger < 30) {
+    snprintf(line4, sizeof(line4), "I was very hungry today! Nom nom.");
+  } else {
+    snprintf(line4, sizeof(line4), "I felt happy and healthy!");
+  }
+
+  uint16_t year;
+  uint8_t month, day, hour, minute;
+  if (halClock.isAvailable() && halClock.getDateTime(year, month, day, hour, minute)) {
+    int h = hour;
+    const char* ampm = (h >= 12) ? "PM" : "AM";
+    if (h > 12) h -= 12;
+    if (h == 0) h = 12;
+    snprintf(line5, sizeof(line5), "Slept at %d:%02d %s.", h, (int)minute, ampm);
+  } else {
+    snprintf(line5, sizeof(line5), "Slept soundly tonight.");
+  }
+
+  renderer.drawText(SMALL_FONT_ID, rectX + 15, rectY + 70, line1);
+  renderer.drawText(SMALL_FONT_ID, rectX + 15, rectY + 110, line2);
+  renderer.drawText(SMALL_FONT_ID, rectX + 15, rectY + 150, line3);
+  renderer.drawText(SMALL_FONT_ID, rectX + 15, rectY + 190, line4);
+  renderer.drawText(SMALL_FONT_ID, rectX + 15, rectY + 230, line5);
 
   renderer.displayBuffer(HalDisplay::FULL_REFRESH, TURN_OFF_SCREEN_AFTER_SLEEP_REFRESH);
 }

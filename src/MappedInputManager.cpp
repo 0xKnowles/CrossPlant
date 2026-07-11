@@ -250,6 +250,28 @@ bool MappedInputManager::wasReleased(const Button button) const {
     return true;
   }
 
+  if (button == Button::Left) {
+    if (mapButton(button, &HalGPIO::wasReleased)) {
+      if (suppressLeftRelease) {
+        suppressLeftRelease = false;
+        return false;
+      }
+      return true;
+    }
+    return false;
+  }
+
+  if (button == Button::Right) {
+    if (mapButton(button, &HalGPIO::wasReleased)) {
+      if (suppressRightRelease) {
+        suppressRightRelease = false;
+        return false;
+      }
+      return true;
+    }
+    return false;
+  }
+
   return mapButton(button, &HalGPIO::wasReleased);
 }
 

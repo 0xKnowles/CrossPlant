@@ -5,6 +5,20 @@
 - Virtual Pet: a reading companion that hatches from an egg and evolves (hatchling → youngster → companion → elder) as you read, with hunger, happiness, health, weight, and discipline to tend. Choose from five species (chicken, cat, dog, dragon, bunny), feed/clean/play with it, and watch it grow from real page turns. Open it from Settings → System → My Pet.
 - Virtual Pet can be opened with the power button: added "My Pet" as a Controls → Power button short-press and long-press action, so a press opens the pet from the home screen or while reading.
 - Pet sleep screen: a new sleep-screen mode that shows your pet and its name/stage while the device sleeps.
+- My Pet home screen menu option: added the "My Pet" option to the dashboard home menu list (for both standard and minimal layouts) when a pet is hatched and alive, routing click events directly to the pet's main screen activity.
+- Ink Points system: earn 1 Ink Point (IP) per page read and 100 IP per book completed, stored in the pet's persistent state.
+- Ink Points Shop: buy items in a scrollable menu using earned Ink Points: Treat Box (20 IP, feeds meal), Reading Toy (50 IP, halves happiness decay rate), Round Glasses (100 IP, cosmetic accessory), and Wizard Hat (150 IP, cosmetic accessory).
+- Cosmetic equipment: equip and toggle round glasses and wizard hats on the pet, rendering them dynamically on top of the pet sprite at any scale.
+- Long press shortcuts: allow opening "My Pet" by holding down any of the front bezel buttons (Confirm, Left, or Right) for the configured long-press duration, globally suppressed to prevent standard click actions.
+- Reading statistics cache: sync and display longest reading streak and total reading sessions on the pet UI, fully persisted.
+
+### Changed
+
+- Virtual Pet UI Overhaul: split the layout into a clean two-column grid. The left column shows the animated pet sprite, compact progress meters for vitals (hunger, happiness, health, discipline), age/weight, and Ink Points balance. The right column displays detailed reading partner statistics and the scrollable pet action menu.
+- Dashboard Theme Shortcuts: mapped the physical Settings button to open "My Pet" directly. Relocated the "Settings" menu item inside the Back-button Menu so settings are still accessible.
+- Boot Logo: replaced the default CrossInk logo and brand text with a happy chicken pet companion sprite, the brand name "CrossMerge", and version "v0.1.0" at the bottom of the screen.
+- Dashboard theme home screen footer: replaced the reading streak and reader type (time-of-day reader bucket) labels with a compact pet status layout (displaying the pet's mini sprite, name, stage, hunger, happiness, health, and weight) when a pet is alive.
+- Pet sleep screen: replaced the basic centered pet sleep screen with a dual-pane "Pet Diary" sleep screen. The left side displays the sleeping pet with name and stage, and the right side renders a simulated ruled notebook diary page with entries describing the pet's day (age, pages read, petted count, mood, and sleep time).
 
 ## [v1.4.0] - 2026-07-10
 

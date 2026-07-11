@@ -42,6 +42,15 @@ static void applyOneHour(PetState& state, uint8_t currentHour, uint32_t h) {
     if (state.isSick) decay += PetConfig::SICK_HAPPINESS_PENALTY;
     // Each waste pile drains happiness
     if (state.wasteCount > 0) decay += state.wasteCount * PetConfig::WASTE_HAPPINESS_PENALTY;
+
+    // Toy halves the happiness decay!
+    if (state.hasToy) {
+      if (decay > 1) {
+        decay /= 2;
+      } else if (decay == 1 && h % 4 == 0) {
+        decay = 0;
+      }
+    }
     state.happiness = clampSub(state.happiness, decay);
   }
 

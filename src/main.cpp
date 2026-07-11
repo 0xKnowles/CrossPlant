@@ -978,6 +978,42 @@ void loop() {
     return;
   }
 
+  // Monitor other buttons for long press (Confirm, Left, Right) to open My Pet
+  {
+    static unsigned long otherButtonPressStart[MappedInputManager::BUTTON_COUNT] = {0};
+    static bool otherButtonLongHandled[MappedInputManager::BUTTON_COUNT] = {false};
+
+    MappedInputManager::Button longPressButtons[] = {
+      MappedInputManager::Button::Confirm,
+      MappedInputManager::Button::Left,
+      MappedInputManager::Button::Right
+    };
+
+    for (auto btn : longPressButtons) {
+      size_t idx = static_cast<size_t>(btn);
+      if (mappedInputManager.isPressed(btn)) {
+        if (otherButtonPressStart[idx] == 0) {
+          otherButtonPressStart[idx] = millis();
+        } else if (!otherButtonLongHandled[idx] && 
+                   (millis() - otherButtonPressStart[idx] >= SETTINGS.getPowerButtonLongPressDuration())) {
+          otherButtonLongHandled[idx] = true;
+
+          if (btn == MappedInputManager::Button::Confirm) mappedInputManager.suppressNextConfirmRelease();
+          else if (btn == MappedInputManager::Button::Left) mappedInputManager.suppressNextLeftRelease();
+          else if (btn == MappedInputManager::Button::Right) mappedInputManager.suppressNextRightRelease();
+
+          if (!activityManager.canSnapshotForSleepOverlay()) {
+            activityManager.goToVirtualPet();
+          }
+          lastActivityTime = millis();
+        }
+      } else {
+        otherButtonPressStart[idx] = 0;
+        otherButtonLongHandled[idx] = false;
+      }
+    }
+  }
+
   // Refresh the battery icon when USB is plugged or unplugged.
   // Placed after sleep guards so we never queue a render that won't be processed.
   if (gpio.wasUsbStateChanged()) {

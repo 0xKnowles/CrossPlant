@@ -28,6 +28,9 @@
 #include "components/icons/night.h"
 #include "components/icons/streak.h"
 #include "fontIds.h"
+#include "pet/PetManager.h"
+#include "pet/PetSpriteRenderer.h"
+#include "pet/PetEvolution.h"
 
 namespace {
 constexpr int kContentInsetX4 = 20;
@@ -479,6 +482,55 @@ void drawFooterStats(const GfxRenderer& renderer, const Rect& coverRect, const G
   const int inset = contentInset(renderer);
   const int footerY = renderer.getScreenHeight() - DashboardMetrics::values.buttonHintsHeight - kFooterBottomGap;
   const int centerY = std::max(coverRect.y + coverRect.height + 120, footerY);
+
+  // If a virtual pet is hatched and alive, draw its status instead of the global reading stats
+  PET_MANAGER.load();
+  if (PET_MANAGER.exists() && PET_MANAGER.isAlive()) {
+    const auto& state = PET_MANAGER.getState();
+    const PetMood mood = PET_MANAGER.getMood();
+    const int iconX = coverRect.x;
+    const int iconY = centerY - kFooterIconSize / 2;
+
+    // Draw mini pet sprite
+    PetSpriteRenderer::drawMini(const_cast<GfxRenderer&>(renderer), iconX, iconY, state.stage, mood,
+                                state.evolutionVariant, state.petType);
+
+    // Draw pet name & stage
+    const int lineH10 = renderer.getLineHeight(UI_10_FONT_ID);
+    const int lineH8 = renderer.getLineHeight(SMALL_FONT_ID);
+    const int totalTextH = lineH10 + 2 + lineH8;
+    const int textY = centerY - totalTextH / 2;
+    const int textX = iconX + kFooterIconSize + kFooterIconTextGap;
+
+    const char* petName = state.petName[0] ? state.petName : PetTypeNames::get(state.petType);
+    const char* stageName = PetEvolution::variantStageName(state.stage, state.evolutionVariant);
+
+    renderer.drawText(UI_10_FONT_ID, textX, textY, petName, !inverted, EpdFontFamily::BOLD);
+    renderer.drawText(SMALL_FONT_ID, textX, textY + lineH10 + 2, stageName, !inverted);
+
+    // Draw pet stats right-aligned
+    char statsLine1[64];
+    char statsLine2[64];
+
+    if (state.isSick) {
+      snprintf(statsLine1, sizeof(statsLine1), "SICK!");
+    } else if (state.attentionCall) {
+      snprintf(statsLine1, sizeof(statsLine1), "NEEDS ATTENTION");
+    } else {
+      snprintf(statsLine1, sizeof(statsLine1), "%s: %u%%  %s: %u%%",
+               tr(STR_PET_HUNGER), state.hunger,
+               tr(STR_PET_STAT_HAPPY), state.happiness);
+    }
+
+    snprintf(statsLine2, sizeof(statsLine2), "%s: %u%%  Wt: %ug",
+             tr(STR_PET_HEALTH), state.health,
+             state.weight);
+
+    const int rightX = renderer.getScreenWidth() - inset - (gpio.deviceIsX3() ? kPairInwardShiftX3 : 0);
+    drawRightAlignedText(renderer, UI_10_FONT_ID, rightX, textY, statsLine1, true, !inverted);
+    drawRightAlignedText(renderer, SMALL_FONT_ID, rightX, textY + lineH10 + 2, statsLine2, false, !inverted);
+    return;
+  }
 
   if (gpio.deviceIsX4()) {
     char totalTime[40];

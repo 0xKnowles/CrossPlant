@@ -5,7 +5,7 @@
 
 #include "AppVersion.h"
 #include "fontIds.h"
-#include "images/Logo120.h"
+#include "pet/PetSpriteRenderer.h"
 
 void BootActivity::onEnter() {
   Activity::onEnter();
@@ -14,9 +14,17 @@ void BootActivity::onEnter() {
   const auto pageHeight = renderer.getScreenHeight();
 
   renderer.clearScreen();
-  renderer.drawImage(Logo120, (pageWidth - 120) / 2, (pageHeight - 120) / 2, 120, 120);
-  renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2 + 70, tr(STR_CROSSINK), true, EpdFontFamily::BOLD);
-  renderer.drawCenteredText(SMALL_FONT_ID, pageHeight / 2 + 95, tr(STR_BOOTING));
-  renderer.drawCenteredText(SMALL_FONT_ID, pageHeight - 30, CROSSINK_VERSION);
+
+  constexpr int PET_SCALE = 3;
+  const int petSize = PetSpriteRenderer::displaySize(PET_SCALE);
+  const int spriteX = (pageWidth - petSize) / 2;
+  const int spriteY = (pageHeight - petSize) / 2 - 20;
+
+  PetSpriteRenderer::drawPet(renderer, spriteX, spriteY, PetStage::COMPANION, PetMood::HAPPY, PET_SCALE,
+                             0, 0, 0);
+
+  renderer.drawCenteredText(UI_10_FONT_ID, spriteY + petSize + 16, "CrossMerge", true, EpdFontFamily::BOLD);
+  renderer.drawCenteredText(SMALL_FONT_ID, spriteY + petSize + 16 + 25, tr(STR_BOOTING));
+  renderer.drawCenteredText(SMALL_FONT_ID, pageHeight - 30, "v0.1.0");
   renderer.displayBuffer();
 }

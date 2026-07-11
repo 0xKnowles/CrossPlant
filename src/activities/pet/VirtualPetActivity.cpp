@@ -44,6 +44,28 @@ void VirtualPetActivity::loop() {
     return;
   }
 
+  // Shop mode: handle Up/Down/Confirm/Back inline
+  if (screenMode == ScreenMode::SHOP) {
+    if (mappedInput.wasReleased(MappedInputManager::Button::Back)) {
+      screenMode = ScreenMode::NORMAL;
+      requestUpdate();
+      return;
+    }
+    buttonNavigator.onPrevious([this] {
+      typeSelectIndex = (typeSelectIndex > 0) ? typeSelectIndex - 1 : 3;
+      requestUpdate();
+    });
+    buttonNavigator.onNext([this] {
+      typeSelectIndex = (typeSelectIndex + 1) % 4;
+      requestUpdate();
+    });
+    if (mappedInput.wasReleased(MappedInputManager::Button::Confirm)) {
+      buyShopItem(typeSelectIndex);
+      requestUpdate();
+    }
+    return;
+  }
+
   if (mappedInput.wasReleased(MappedInputManager::Button::Back)) {
     PET_MANAGER.save();
     finish();
@@ -91,6 +113,7 @@ void VirtualPetActivity::executeSelectedAction() {
     case PetAction::PET_PET:       PET_MANAGER.pet();           triggerActionIcon(PetAnimIcon::HEART);    break;
     case PetAction::RENAME:        startRenameFlow();           return;
     case PetAction::CHANGE_TYPE:   startTypeSelectForChange();  return;
+    case PetAction::SHOP:          typeSelectIndex = 0; screenMode = ScreenMode::SHOP; return;
     default: break;
   }
 }
@@ -183,4 +206,45 @@ void VirtualPetActivity::confirmTypeSelect() {
   }
   screenMode = ScreenMode::NORMAL;
   requestUpdate();
+}
+
+void VirtualPetActivity::buyShopItem(int index) {
+  const auto& state = PET_MANAGER.getState();
+  if (index == 0) {
+    // Treat Box (20 IP)
+    if (state.inkPoints >= 20) {
+      if (PET_MANAGER.feedMeal()) {
+        PET_MANAGER.deductPoints(20);
+        PET_MANAGER.save();
+      }
+    }
+  } else if (index == 1) {
+    // Reading Toy (50 IP)
+    if (!state.hasToy && state.inkPoints >= 50) {
+      PET_MANAGER.deductPoints(50);
+      PET_MANAGER.setHasToy(true);
+    }
+  } else if (index == 2) {
+    // Round Glasses (100 IP)
+    if (!state.hasGlasses) {
+      if (state.inkPoints >= 100) {
+        PET_MANAGER.deductPoints(100);
+        PET_MANAGER.setHasGlasses(true);
+        PET_MANAGER.setEquipGlasses(true);
+      }
+    } else {
+      PET_MANAGER.setEquipGlasses(!state.equipGlasses);
+    }
+  } else if (index == 3) {
+    // Wizard Hat (150 IP)
+    if (!state.hasHat) {
+      if (state.inkPoints >= 150) {
+        PET_MANAGER.deductPoints(150);
+        PET_MANAGER.setHasHat(true);
+        PET_MANAGER.setEquipHat(true);
+      }
+    } else {
+      PET_MANAGER.setEquipHat(!state.equipHat);
+    }
+  }
 }

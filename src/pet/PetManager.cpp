@@ -140,7 +140,29 @@ void PetManager::syncFromReadingStats(const GlobalReadingStats& stats) {
   ReadingStatsDateTime today;
   state.currentStreak = getCurrentLocalReadingStatsDateTime(today) ? stats.currentReadingStreak(&today.date) : 0;
   state.lastReadDay = getDayOfYear();  // keep in sync to prevent tick() from resetting streak
+  if (stats.completedBooks > state.booksFinished) {
+    uint32_t diff = stats.completedBooks - state.booksFinished;
+    state.inkPoints += diff * 100;
+  }
   state.booksFinished = (stats.completedBooks > 255) ? 255 : static_cast<uint8_t>(stats.completedBooks);
+
+  state.longestReadingStreak = stats.longestReadingStreak;
+
+  if (state.lastKnownSessions == 0) {
+    state.lastKnownSessions = stats.totalSessions;
+  } else if (stats.totalSessions > state.lastKnownSessions) {
+    uint32_t diffSessions = stats.totalSessions - state.lastKnownSessions;
+    state.inkPoints += diffSessions * 5;
+    state.lastKnownSessions = stats.totalSessions;
+  }
+
+  if (state.lastKnownReadSeconds == 0) {
+    state.lastKnownReadSeconds = stats.totalReadingSeconds;
+  } else if (stats.totalReadingSeconds > state.lastKnownReadSeconds) {
+    uint32_t diffSeconds = stats.totalReadingSeconds - state.lastKnownReadSeconds;
+    state.inkPoints += diffSeconds / 30;
+    state.lastKnownReadSeconds = stats.totalReadingSeconds;
+  }
 
   // Real page count for evolution thresholds (crossink tracks this precisely,
   // unlike the reading-time estimate the original pet used)
@@ -173,6 +195,7 @@ void PetManager::onPageTurned() {
   if (state.missionPagesRead < PetConfig::DAILY_GOAL_PAGES) state.missionPagesRead++;
   state.totalPagesRead++;
   state.lastKnownPagesTurned++;
+  state.inkPoints++;
   feedFromPages(1);
   // Not saved here — per-page-turn SD writes are a debounce violation.
   // EpubReaderActivity::onExit() persists this via PET_MANAGER.save() when

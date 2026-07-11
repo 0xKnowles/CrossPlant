@@ -42,6 +42,7 @@ bool PetActionMenu::isActionAvailable(PetAction action, const PetState& state) c
       return !state.isSleeping;
     case PetAction::RENAME:
     case PetAction::CHANGE_TYPE:
+    case PetAction::SHOP:
       return true;
     default:
       return false;
@@ -63,6 +64,7 @@ const char* PetActionMenu::actionLabel(PetAction action) {
     case PetAction::PET_PET:       return tr(STR_PET_ACTION_PET);
     case PetAction::RENAME:        return tr(STR_PET_ACTION_RENAME);
     case PetAction::CHANGE_TYPE:   return tr(STR_PET_ACTION_TYPE);
+    case PetAction::SHOP:          return tr(STR_PET_ACTION_SHOP);
     default:                       return "???";
   }
 }

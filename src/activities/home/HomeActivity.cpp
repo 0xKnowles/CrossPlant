@@ -38,6 +38,7 @@
 #include "components/themes/lyra/LyraCarouselTheme.h"
 #include "components/themes/minimal/MinimalTheme.h"
 #include "fontIds.h"
+#include "pet/PetManager.h"
 
 namespace {
 constexpr uint32_t CAROUSEL_CACHE_MAGIC = 0x43434152;  // "CCAR"
@@ -58,6 +59,7 @@ enum class HomeMenuAction {
   Bookmarks,
   FileTransfer,
   Settings,
+  VirtualPet,
 };
 
 struct HomeMenuEntry {
@@ -67,7 +69,7 @@ struct HomeMenuEntry {
 };
 
 struct HomeMenuEntries {
-  static constexpr int kCapacity = 8;
+  static constexpr int kCapacity = 10;
   std::array<HomeMenuEntry, kCapacity> entries{};
   int count = 0;
 
@@ -263,6 +265,11 @@ void appendHomeMenuItems(HomeMenuEntries& items, bool hasOpdsServers, bool hasRe
     items.push({savedItemsLabel(hasBookmarks, hasClippings), BookmarkIcon, HomeMenuAction::Bookmarks});
   }
 
+  PET_MANAGER.load();
+  if (PET_MANAGER.exists() && PET_MANAGER.isAlive()) {
+    items.push({tr(STR_SLEEP_PET), Chart, HomeMenuAction::VirtualPet});
+  }
+
   items.push({tr(STR_FILE_TRANSFER), Transfer, HomeMenuAction::FileTransfer});
   items.push({tr(STR_SETTINGS_TITLE), Settings, HomeMenuAction::Settings});
 }
@@ -287,7 +294,13 @@ HomeMenuEntries buildMinimalMenuItems(bool hasOpdsServers, bool hasReadingStats,
     items.push({tr(STR_READING_STATS), Chart, HomeMenuAction::ReadingStats});
   }
 
+  PET_MANAGER.load();
+  if (PET_MANAGER.exists() && PET_MANAGER.isAlive()) {
+    items.push({tr(STR_SLEEP_PET), Chart, HomeMenuAction::VirtualPet});
+  }
+
   items.push({tr(STR_FILE_TRANSFER), Transfer, HomeMenuAction::FileTransfer});
+  items.push({tr(STR_SETTINGS_TITLE), Settings, HomeMenuAction::Settings});
   return items;
 }
 
@@ -1467,8 +1480,13 @@ void HomeActivity::loop() {
           case HomeMenuAction::FileTransfer:
             onFileTransferOpen();
             break;
-          case HomeMenuAction::ContinueReading:
+          case HomeMenuAction::VirtualPet:
+            onVirtualPetOpen();
+            break;
           case HomeMenuAction::Settings:
+            onSettingsOpen();
+            break;
+          case HomeMenuAction::ContinueReading:
             break;
         }
       }
@@ -1510,7 +1528,11 @@ void HomeActivity::loop() {
           onFileBrowserOpen();
           break;
         case 2:
-          onSettingsOpen();
+          if (isDashboardTheme()) {
+            onVirtualPetOpen();
+          } else {
+            onSettingsOpen();
+          }
           break;
         case 3:
           onContinueReading();
@@ -1666,6 +1688,9 @@ void HomeActivity::loop() {
       case HomeMenuAction::Settings:
         onSettingsOpen();
         break;
+      case HomeMenuAction::VirtualPet:
+        onVirtualPetOpen();
+        break;
     }
   }
 }
@@ -1711,7 +1736,8 @@ void HomeActivity::render(RenderLock&&) {
       minimalHomeNavIndex = homeNavCount - 1;
     }
     MinimalTheme::setHomeButtonHintSelection(minimalHomeNavIndex);
-    GUI.drawButtonHints(renderer, tr(STR_MENU), tr(STR_BROWSE), tr(STR_SETTINGS_SHORT),
+    GUI.drawButtonHints(renderer, tr(STR_MENU), tr(STR_BROWSE),
+                        isDashboardTheme() ? tr(STR_SLEEP_PET) : tr(STR_SETTINGS_SHORT),
                         recentBooks.empty() ? "" : tr(STR_READ));
 
     renderer.displayBuffer();
@@ -1937,3 +1963,5 @@ void HomeActivity::onSavedItemsOpen() {
   startActivityForResult(std::make_unique<SavedItemsHomeActivity>(renderer, mappedInput),
                          [this](const ActivityResult&) { requestUpdate(); });
 }
+
+void HomeActivity::onVirtualPetOpen() { activityManager.goToVirtualPet(); }

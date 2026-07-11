@@ -22,6 +22,8 @@ void VirtualPetActivity::render(RenderLock&&) {
 
   if (screenMode == ScreenMode::TYPE_SELECT) {
     renderTypeSelect();
+  } else if (screenMode == ScreenMode::SHOP) {
+    renderShop();
   } else if (!PET_MANAGER.exists()) {
     renderNoPet();
   } else if (!PET_MANAGER.isAlive()) {
@@ -74,14 +76,17 @@ void VirtualPetActivity::renderAlive() const {
   const int contentTop = metrics.topPadding + metrics.headerHeight + metrics.verticalSpacing;
   const int contentBottom = pageHeight - metrics.buttonHintsHeight - metrics.verticalSpacing;
 
-  // --- Pet sprite (144x144) centered at top, with idle animation offset ---
+  // --- Left Column ---
+  const int col1W = 340;
+  const int col1X = 20;
+
+  // Pet sprite (scale 3 = 144x144)
   constexpr int PET_SCALE = 3;
   const int petSize = PetSpriteRenderer::displaySize(PET_SCALE);
-  int spriteX = (pageWidth - petSize) / 2;
+  int spriteX = col1X + (col1W - petSize) / 2;
   int spriteY = contentTop;
 
-  // Idle animation: 3-frame cycle (0→1→2→0)
-  // Egg wobbles left/center/right; living pets bob up/down/up
+  // Idle bobbing / wobble animation
   static const int EGG_WOBBLE[3] = {-2, 0, 2};
   static const int BOB[3] = {0, 3, 0};
   if (state.stage == PetStage::EGG) {
@@ -98,67 +103,89 @@ void VirtualPetActivity::renderAlive() const {
     drawPetActionIcon(renderer, actionIcon, spriteX + petSize + 8, contentTop + 8);
   }
 
-  // --- Status icons row below sprite ---
+  // Status icons
   const int iconsY = contentTop + petSize + 4;
-  const int sideMargin = 30;
-  statsPanel.renderStatusIcons(renderer, state, sideMargin, iconsY, pageWidth - sideMargin * 2);
+  statsPanel.renderStatusIcons(renderer, state, col1X, iconsY, col1W);
 
-  // --- Name | Stage | Day | Streak info line ---
-  const int infoY = iconsY + renderer.getLineHeight(SMALL_FONT_ID) + 4;
+  // Name & Stage
+  const int infoY = iconsY + renderer.getLineHeight(SMALL_FONT_ID) + 6;
   const char* stageName = PetEvolution::variantStageName(state.stage, state.evolutionVariant);
-  char infoLine[80];
-  if (state.petName[0]) {
-    if (state.petType > 0) {
-      snprintf(infoLine, sizeof(infoLine), tr(STR_PET_INFO_FMT_NAME_TYPE),
-               state.petName, PetEvolution::typeName(state.petType),
-               (unsigned long)PET_MANAGER.getDaysAlive(), (unsigned)state.currentStreak);
-    } else {
-      snprintf(infoLine, sizeof(infoLine), tr(STR_PET_INFO_FMT_NAME_TYPE),
-               state.petName, stageName,
-               (unsigned long)PET_MANAGER.getDaysAlive(), (unsigned)state.currentStreak);
+  char nameStage[64];
+  const char* petName = state.petName[0] ? state.petName : PetTypeNames::get(state.petType);
+  snprintf(nameStage, sizeof(nameStage), "%s (%s)", petName, stageName);
+  renderer.drawText(UI_10_FONT_ID, col1X + 10, infoY, nameStage, true, EpdFontFamily::BOLD);
+
+  // Compact Stat Bars (Hunger, Happiness, Health, Discipline)
+  const int barYStart = infoY + renderer.getLineHeight(UI_10_FONT_ID) + 8;
+  const int rowSpacing = renderer.getLineHeight(SMALL_FONT_ID) + 4;
+
+  auto drawCompactBar = [&](const char* label, uint8_t val, int yOffset) {
+    renderer.drawText(SMALL_FONT_ID, col1X + 10, yOffset, label);
+    int labelW = renderer.getTextWidth(SMALL_FONT_ID, label);
+    int barX = col1X + 10 + labelW + 6;
+    int barW = col1W - 20 - labelW - 6;
+    renderer.drawRect(barX, yOffset + 2, barW, 8);
+    if (val > 0) {
+      int fillW = (barW - 2) * val / 100;
+      renderer.fillRect(barX + 1, yOffset + 3, fillW, 6);
     }
-  } else {
-    if (state.petType > 0) {
-      snprintf(infoLine, sizeof(infoLine), tr(STR_PET_INFO_FMT_TYPE_STAGE),
-               PetEvolution::typeName(state.petType), stageName,
-               (unsigned long)PET_MANAGER.getDaysAlive(), (unsigned)state.currentStreak);
-    } else {
-      snprintf(infoLine, sizeof(infoLine), tr(STR_PET_INFO_FMT_STAGE),
-               stageName, (unsigned long)PET_MANAGER.getDaysAlive(), (unsigned)state.currentStreak);
-    }
-  }
-  renderer.drawCenteredText(SMALL_FONT_ID, infoY, infoLine);
+  };
 
-  // --- Stat bars ---
-  const int statsY = infoY + renderer.getLineHeight(SMALL_FONT_ID) + metrics.verticalSpacing;
-  const int barW = pageWidth - sideMargin * 2;
-  statsPanel.renderStats(renderer, state, sideMargin, statsY, barW);
+  drawCompactBar("Hunger: ", state.hunger, barYStart);
+  drawCompactBar("Happy:  ", state.happiness, barYStart + rowSpacing);
+  drawCompactBar("Health: ", state.health, barYStart + rowSpacing * 2);
+  drawCompactBar("Discip: ", state.discipline, barYStart + rowSpacing * 3);
 
-  // --- Reading stats compact row (streak / books finished — pulled from the
-  //     pet's own lazily-synced state rather than a live GlobalReadingStats
-  //     read, since this is a render-only method) ---
-  const int barSpacing = renderer.getLineHeight(SMALL_FONT_ID) + 10;
-  int readY = statsY + barSpacing * 7 + 4;
-  {
-    renderer.fillRect(sideMargin + 20, readY, barW - 40, 1);
-    readY += 6;
-    char readLine[80];
-    snprintf(readLine, sizeof(readLine), "%s %u  |  %s %u",
-             tr(STR_STATS_STREAK), (unsigned)state.currentStreak,
-             tr(STR_STATS_BOOKS_DONE), (unsigned)state.booksFinished);
-    renderer.drawCenteredText(SMALL_FONT_ID, readY, readLine);
-    readY += renderer.getLineHeight(SMALL_FONT_ID) + metrics.verticalSpacing;
-  }
+  // Weight, Age, and Ink Points
+  char weightAgeLine[80];
+  snprintf(weightAgeLine, sizeof(weightAgeLine), "Wt: %ug  |  Age: %lu days", state.weight, (unsigned long)PET_MANAGER.getDaysAlive());
+  renderer.drawText(SMALL_FONT_ID, col1X + 10, barYStart + rowSpacing * 4 + 2, weightAgeLine);
 
-  // --- Action menu fills remaining space ---
-  const int menuY = readY;
-  const int menuH = contentBottom - menuY;
-  actionMenu.render(renderer, state, sideMargin, menuY, barW, menuH);
+  char ipLine[64];
+  snprintf(ipLine, sizeof(ipLine), "Points: %lu IP", (unsigned long)state.inkPoints);
+  renderer.drawText(UI_10_FONT_ID, col1X + 10, barYStart + rowSpacing * 5 + 4, ipLine, true, EpdFontFamily::BOLD);
 
-  // --- Feedback text above button hints ---
+  // --- Vertical Divider ---
+  renderer.drawLine(380, contentTop, 380, contentBottom, true);
+
+  // --- Right Column ---
+  const int col2X = 400;
+  const int col2W = pageWidth - col2X - 20;
+
+  // 1. Reading Stats Box
+  renderer.drawText(UI_10_FONT_ID, col2X, contentTop, "READING PARTNER STATS", true, EpdFontFamily::BOLD);
+  renderer.fillRect(col2X, contentTop + renderer.getLineHeight(UI_10_FONT_ID) + 2, col2W, 1);
+
+  int rStatsY = contentTop + renderer.getLineHeight(UI_10_FONT_ID) + 8;
+  char streakText[64];
+  snprintf(streakText, sizeof(streakText), "Streak: %u days (Best: %u days)", state.currentStreak, state.longestReadingStreak);
+  renderer.drawText(SMALL_FONT_ID, col2X + 10, rStatsY, streakText);
+
+  char booksText[64];
+  snprintf(booksText, sizeof(booksText), "Books Completed: %u", state.booksFinished);
+  renderer.drawText(SMALL_FONT_ID, col2X + 10, rStatsY + rowSpacing, booksText);
+
+  char pagesText[64];
+  snprintf(pagesText, sizeof(pagesText), "Total Pages Read: %lu", (unsigned long)state.totalPagesRead);
+  renderer.drawText(SMALL_FONT_ID, col2X + 10, rStatsY + rowSpacing * 2, pagesText);
+
+  char sessionsText[64];
+  snprintf(sessionsText, sizeof(sessionsText), "Reading Sessions: %lu", (unsigned long)state.lastKnownSessions);
+  renderer.drawText(SMALL_FONT_ID, col2X + 10, rStatsY + rowSpacing * 3, sessionsText);
+
+  // 2. Pet Actions Menu
+  const int menuHeaderY = rStatsY + rowSpacing * 4 + 10;
+  renderer.drawText(UI_10_FONT_ID, col2X, menuHeaderY, "PET ACTIONS", true, EpdFontFamily::BOLD);
+  renderer.fillRect(col2X, menuHeaderY + renderer.getLineHeight(UI_10_FONT_ID) + 2, col2W, 1);
+
+  const int menuY = menuHeaderY + renderer.getLineHeight(UI_10_FONT_ID) + 6;
+  const int menuH = contentBottom - menuY - (PET_MANAGER.getLastFeedback() ? rowSpacing : 0);
+  actionMenu.render(renderer, state, col2X, menuY, col2W, menuH);
+
+  // --- Feedback text ---
   if (PET_MANAGER.getLastFeedback() != nullptr) {
     const int fbY = contentBottom - renderer.getLineHeight(SMALL_FONT_ID) - 2;
-    renderer.drawCenteredText(SMALL_FONT_ID, fbY, PET_MANAGER.getLastFeedback());
+    renderer.drawText(SMALL_FONT_ID, col2X + 10, fbY, PET_MANAGER.getLastFeedback(), true, EpdFontFamily::BOLD);
   }
 
   // --- Button hints ---
@@ -215,5 +242,80 @@ void VirtualPetActivity::renderTypeSelect() const {
   }
 
   const auto labels = mappedInput.mapLabels(tr(STR_BACK), tr(STR_SELECT), tr(STR_DIR_UP), tr(STR_DIR_DOWN));
+  GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
+}
+
+void VirtualPetActivity::renderShop() const {
+  const auto& state = PET_MANAGER.getState();
+  const auto& metrics = UITheme::getInstance().getMetrics();
+  const int pageWidth = renderer.getScreenWidth();
+  const int pageHeight = renderer.getScreenHeight();
+  const int contentTop = metrics.topPadding + metrics.headerHeight + metrics.verticalSpacing;
+  const int contentBottom = pageHeight - metrics.buttonHintsHeight - metrics.verticalSpacing;
+
+  // Draw Shop Title and Balance
+  char balanceLine[64];
+  snprintf(balanceLine, sizeof(balanceLine), "Balance: %lu IP", (unsigned long)state.inkPoints);
+  renderer.drawCenteredText(UI_10_FONT_ID, contentTop, "INK POINTS SHOP", true, EpdFontFamily::BOLD);
+  renderer.drawCenteredText(UI_10_FONT_ID, contentTop + 24, balanceLine, true, EpdFontFamily::BOLD);
+
+  const int lh = renderer.getLineHeight(UI_10_FONT_ID);
+  const int rowH = lh + 10;
+  const int listTop = contentTop + 55;
+
+  struct ShopItem {
+    const char* name;
+    uint32_t cost;
+    bool owned;
+    bool equipped;
+  };
+
+  ShopItem items[4] = {
+    {"Treat Box (Fills Hunger & Hp)", 20, false, false},
+    {"Reading Toy (Passive: Halves Decay)", 50, state.hasToy, false},
+    {"Round Glasses (Cosmetic)", 100, state.hasGlasses, state.equipGlasses},
+    {"Wizard Hat (Cosmetic)", 150, state.hasHat, state.equipHat}
+  };
+
+  const int listX = metrics.contentSidePadding + 10;
+  const int listW = pageWidth - listX * 2;
+
+  for (int i = 0; i < 4; i++) {
+    const int rowY = listTop + i * rowH;
+    const bool selected = (i == typeSelectIndex);
+    const auto& item = items[i];
+
+    char itemText[128];
+    if (i == 0) {
+      snprintf(itemText, sizeof(itemText), "%s - %lu IP", item.name, (unsigned long)item.cost);
+    } else if (item.owned) {
+      if (i == 1) {
+        snprintf(itemText, sizeof(itemText), "%s - Owned (Active)", item.name);
+      } else {
+        snprintf(itemText, sizeof(itemText), "%s - Owned (%s)", item.name, item.equipped ? "Equipped" : "Unequipped");
+      }
+    } else {
+      snprintf(itemText, sizeof(itemText), "%s - %lu IP", item.name, (unsigned long)item.cost);
+    }
+
+    if (selected) {
+      renderer.fillRect(listX - 4, rowY - 2, listW + 8, rowH, true);
+      renderer.drawText(UI_10_FONT_ID, listX, rowY + 3, itemText, /*black=*/false);
+    } else {
+      renderer.drawText(UI_10_FONT_ID, listX, rowY + 3, itemText);
+    }
+  }
+
+  // Draw description at the bottom
+  const char* desc = "";
+  if (typeSelectIndex == 0) desc = "A yummy treat box. Restores Hunger and Health.";
+  if (typeSelectIndex == 1) desc = "A cute wooden toy. Halves your pet's happiness decay rate.";
+  if (typeSelectIndex == 2) desc = "Cute round glasses. Buy or toggle equipping them.";
+  if (typeSelectIndex == 3) desc = "A magical top hat. Buy or toggle equipping it.";
+
+  const int descY = contentBottom - 30;
+  renderer.drawCenteredText(SMALL_FONT_ID, descY, desc);
+
+  const auto labels = mappedInput.mapLabels(tr(STR_BACK), "Buy/Toggle", tr(STR_DIR_UP), tr(STR_DIR_DOWN));
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
 }

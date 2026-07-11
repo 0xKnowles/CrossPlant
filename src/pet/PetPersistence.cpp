@@ -79,6 +79,15 @@ bool PetManager::load() {
   state.booksFinished    = doc["booksFinished"]    | (uint8_t)0;
   state.streakTier       = doc["streakTier"]       | (uint8_t)0;
 
+  state.inkPoints        = doc["inkPoints"]        | (uint32_t)0;
+  state.hasGlasses       = doc["hasGlasses"]       | false;
+  state.equipGlasses     = doc["equipGlasses"]     | false;
+  state.hasHat           = doc["hasHat"]           | false;
+  state.equipHat         = doc["equipHat"]         | false;
+  state.hasToy           = doc["hasToy"]           | false;
+  state.longestReadingStreak = doc["longestReadingStreak"] | (uint16_t)0;
+  state.lastKnownSessions = doc["lastKnownSessions"] | (uint32_t)0;
+
   // Lazy-eval fields
   state.lastKnownReadSeconds = doc["lastKnownReadSeconds"] | (uint32_t)0;
   state.lastKnownPagesTurned = doc["lastKnownPagesTurned"] | (uint32_t)0;
@@ -146,6 +155,15 @@ bool PetManager::save() {
   doc["evolutionVariant"] = state.evolutionVariant;
   doc["booksFinished"]    = state.booksFinished;
   doc["streakTier"]       = state.streakTier;
+
+  doc["inkPoints"]        = state.inkPoints;
+  doc["hasGlasses"]       = state.hasGlasses;
+  doc["equipGlasses"]     = state.equipGlasses;
+  doc["hasHat"]           = state.hasHat;
+  doc["equipHat"]         = state.equipHat;
+  doc["hasToy"]           = state.hasToy;
+  doc["longestReadingStreak"] = state.longestReadingStreak;
+  doc["lastKnownSessions"] = state.lastKnownSessions;
 
   // Lazy-eval fields
   doc["lastKnownReadSeconds"] = state.lastKnownReadSeconds;

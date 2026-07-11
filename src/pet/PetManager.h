@@ -48,6 +48,20 @@ class PetManager {
   bool renamePet(const char* name);
   bool changeType(uint8_t type);
 
+  // Shop & customization helper methods
+  bool deductPoints(uint32_t points) {
+    if (state.inkPoints >= points) {
+      state.inkPoints -= points;
+      return true;
+    }
+    return false;
+  }
+  void setHasToy(bool val) { state.hasToy = val; save(); }
+  void setHasGlasses(bool val) { state.hasGlasses = val; save(); }
+  void setEquipGlasses(bool val) { state.equipGlasses = val; save(); }
+  void setHasHat(bool val) { state.hasHat = val; save(); }
+  void setEquipHat(bool val) { state.equipHat = val; save(); }
+
   // --- User actions (PetActions.cpp) ---
   bool feedMeal();       // fill hunger + add weight + waste tracking
   bool feedSnack();      // add happiness + add weight (no hunger)

@@ -101,6 +101,18 @@ struct PetState {
   uint8_t booksFinished = 0;    // total books completed (lifetime)
   uint8_t streakTier = 0;       // 0-3, derived from currentStreak
 
+  // Shop & customization items
+  uint32_t inkPoints = 0;
+  bool hasGlasses = false;
+  bool equipGlasses = false;
+  bool hasHat = false;
+  bool equipHat = false;
+  bool hasToy = false;
+
+  // Extra Reading Stats Cache
+  uint16_t longestReadingStreak = 0;
+  uint32_t lastKnownSessions = 0;
+
   // Lazy-eval fields: track what GlobalReadingStats values the pet last consumed
   uint32_t lastKnownReadSeconds = 0;   // GlobalReadingStats.totalReadingSeconds at last sync
   uint32_t lastKnownPagesTurned = 0;   // GlobalReadingStats.totalPagesTurned at last sync

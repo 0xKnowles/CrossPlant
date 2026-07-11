@@ -28,6 +28,8 @@ class MappedInputManager {
   void suppressNextConfirmRelease() { suppressConfirmRelease = true; }
   void suppressNextPowerRelease() { suppressPowerRelease = true; }
   void suppressNextPowerConfirmRelease() { suppressPowerConfirmRelease = true; }
+  void suppressNextLeftRelease() { suppressLeftRelease = true; }
+  void suppressNextRightRelease() { suppressRightRelease = true; }
   bool wasPressed(Button button) const;
   bool wasReleased(Button button) const;
   bool isPressed(Button button) const;
@@ -55,6 +57,8 @@ class MappedInputManager {
   mutable bool suppressConfirmRelease = false;
   mutable bool suppressPowerRelease = false;
   mutable bool suppressPowerConfirmRelease = false;
+  mutable bool suppressLeftRelease = false;
+  mutable bool suppressRightRelease = false;
 #ifdef SIMULATOR
   std::array<bool, BUTTON_COUNT> simulatorPressed{};
   std::array<bool, BUTTON_COUNT> simulatorReleased{};
