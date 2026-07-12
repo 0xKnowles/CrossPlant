@@ -23,17 +23,23 @@ class PetSpriteRenderer {
   // variant selects evolution branch (0=default, 1=chubby, 2=misbehaved).
   // petType selects built-in pixel-art design (0=Chicken, 1=Cat, 2=Dog, 3=Dragon, 4=Bunny).
   // Tries {stage}_v{variant}_{mood}.bin first, falls back to {stage}_{mood}.bin, then built-in art.
+  // targetSize > 0 overrides the drawn size and scales the baked/SD art to exactly that many
+  // pixels (square), instead of centring the native 144px art inside displaySize(scale). Use it
+  // when a caller wants the plant larger/smaller than the fixed scale steps. 0 keeps legacy sizing.
   static void drawPet(GfxRenderer& renderer, int x, int y, PetStage stage, PetMood mood,
                       int scale = 1, uint8_t variant = 0, uint8_t petType = 0,
-                      uint8_t animFrame = 0, bool forceHat = false, bool forceGlasses = false);
+                      uint8_t animFrame = 0, bool forceHat = false, bool forceGlasses = false,
+                      int targetSize = 0);
   // Built-in grid is 24x24 logical pixels; each pixel renders as (2*scale) physical pixels.
   // At scale=3: 24*2*3 = 144px (same as old 12*4*3).
   static constexpr int BUILTIN_GRID = 24;
   static constexpr int displaySize(int scale = 1) { return BUILTIN_GRID * 2 * scale; }
 
-  // Draw 24x24 mini sprite at (x,y). Falls back to pixel-art if file missing.
+  // Draw a mini sprite at (x,y), sized size x size (default MINI_W = 24). Falls back to pixel-art
+  // if file missing. size != MINI_W scales the native 24x24 art to fit, for callers that need the
+  // icon smaller to avoid crowding nearby text.
   static void drawMini(GfxRenderer& renderer, int x, int y, PetStage stage, PetMood mood,
-                       uint8_t variant = 0, uint8_t petType = 0);
+                       uint8_t variant = 0, uint8_t petType = 0, int size = MINI_W);
 
  private:
   // Shared 288-byte buffer — large enough for a full sprite frame.

@@ -2,6 +2,8 @@
 
 #include <HalStorage.h>
 
+#include <algorithm>
+
 #include "PetSpriteData.h"
 #include "fontIds.h"
 #include "PetState.h"
@@ -37,6 +39,27 @@ static void drawBakedImage(GfxRenderer& renderer, const uint8_t* img, int x, int
     for (int c = 0; c < width; c++) {
       int idx = (r * width + c) / 8;
       int bit = (img[idx] >> (7 - (c % 8))) & 1;
+      if (bit == 0) {
+        renderer.drawPixel(x + c, y + r);
+      }
+    }
+  }
+}
+
+// Nearest-neighbour blit of a 1-bit baked image (srcW x srcH, MSB-first, row-packed) scaled to
+// dstW x dstH. Used when a caller asks for a plant larger than the native art; at dst == src it
+// produces the exact same pixels as drawBakedImage, so existing callers are unaffected.
+static void drawBakedImageScaled(GfxRenderer& renderer, const uint8_t* img, int x, int y, int srcW,
+                                 int srcH, int dstW, int dstH) {
+  if (dstW <= 0 || dstH <= 0 || srcW <= 0 || srcH <= 0) {
+    return;
+  }
+  for (int r = 0; r < dstH; r++) {
+    const int sr = r * srcH / dstH;
+    for (int c = 0; c < dstW; c++) {
+      const int sc = c * srcW / dstW;
+      const int idx = (sr * srcW + sc) / 8;
+      const int bit = (img[idx] >> (7 - (sc % 8))) & 1;
       if (bit == 0) {
         renderer.drawPixel(x + c, y + r);
       }
@@ -241,12 +264,16 @@ void PetSpriteRenderer::drawFallback(GfxRenderer& renderer, int x, int y, int sc
 
 void PetSpriteRenderer::drawPet(GfxRenderer& renderer, int x, int y, PetStage stage,
                                  PetMood mood, int scale, uint8_t variant, uint8_t petType,
-                                 uint8_t animFrame, bool forceHat, bool forceGlasses) {
+                                 uint8_t animFrame, bool forceHat, bool forceGlasses,
+                                 int targetSize) {
   char path[80];
   bool drawn = false;
 
   // 1. Try BMP files first at display size!
-  int size = displaySize(scale);
+  // When targetSize is requested we render at exactly that many pixels and scale the native
+  // 144px baked art to fill it, rather than centring the art inside the fixed displaySize(scale).
+  const bool fillTarget = targetSize > 0;
+  int size = fillTarget ? targetSize : displaySize(scale);
   if (drawBmpSprite(renderer, x, y, size, stageName(stage), (int)variant, moodName(mood), petType, stage)) {
     drawn = true;
   }
@@ -269,16 +296,25 @@ void PetSpriteRenderer::drawPet(GfxRenderer& renderer, int x, int y, PetStage st
     }
   }
   if (!drawn) {
+    // Draw the native 144px baked art: scaled to fill when targetSize is set, otherwise centred
+    // inside the size box exactly as before.
+    auto blitBaked = [&](const uint8_t* baked) {
+      if (fillTarget) {
+        drawBakedImageScaled(renderer, baked, x, y, 144, 144, size, size);
+      } else {
+        const int dx = (size - 144) / 2;
+        const int dy = (size - 144) / 2;
+        drawBakedImage(renderer, baked, x + dx, y + dy, 144, 144);
+      }
+    };
     if (stage == PetStage::EGG) {
-      int dx = (size - 144) / 2;
-      int dy = (size - 144) / 2;
       if (petType == 0) {
-        drawBakedImage(renderer, Seed, x + dx, y + dy, 144, 144);
+        blitBaked(Seed);
         drawn = true;
       } else {
         const uint8_t* baked = getBakedPlantSprite(petType, 1);
         if (baked != nullptr) {
-          drawBakedImage(renderer, baked, x + dx, y + dy, 144, 144);
+          blitBaked(baked);
           drawn = true;
         }
       }
@@ -286,9 +322,7 @@ void PetSpriteRenderer::drawPet(GfxRenderer& renderer, int x, int y, PetStage st
       int stageNum = getStageNum(stage);
       const uint8_t* baked = getBakedPlantSprite(petType, stageNum);
       if (baked != nullptr) {
-        int dx = (size - 144) / 2;
-        int dy = (size - 144) / 2;
-        drawBakedImage(renderer, baked, x + dx, y + dy, 144, 144);
+        blitBaked(baked);
         drawn = true;
       }
     }
@@ -296,16 +330,25 @@ void PetSpriteRenderer::drawPet(GfxRenderer& renderer, int x, int y, PetStage st
   if (!drawn) {
     drawFallback(renderer, x, y, scale, stage, variant, petType, animFrame);
   }
-
-
 }
 
 void PetSpriteRenderer::drawMini(GfxRenderer& renderer, int x, int y, PetStage stage,
-                                  PetMood mood, uint8_t variant, uint8_t petType) {
-  // 1. Try BMP mini files first!
-  if (drawBmpMini(renderer, x, y, MINI_W, stageName(stage), (int)variant, moodName(mood), petType, stage)) {
+                                  PetMood mood, uint8_t variant, uint8_t petType, int size) {
+  // 1. Try BMP mini files first! drawBitmap already scales to whatever size we ask for.
+  if (drawBmpMini(renderer, x, y, size, stageName(stage), (int)variant, moodName(mood), petType, stage)) {
     return;
   }
+
+  // Native art below is 24x24 (MINI_W x MINI_H); only scale it when a caller asked for a
+  // different size, so the common case keeps the cheap 1:1 blit.
+  const bool needsScale = (size != MINI_W);
+  auto blitMini = [&](const uint8_t* img) {
+    if (needsScale) {
+      drawBakedImageScaled(renderer, img, x, y, MINI_W, MINI_H, size, size);
+    } else {
+      drawBakedImage(renderer, img, x, y, MINI_W, MINI_H);
+    }
+  };
 
   char path[88];
   // Try variant-specific mini file first
@@ -313,7 +356,11 @@ void PetSpriteRenderer::drawMini(GfxRenderer& renderer, int x, int y, PetStage s
     snprintf(path, sizeof(path), "/.crosspoint/pet/sprites/mini/%s_v%d_%s.bin",
              stageName(stage), (int)variant, moodName(mood));
     if (loadSprite(path, MINI_BYTES) == MINI_BYTES) {
-      renderer.drawImage(spriteBuffer, x, y, MINI_W, MINI_H);
+      if (needsScale) {
+        drawBakedImageScaled(renderer, spriteBuffer, x, y, MINI_W, MINI_H, size, size);
+      } else {
+        renderer.drawImage(spriteBuffer, x, y, MINI_W, MINI_H);
+      }
       return;
     }
   }
@@ -321,13 +368,17 @@ void PetSpriteRenderer::drawMini(GfxRenderer& renderer, int x, int y, PetStage s
   snprintf(path, sizeof(path), "/.crosspoint/pet/sprites/mini/%s_%s.bin", stageName(stage),
            moodName(mood));
   if (loadSprite(path, MINI_BYTES) == MINI_BYTES) {
-    renderer.drawImage(spriteBuffer, x, y, MINI_W, MINI_H);
+    if (needsScale) {
+      drawBakedImageScaled(renderer, spriteBuffer, x, y, MINI_W, MINI_H, size, size);
+    } else {
+      renderer.drawImage(spriteBuffer, x, y, MINI_W, MINI_H);
+    }
   } else {
     if (stage == PetStage::EGG) {
       if (petType > 0) {
         const uint8_t* bakedMini = getBakedPlantMiniSprite(petType, 1);
         if (bakedMini != nullptr) {
-          drawBakedImage(renderer, bakedMini, x, y, MINI_W, MINI_H);
+          blitMini(bakedMini);
           return;
         }
       }
@@ -335,7 +386,7 @@ void PetSpriteRenderer::drawMini(GfxRenderer& renderer, int x, int y, PetStage s
       int stageNum = getStageNum(stage);
       const uint8_t* bakedMini = getBakedPlantMiniSprite(petType, stageNum);
       if (bakedMini != nullptr) {
-        drawBakedImage(renderer, bakedMini, x, y, MINI_W, MINI_H);
+        blitMini(bakedMini);
         return;
       }
     }
