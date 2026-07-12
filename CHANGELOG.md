@@ -27,10 +27,10 @@
 - Added a "Daily Quests" menu option to the "My Plants" action menu to view detailed progress bars for all active daily missions.
 - Fixed Cozy Frame box height on the sleep screen to prevent the bottom border from overlapping the plant stage text on X3 stacked layouts.
 - Replaced remaining hardcoded "Pet" references on the sleep screen and plant details cards with "Plant" (e.g. "PET DIARY" -> "PLANT DIARY", "PET STATUS" -> "PLANT STATUS", and "PET ACTIONS" -> "PLANT ACTIONS").
-- Added support for loading custom species-specific `.bmp` plant images from the SD card (e.g. `alo-1.bmp`, `begonia-2.bmp`, `mon-3.bmp` under `/.crosspoint/pet/sprites/`) with automatic ordered Bayer dithering, displaying high-fidelity plant details smoothly without blocky thresholding distortion.
+- Added support for loading custom species-specific `.bmp` plant images from the SD card (e.g. `alo-1.bmp`, `begonia-2.bmp`, `mon-3.bmp` under `/.crosspoint/pet/sprites/`) with automatic ordered Bayer dithering, and baked them directly into the firmware as dithered 1bpp fallbacks that center automatically inside their display bounding box without distortion or SD card requirements.
 - Fixed a pre-existing simulator compilation error in `WifiSelectionActivity.cpp` by wrapping `WiFi.disconnect` parameters in a simulator check.
 - Renamed the OS name from "CrossInk" / "CrossMerge" to "CrossPlant" across all boot screens, sleep screens, version footers, and system settings tabs.
-- Updated the boot screen to display the custom Monstera Seed graphic (instead of the legacy companion sprite) and aligned it with the new OS name.
+- Updated the boot screen to display the custom Alocasia Mature (alo-3) graphic and aligned it with the new OS name.
 - Updated the default sleep screen to display the new custom Seed logo instead of the legacy CrossInk logo.
 
 ## [v1.4.0] - 2026-07-10

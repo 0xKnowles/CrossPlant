@@ -11,21 +11,6 @@
 #include "images/BakedPlantSprites.h"
 
 namespace {
-static void drawScaledImage(GfxRenderer& renderer, const uint8_t* img, int x, int y, int width, int height, int scale) {
-  if (scale <= 1) {
-    renderer.drawImage(img, x, y, width, height);
-    return;
-  }
-  for (int r = 0; r < height; r++) {
-    for (int c = 0; c < width; c++) {
-      int idx = (r * width + c) / 8;
-      int bit = (img[idx] >> (7 - (c % 8))) & 1;
-      if (bit == 0) {
-        renderer.fillRect(x + c * scale, y + r * scale, scale, scale);
-      }
-    }
-  }
-}
 static const char* getSpeciesPrefix(uint8_t petType) {
   switch (petType) {
     case 0:  return "mon";
@@ -273,13 +258,17 @@ void PetSpriteRenderer::drawPet(GfxRenderer& renderer, int x, int y, PetStage st
   }
   if (!drawn) {
     if (stage == PetStage::EGG) {
-      drawScaledImage(renderer, Seed, x, y, 144, 144, scale);
+      int dx = (size - 144) / 2;
+      int dy = (size - 144) / 2;
+      renderer.drawImage(Seed, x + dx, y + dy, 144, 144);
       drawn = true;
     } else {
       int stageNum = getStageNum(stage);
       const uint8_t* baked = getBakedPlantSprite(petType, stageNum);
       if (baked != nullptr) {
-        drawScaledImage(renderer, baked, x, y, 144, 144, scale);
+        int dx = (size - 144) / 2;
+        int dy = (size - 144) / 2;
+        renderer.drawImage(baked, x + dx, y + dy, 144, 144);
         drawn = true;
       }
     }
