@@ -376,6 +376,14 @@ void PetSpriteRenderer::drawMini(GfxRenderer& renderer, int x, int y, PetStage s
   if (loadSprite(path, MINI_BYTES) == MINI_BYTES) {
     renderer.drawImage(spriteBuffer, x, y, MINI_W, MINI_H);
   } else {
+    if (stage != PetStage::DEAD) {
+      int stageNum = getStageNum(stage);
+      const uint8_t* bakedMini = getBakedPlantMiniSprite(petType, stageNum);
+      if (bakedMini != nullptr) {
+        renderer.drawImage(bakedMini, x, y, MINI_W, MINI_H);
+        return;
+      }
+    }
     drawFallback(renderer, x, y, /*scale=*/1, stage, variant, petType, /*animFrame=*/0);
   }
 }
