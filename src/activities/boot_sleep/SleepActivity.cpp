@@ -314,25 +314,28 @@ bool tryDrawCoverBmp(const GfxRenderer& renderer, const std::string& bmpPath, co
   return drawn;
 }
 
-// Draws the most-recently-read book's cover into r. For EPUBs, generates (or reuses) the exact
-// same fixed-size adaptive-fit thumbnail the Dashboard theme's own cover UI uses —
-// generateAdaptiveThumbBmp short-circuits instantly when a matching-size file is already cached,
-// so calling it on every render is cheap. tryDrawCoverBmp then scale-fits that bitmap into r
-// regardless of r's own size, so this cover box can be any size. Non-EPUB formats fall back to
-// whatever cover thumb the recent-books store already has cached. Falls back to an empty framed
-// box only if no source cover exists at all (e.g. the book file was removed).
+// Draws the most-recently-read book's cover into r. For EPUBs, generates (or reuses) an
+// adaptive-fit thumbnail sized to r itself (not a fixed Dashboard-sized one) — the JPEG/PNG
+// converter prescales to its target dimensions before dithering specifically to avoid dithering
+// artifacts from a later, separate downscale (see JpegToBmpConverter's USE_PRESCALE comment).
+// Generating at a fixed 296x444 and then letting tryDrawCoverBmp's nearest-neighbour scale-fit
+// shrink that down to a small card box re-samples already-dithered pixels, which is what made the
+// small sleep-screen cover render mostly black. Requesting the real target size here instead lets
+// the converter dither once at (close to) final resolution, and generateAdaptiveThumbBmp
+// short-circuits instantly when a matching-size file is already cached, so calling it on every
+// render is still cheap. Non-EPUB formats fall back to whatever cover thumb the recent-books store
+// already has cached. Falls back to an empty framed box only if no source cover exists at all
+// (e.g. the book file was removed).
 void drawLastBookCover(const GfxRenderer& renderer, const RecentBook& book, const Rect& r) {
   std::string bmpPath;
   if (FsHelpers::hasEpubExtension(book.path)) {
     Epub epub(book.path, "/.crosspoint");
-    bmpPath = epub.getAdaptiveThumbBmpPath(DashboardMetrics::homeCoverImageWidth, DashboardMetrics::homeCoverImageHeight);
+    bmpPath = epub.getAdaptiveThumbBmpPath(r.width, r.height);
     if (!Storage.exists(bmpPath.c_str()) && epub.load(/*buildIfMissing=*/true, /*skipLoadingCss=*/true)) {
-      epub.generateAdaptiveThumbBmp(DashboardMetrics::homeCoverImageWidth, DashboardMetrics::homeCoverImageHeight,
-                                    &renderer, SETTINGS.getReaderFontId());
+      epub.generateAdaptiveThumbBmp(r.width, r.height, &renderer, SETTINGS.getReaderFontId());
     }
   } else {
-    bmpPath = UITheme::getCoverThumbPath(book.coverBmpPath, DashboardMetrics::homeCoverImageWidth,
-                                         DashboardMetrics::homeCoverImageHeight);
+    bmpPath = UITheme::getCoverThumbPath(book.coverBmpPath, r.width, r.height);
   }
 
   if (tryDrawCoverBmp(renderer, bmpPath, r)) {
