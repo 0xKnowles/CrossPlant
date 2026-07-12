@@ -10,8 +10,10 @@
 namespace PetEvolution {
 
   // Check and apply an evolution transition if requirements are met.
-  // Assigns evolutionVariant at branching stages.
-  void checkEvolution(PetState& state);
+  // Assigns evolutionVariant at branching stages. currentStreak/booksFinished
+  // are farm-level (PetFarmState) — reading habits are account-wide, not
+  // tracked per plot — so the caller passes them in explicitly.
+  void checkEvolution(PetState& state, uint16_t currentStreak, uint8_t booksFinished);
 
   // Returns display name for stage + variant combination.
   const char* variantStageName(PetStage stage, uint8_t variant);

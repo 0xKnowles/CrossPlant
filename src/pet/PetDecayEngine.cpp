@@ -20,7 +20,7 @@ static inline uint8_t clampAdd(uint8_t val, uint8_t amount) {
 }
 
 // Apply one simulated hour of decay (called per hour in the loop)
-static void applyOneHour(PetState& state, uint8_t currentHour, uint32_t h) {
+static void applyOneHour(PetState& state, const PetFarmState& farm, uint8_t currentHour, uint32_t h) {
   // Skip most decay while sleeping (only light effects apply)
   if (isSleepHour(currentHour)) {
     state.isSleeping = true;
@@ -34,13 +34,13 @@ static void applyOneHour(PetState& state, uint8_t currentHour, uint32_t h) {
 
   // Hunger (Moisture) decays every hour while awake, halved if Self-Watering Pot is equipped
   uint8_t hungerDecay = PetConfig::HUNGER_DECAY_PER_HOUR;
-  if (state.equipSelfWateringPot) {
+  if (farm.equipSelfWateringPot) {
     if (h % 2 != 0) hungerDecay = 0;
   }
   state.hunger = clampSub(state.hunger, hungerDecay);
 
   // Slow-Release Fertilizer passive: regenerates nutrients (+1 discipline every 2 hours)
-  if (state.equipSlowReleaseFertilizer && h % 2 == 0) {
+  if (farm.equipSlowReleaseFertilizer && h % 2 == 0) {
     state.discipline = clampAdd(state.discipline, 1);
   }
 
@@ -53,7 +53,7 @@ static void applyOneHour(PetState& state, uint8_t currentHour, uint32_t h) {
     if (state.wasteCount > 0) decay += state.wasteCount * PetConfig::WASTE_HAPPINESS_PENALTY;
 
     // Moss Pole halves the happiness decay!
-    if (state.equipMossPole) {
+    if (farm.equipMossPole) {
       if (decay > 1) {
         decay /= 2;
       } else if (decay == 1 && h % 4 == 0) {
@@ -66,7 +66,7 @@ static void applyOneHour(PetState& state, uint8_t currentHour, uint32_t h) {
   // Health drains when starving
   if (state.hunger == 0) {
     uint8_t healthDecay = PetConfig::HEALTH_DECAY_PER_HOUR;
-    if (state.equipGreenhouseCover) {
+    if (farm.equipGreenhouseCover) {
       healthDecay /= 2;
     }
     state.health = clampSub(state.health, healthDecay);
@@ -74,7 +74,7 @@ static void applyOneHour(PetState& state, uint8_t currentHour, uint32_t h) {
   // Underweight also drains health slowly
   if (state.weight < PetConfig::UNDERWEIGHT_THRESHOLD && h % 4 == 0) {
     uint8_t healthDecay = 1;
-    if (state.equipGreenhouseCover && h % 8 != 0) {
+    if (farm.equipGreenhouseCover && h % 8 != 0) {
       healthDecay = 0;
     }
     state.health = clampSub(state.health, healthDecay);
@@ -114,13 +114,13 @@ static void applyOneHour(PetState& state, uint8_t currentHour, uint32_t h) {
 
 namespace PetDecayEngine {
 
-void applyDecay(PetState& state, uint32_t elapsedHours, uint8_t startHour) {
+void applyDecay(PetState& state, const PetFarmState& farm, uint32_t elapsedHours, uint8_t startHour) {
   // Cap to prevent overflow from very long absences (max 30 days = 720h)
   if (elapsedHours > 720) elapsedHours = 720;
 
   for (uint32_t h = 0; h < elapsedHours; h++) {
     uint8_t currentHour = static_cast<uint8_t>((startHour + h) % 24);
-    applyOneHour(state, currentHour, h);
+    applyOneHour(state, farm, currentHour, h);
 
     // Death check after each hour
     if (state.health == 0) {

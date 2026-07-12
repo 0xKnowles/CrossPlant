@@ -8,6 +8,84 @@
 #include <cstring>
 #include <ctime>
 
+namespace {
+
+// Reads one plot's fields from `obj` (either the legacy flat document root,
+// or one element of the new "plots" array) into `plot`. Every key uses the
+// exact same name the single-pet schema always used, so the legacy-flat and
+// new-nested readers share this one function — only the JSON node they're
+// called with differs.
+void loadPlotFields(PetState& plot, JsonObjectConst obj) {
+  plot.stage           = static_cast<PetStage>(obj["stage"] | 0);
+  plot.hunger          = obj["hunger"]          | (uint8_t)80;
+  plot.happiness       = obj["happiness"]       | (uint8_t)80;
+  plot.health           = obj["health"]          | (uint8_t)100;
+  plot.birthTime        = obj["birthTime"]       | (uint32_t)0;
+  plot.lastTickTime     = obj["lastTickTime"]    | (uint32_t)0;
+  plot.totalPagesRead   = obj["totalPagesRead"]  | (uint32_t)0;
+  plot.daysAtStage      = obj["daysAtStage"]     | (uint8_t)0;
+  plot.pageAccumulator  = obj["pageAccumulator"] | (uint16_t)0;
+  const char* petNameStr = obj["petName"] | "";
+  strncpy(plot.petName, petNameStr, sizeof(plot.petName) - 1);
+  plot.petName[sizeof(plot.petName) - 1] = '\0';
+  plot.petType = obj["petType"] | (uint8_t)0;
+
+  // Backward compat: infer initialized from birthTime if field missing
+  plot.initialized = obj["initialized"] | (plot.birthTime > 0);
+
+  plot.weight           = obj["weight"]           | (uint8_t)50;
+  plot.isSick           = obj["isSick"]           | false;
+  plot.sicknessTimer    = obj["sicknessTimer"]    | (uint8_t)0;
+  plot.wasteCount       = obj["wasteCount"]       | (uint8_t)0;
+  plot.mealsSinceClean  = obj["mealsSinceClean"]  | (uint8_t)0;
+  plot.discipline       = obj["discipline"]       | (uint8_t)50;
+  plot.attentionCall    = obj["attentionCall"]    | false;
+  plot.isFakeCall       = obj["isFakeCall"]       | false;
+  plot.currentNeed      = static_cast<PetNeed>(obj["currentNeed"] | (uint8_t)0);
+  plot.lastCallTime     = obj["lastCallTime"]     | (uint32_t)0;
+  plot.isSleeping       = obj["isSleeping"]       | false;
+  plot.lightsOff        = obj["lightsOff"]        | (uint8_t)0;
+  plot.totalAge         = obj["totalAge"]         | (uint16_t)0;
+  plot.careMistakes     = obj["careMistakes"]     | (uint8_t)0;
+  plot.avgCareScore     = obj["avgCareScore"]     | (uint8_t)50;
+  plot.evolutionVariant = obj["evolutionVariant"] | (uint8_t)0;
+}
+
+// Mirrors loadPlotFields(): writes one plot's fields into a "plots" array element.
+void savePlotFields(const PetState& plot, JsonObject obj) {
+  obj["petName"]        = plot.petName;
+  obj["petType"]        = plot.petType;
+  obj["initialized"]    = plot.initialized;
+  obj["stage"]          = static_cast<uint8_t>(plot.stage);
+  obj["hunger"]         = plot.hunger;
+  obj["happiness"]      = plot.happiness;
+  obj["health"]         = plot.health;
+  obj["birthTime"]      = plot.birthTime;
+  obj["lastTickTime"]   = plot.lastTickTime;
+  obj["totalPagesRead"] = plot.totalPagesRead;
+  obj["daysAtStage"]    = plot.daysAtStage;
+  obj["pageAccumulator"] = plot.pageAccumulator;
+
+  obj["weight"]           = plot.weight;
+  obj["isSick"]           = plot.isSick;
+  obj["sicknessTimer"]    = plot.sicknessTimer;
+  obj["wasteCount"]       = plot.wasteCount;
+  obj["mealsSinceClean"]  = plot.mealsSinceClean;
+  obj["discipline"]       = plot.discipline;
+  obj["attentionCall"]    = plot.attentionCall;
+  obj["isFakeCall"]       = plot.isFakeCall;
+  obj["currentNeed"]      = static_cast<uint8_t>(plot.currentNeed);
+  obj["lastCallTime"]     = plot.lastCallTime;
+  obj["isSleeping"]       = plot.isSleeping;
+  obj["lightsOff"]        = plot.lightsOff;
+  obj["totalAge"]         = plot.totalAge;
+  obj["careMistakes"]     = plot.careMistakes;
+  obj["avgCareScore"]     = plot.avgCareScore;
+  obj["evolutionVariant"] = plot.evolutionVariant;
+}
+
+}  // namespace
+
 // --- Persistence ---
 
 bool PetManager::load() {
@@ -35,82 +113,73 @@ bool PetManager::load() {
     return false;
   }
 
-  // Core fields
-  state.stage           = static_cast<PetStage>(doc["stage"] | 0);
-  state.hunger          = doc["hunger"]          | (uint8_t)80;
-  state.happiness       = doc["happiness"]       | (uint8_t)80;
-  state.health          = doc["health"]          | (uint8_t)100;
-  state.birthTime       = doc["birthTime"]       | (uint32_t)0;
-  state.lastTickTime    = doc["lastTickTime"]    | (uint32_t)0;
-  state.totalPagesRead  = doc["totalPagesRead"]  | (uint32_t)0;
-  state.currentStreak   = doc["currentStreak"]   | (uint16_t)0;
-  state.daysAtStage     = doc["daysAtStage"]     | (uint8_t)0;
-  state.lastReadDay     = doc["lastReadDay"]      | (uint16_t)0;
-  state.pageAccumulator = doc["pageAccumulator"] | (uint16_t)0;
-  // Customization fields — backward compat: missing = empty name, default type
-  const char* petNameStr = doc["petName"] | "";
-  strncpy(state.petName, petNameStr, sizeof(state.petName) - 1);
-  state.petName[sizeof(state.petName) - 1] = '\0';
-  state.petType = doc["petType"] | (uint8_t)0;
+  // --- Farm (account-wide) fields — same top-level keys the single-pet
+  // schema always used, so legacy saves need no migration for these. ---
+  farm.missionDay      = doc["missionDay"]      | (uint16_t)0;
+  farm.missionPagesRead = doc["missionPagesRead"] | (uint8_t)0;
+  farm.missionPetCount = doc["missionPetCount"] | (uint8_t)0;
+  farm.missionWaterCount = doc["missionWaterCount"] | (uint8_t)0;
+  farm.maxSessionPagesToday   = doc["maxSessionPagesToday"] | doc["missionPruneCount"] | (uint8_t)0;
+  farm.pagesReadAfter9PM      = doc["pagesReadAfter9PM"] | doc["missionWeedCount"] | (uint8_t)0;
+  farm.questReadClaimed = doc["questReadClaimed"] | false;
+  farm.questPetClaimed = doc["questPetClaimed"] | false;
+  farm.questWaterClaimed = doc["questWaterClaimed"] | false;
+  farm.questSpeedyClaimed = doc["questSpeedyClaimed"] | doc["questPruneClaimed"] | false;
+  farm.questNightOwlClaimed = doc["questNightOwlClaimed"] | doc["questWeedClaimed"] | false;
+  farm.questStreakSaverClaimed = doc["questStreakSaverClaimed"] | doc["questFertilizerClaimed"] | false;
 
-  // Backward compat: infer initialized from birthTime if field missing
-  state.initialized     = doc["initialized"]     | (state.birthTime > 0);
-  state.missionDay      = doc["missionDay"]      | (uint16_t)0;
-  state.missionPagesRead = doc["missionPagesRead"] | (uint8_t)0;
-  state.missionPetCount = doc["missionPetCount"] | (uint8_t)0;
-  state.missionWaterCount = doc["missionWaterCount"] | (uint8_t)0;
-  state.maxSessionPagesToday   = doc["maxSessionPagesToday"] | doc["missionPruneCount"] | (uint8_t)0;
-  state.pagesReadAfter9PM      = doc["pagesReadAfter9PM"] | doc["missionWeedCount"] | (uint8_t)0;
-  state.questReadClaimed = doc["questReadClaimed"] | false;
-  state.questPetClaimed = doc["questPetClaimed"] | false;
-  state.questWaterClaimed = doc["questWaterClaimed"] | false;
-  state.questSpeedyClaimed = doc["questSpeedyClaimed"] | doc["questPruneClaimed"] | false;
-  state.questNightOwlClaimed = doc["questNightOwlClaimed"] | doc["questWeedClaimed"] | false;
-  state.questStreakSaverClaimed = doc["questStreakSaverClaimed"] | doc["questFertilizerClaimed"] | false;
+  farm.currentStreak   = doc["currentStreak"]   | (uint16_t)0;
+  farm.lastReadDay     = doc["lastReadDay"]      | (uint16_t)0;
+  farm.waterStock       = doc["waterStock"]       | (uint8_t)3;
+  farm.fertilizerStock  = doc["fertilizerStock"]  | (uint8_t)3;
+  farm.booksFinished    = doc["booksFinished"]    | (uint8_t)0;
+  farm.streakTier       = doc["streakTier"]       | (uint8_t)0;
 
-  // New fields — backward-compat: missing keys use struct defaults
-  state.weight           = doc["weight"]           | (uint8_t)50;
-  state.isSick           = doc["isSick"]           | false;
-  state.sicknessTimer    = doc["sicknessTimer"]    | (uint8_t)0;
-  state.waterStock       = doc["waterStock"]       | (uint8_t)3;
-  state.fertilizerStock  = doc["fertilizerStock"]  | (uint8_t)3;
-  state.wasteCount       = doc["wasteCount"]       | (uint8_t)0;
-  state.mealsSinceClean  = doc["mealsSinceClean"]  | (uint8_t)0;
-  state.discipline       = doc["discipline"]       | (uint8_t)50;
-  state.attentionCall    = doc["attentionCall"]    | false;
-  state.isFakeCall       = doc["isFakeCall"]       | false;
-  state.currentNeed      = static_cast<PetNeed>(doc["currentNeed"] | (uint8_t)0);
-  state.lastCallTime     = doc["lastCallTime"]     | (uint32_t)0;
-  state.isSleeping       = doc["isSleeping"]       | false;
-  state.lightsOff        = doc["lightsOff"]        | (uint8_t)0;
-  state.totalAge         = doc["totalAge"]         | (uint16_t)0;
-  state.careMistakes     = doc["careMistakes"]     | (uint8_t)0;
-  state.avgCareScore     = doc["avgCareScore"]     | (uint8_t)50;
-  state.evolutionVariant = doc["evolutionVariant"] | (uint8_t)0;
-  state.booksFinished    = doc["booksFinished"]    | (uint8_t)0;
-  state.streakTier       = doc["streakTier"]       | (uint8_t)0;
+  farm.inkPoints        = doc["inkPoints"]        | (uint32_t)0;
+  farm.hasMossPole               = doc["hasMossPole"] | doc["hasGlasses"] | false;
+  farm.equipMossPole             = doc["equipMossPole"] | doc["equipGlasses"] | false;
+  farm.hasSelfWateringPot        = doc["hasSelfWateringPot"] | doc["hasHat"] | false;
+  farm.equipSelfWateringPot      = doc["equipSelfWateringPot"] | doc["equipHat"] | false;
+  farm.hasSlowReleaseFertilizer  = doc["hasSlowReleaseFertilizer"] | doc["hasCrown"] | false;
+  farm.equipSlowReleaseFertilizer= doc["equipSlowReleaseFertilizer"] | doc["equipCrown"] | false;
+  farm.hasGreenhouseCover        = doc["hasGreenhouseCover"] | doc["hasScarf"] | false;
+  farm.equipGreenhouseCover      = doc["equipGreenhouseCover"] | doc["equipScarf"] | false;
+  farm.hasPremiumSprayer         = doc["hasPremiumSprayer"] | doc["hasToy"] | false;
+  farm.longestReadingStreak = doc["longestReadingStreak"] | (uint16_t)0;
+  farm.lastKnownSessions = doc["lastKnownSessions"] | (uint32_t)0;
+  farm.unlockedStages    = doc["unlockedStages"] | (uint16_t)0;
+  farm.weatherCondition = doc["weatherCondition"] | (uint8_t)0;
+  farm.weatherTemp      = doc["weatherTemp"]      | (int8_t)0;
+  farm.lastWeatherSync  = doc["lastWeatherSync"]  | (uint32_t)0;
 
-  state.inkPoints        = doc["inkPoints"]        | (uint32_t)0;
-  state.hasMossPole               = doc["hasMossPole"] | doc["hasGlasses"] | false;
-  state.equipMossPole             = doc["equipMossPole"] | doc["equipGlasses"] | false;
-  state.hasSelfWateringPot        = doc["hasSelfWateringPot"] | doc["hasHat"] | false;
-  state.equipSelfWateringPot      = doc["equipSelfWateringPot"] | doc["equipHat"] | false;
-  state.hasSlowReleaseFertilizer  = doc["hasSlowReleaseFertilizer"] | doc["hasCrown"] | false;
-  state.equipSlowReleaseFertilizer= doc["equipSlowReleaseFertilizer"] | doc["equipCrown"] | false;
-  state.hasGreenhouseCover        = doc["hasGreenhouseCover"] | doc["hasScarf"] | false;
-  state.equipGreenhouseCover      = doc["equipGreenhouseCover"] | doc["equipScarf"] | false;
-  state.hasPremiumSprayer         = doc["hasPremiumSprayer"] | doc["hasToy"] | false;
-  state.longestReadingStreak = doc["longestReadingStreak"] | (uint16_t)0;
-  state.lastKnownSessions = doc["lastKnownSessions"] | (uint32_t)0;
-  state.unlockedStages    = doc["unlockedStages"] | (uint16_t)0;
-  state.weatherCondition = doc["weatherCondition"] | (uint8_t)0;
-  state.weatherTemp      = doc["weatherTemp"]      | (int8_t)0;
-  state.lastWeatherSync  = doc["lastWeatherSync"]  | (uint32_t)0;
+  farm.lastKnownReadSeconds = doc["lastKnownReadSeconds"] | (uint32_t)0;
+  farm.lastKnownPagesTurned = doc["lastKnownPagesTurned"] | (uint32_t)0;
+  farm.lastUpdateTimestamp  = doc["lastUpdateTimestamp"]   | (uint32_t)0;
 
-  // Lazy-eval fields
-  state.lastKnownReadSeconds = doc["lastKnownReadSeconds"] | (uint32_t)0;
-  state.lastKnownPagesTurned = doc["lastKnownPagesTurned"] | (uint32_t)0;
-  state.lastUpdateTimestamp  = doc["lastUpdateTimestamp"]   | (uint32_t)0;
+  // --- Growing plots ---
+  JsonVariantConst plotsVar = doc["plots"];
+  if (!plotsVar.isNull() && plotsVar.is<JsonArrayConst>()) {
+    // New nested schema.
+    farm.ownedPlotCount  = doc["ownedPlotCount"]  | (uint8_t)1;
+    farm.activePlotIndex = doc["activePlotIndex"] | (uint8_t)0;
+    if (farm.ownedPlotCount > PetConfig::MAX_PLOTS) farm.ownedPlotCount = PetConfig::MAX_PLOTS;
+    if (farm.ownedPlotCount == 0) farm.ownedPlotCount = 1;
+    if (farm.activePlotIndex >= farm.ownedPlotCount) farm.activePlotIndex = 0;
+
+    JsonArrayConst plotsArr = plotsVar.as<JsonArrayConst>();
+    int i = 0;
+    for (JsonObjectConst plotObj : plotsArr) {
+      if (i >= PetConfig::MAX_PLOTS) break;
+      loadPlotFields(plots[i], plotObj);
+      i++;
+    }
+  } else {
+    // Legacy single-plant save: every plot key lived flat at the document
+    // root. Load it straight into plots[0] and start with one owned plot.
+    loadPlotFields(plots[0], doc.as<JsonObjectConst>());
+    farm.ownedPlotCount = 1;
+    farm.activePlotIndex = 0;
+  }
 
   // Restore clock if RTC lost time (power cycle) but SD card has a saved timestamp
   uint32_t savedTime = doc["savedTime"] | (uint32_t)0;
@@ -127,96 +196,76 @@ bool PetManager::load() {
 
   updateSleepState();
   loaded = true;
-  LOG_DBG("PET", "Loaded pet: stage=%d hunger=%d happy=%d health=%d isSleeping=%d",
-          (int)state.stage, state.hunger, state.happiness, state.health, state.isSleeping);
+  LOG_DBG("PET", "Loaded pet farm: plots=%d active=%d", farm.ownedPlotCount, farm.activePlotIndex);
   return true;
 }
 
 bool PetManager::save() {
   Storage.mkdir(PetConfig::PET_DIR);
 
-  // Auto-unlock current plant species and stage
-  if (state.initialized && state.petType < 3) {
-    uint8_t st = (uint8_t)state.stage; // PetStage: 0=Egg, 1=Hatchling, 2=Youngster, 3=Companion, 4=Prized
-    if (st >= 1 && st <= 4) {
-      uint8_t bit = (state.petType * 4) + (st - 1);
-      state.unlockedStages |= (1 << bit);
+  // Auto-unlock every owned plot's current species+stage in the herbarium.
+  for (int i = 0; i < farm.ownedPlotCount; i++) {
+    const PetState& plot = plots[i];
+    if (plot.initialized && plot.petType < 3) {
+      uint8_t st = (uint8_t)plot.stage; // PetStage: 0=Egg, 1=Hatchling, 2=Youngster, 3=Companion, 4=Prized
+      if (st >= 1 && st <= 4) {
+        uint8_t bit = (plot.petType * 4) + (st - 1);
+        farm.unlockedStages |= (1 << bit);
+      }
     }
   }
 
   JsonDocument doc;
-  // Customization
-  doc["petName"]        = state.petName;
-  doc["petType"]        = state.petType;
-  // Core fields
-  doc["initialized"]    = state.initialized;
-  doc["stage"]          = static_cast<uint8_t>(state.stage);
-  doc["hunger"]         = state.hunger;
-  doc["happiness"]      = state.happiness;
-  doc["health"]         = state.health;
-  doc["birthTime"]      = state.birthTime;
-  doc["lastTickTime"]   = state.lastTickTime;
-  doc["totalPagesRead"] = state.totalPagesRead;
-  doc["currentStreak"]  = state.currentStreak;
-  doc["daysAtStage"]    = state.daysAtStage;
-  doc["lastReadDay"]    = state.lastReadDay;
-  doc["pageAccumulator"] = state.pageAccumulator;
-  doc["missionDay"]     = state.missionDay;
-  doc["missionPagesRead"] = state.missionPagesRead;
-  doc["missionPetCount"]  = state.missionPetCount;
-  doc["missionWaterCount"] = state.missionWaterCount;
-  doc["maxSessionPagesToday"]   = state.maxSessionPagesToday;
-  doc["pagesReadAfter9PM"]      = state.pagesReadAfter9PM;
-  doc["questReadClaimed"] = state.questReadClaimed;
-  doc["questPetClaimed"] = state.questPetClaimed;
-  doc["questWaterClaimed"] = state.questWaterClaimed;
-  doc["questSpeedyClaimed"] = state.questSpeedyClaimed;
-  doc["questNightOwlClaimed"] = state.questNightOwlClaimed;
-  doc["questStreakSaverClaimed"] = state.questStreakSaverClaimed;
 
-  // New fields
-  doc["weight"]           = state.weight;
-  doc["isSick"]           = state.isSick;
-  doc["sicknessTimer"]    = state.sicknessTimer;
-  doc["waterStock"]       = state.waterStock;
-  doc["fertilizerStock"]  = state.fertilizerStock;
-  doc["wasteCount"]       = state.wasteCount;
-  doc["mealsSinceClean"]  = state.mealsSinceClean;
-  doc["discipline"]       = state.discipline;
-  doc["attentionCall"]    = state.attentionCall;
-  doc["isFakeCall"]       = state.isFakeCall;
-  doc["currentNeed"]      = static_cast<uint8_t>(state.currentNeed);
-  doc["lastCallTime"]     = state.lastCallTime;
-  doc["isSleeping"]       = state.isSleeping;
-  doc["lightsOff"]        = state.lightsOff;
-  doc["totalAge"]         = state.totalAge;
-  doc["careMistakes"]     = state.careMistakes;
-  doc["avgCareScore"]     = state.avgCareScore;
-  doc["evolutionVariant"] = state.evolutionVariant;
-  doc["booksFinished"]    = state.booksFinished;
-  doc["streakTier"]       = state.streakTier;
+  doc["missionDay"]     = farm.missionDay;
+  doc["missionPagesRead"] = farm.missionPagesRead;
+  doc["missionPetCount"]  = farm.missionPetCount;
+  doc["missionWaterCount"] = farm.missionWaterCount;
+  doc["maxSessionPagesToday"]   = farm.maxSessionPagesToday;
+  doc["pagesReadAfter9PM"]      = farm.pagesReadAfter9PM;
+  doc["questReadClaimed"] = farm.questReadClaimed;
+  doc["questPetClaimed"] = farm.questPetClaimed;
+  doc["questWaterClaimed"] = farm.questWaterClaimed;
+  doc["questSpeedyClaimed"] = farm.questSpeedyClaimed;
+  doc["questNightOwlClaimed"] = farm.questNightOwlClaimed;
+  doc["questStreakSaverClaimed"] = farm.questStreakSaverClaimed;
 
-  doc["inkPoints"]        = state.inkPoints;
-  doc["hasMossPole"]               = state.hasMossPole;
-  doc["equipMossPole"]             = state.equipMossPole;
-  doc["hasSelfWateringPot"]        = state.hasSelfWateringPot;
-  doc["equipSelfWateringPot"]      = state.equipSelfWateringPot;
-  doc["hasSlowReleaseFertilizer"]  = state.hasSlowReleaseFertilizer;
-  doc["equipSlowReleaseFertilizer"]= state.equipSlowReleaseFertilizer;
-  doc["hasGreenhouseCover"]        = state.hasGreenhouseCover;
-  doc["equipGreenhouseCover"]      = state.equipGreenhouseCover;
-  doc["hasPremiumSprayer"]         = state.hasPremiumSprayer;
-  doc["longestReadingStreak"] = state.longestReadingStreak;
-  doc["lastKnownSessions"] = state.lastKnownSessions;
-  doc["unlockedStages"]    = state.unlockedStages;
-  doc["weatherCondition"] = state.weatherCondition;
-  doc["weatherTemp"]      = state.weatherTemp;
-  doc["lastWeatherSync"]  = state.lastWeatherSync;
+  doc["currentStreak"]  = farm.currentStreak;
+  doc["lastReadDay"]    = farm.lastReadDay;
+  doc["waterStock"]       = farm.waterStock;
+  doc["fertilizerStock"]  = farm.fertilizerStock;
+  doc["booksFinished"]    = farm.booksFinished;
+  doc["streakTier"]       = farm.streakTier;
 
-  // Lazy-eval fields
-  doc["lastKnownReadSeconds"] = state.lastKnownReadSeconds;
-  doc["lastKnownPagesTurned"] = state.lastKnownPagesTurned;
-  doc["lastUpdateTimestamp"]  = state.lastUpdateTimestamp;
+  doc["inkPoints"]        = farm.inkPoints;
+  doc["hasMossPole"]               = farm.hasMossPole;
+  doc["equipMossPole"]             = farm.equipMossPole;
+  doc["hasSelfWateringPot"]        = farm.hasSelfWateringPot;
+  doc["equipSelfWateringPot"]      = farm.equipSelfWateringPot;
+  doc["hasSlowReleaseFertilizer"]  = farm.hasSlowReleaseFertilizer;
+  doc["equipSlowReleaseFertilizer"]= farm.equipSlowReleaseFertilizer;
+  doc["hasGreenhouseCover"]        = farm.hasGreenhouseCover;
+  doc["equipGreenhouseCover"]      = farm.equipGreenhouseCover;
+  doc["hasPremiumSprayer"]         = farm.hasPremiumSprayer;
+  doc["longestReadingStreak"] = farm.longestReadingStreak;
+  doc["lastKnownSessions"] = farm.lastKnownSessions;
+  doc["unlockedStages"]    = farm.unlockedStages;
+  doc["weatherCondition"] = farm.weatherCondition;
+  doc["weatherTemp"]      = farm.weatherTemp;
+  doc["lastWeatherSync"]  = farm.lastWeatherSync;
+
+  doc["lastKnownReadSeconds"] = farm.lastKnownReadSeconds;
+  doc["lastKnownPagesTurned"] = farm.lastKnownPagesTurned;
+  doc["lastUpdateTimestamp"]  = farm.lastUpdateTimestamp;
+
+  doc["ownedPlotCount"]  = farm.ownedPlotCount;
+  doc["activePlotIndex"] = farm.activePlotIndex;
+
+  JsonArray plotsArr = doc["plots"].to<JsonArray>();
+  for (int i = 0; i < farm.ownedPlotCount; i++) {
+    JsonObject plotObj = plotsArr.add<JsonObject>();
+    savePlotFields(plots[i], plotObj);
+  }
 
   // Persist current timestamp for clock restoration after power cycle
   doc["savedTime"] = (uint32_t)time(nullptr);

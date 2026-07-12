@@ -401,7 +401,7 @@ void BaseTheme::drawHeader(const GfxRenderer& renderer, Rect rect, const char* t
                                 petState.evolutionVariant, petState.petType);
 
     char shortStatus[32];
-    snprintf(shortStatus, sizeof(shortStatus), "%lu DD", (unsigned long)petState.inkPoints);
+    snprintf(shortStatus, sizeof(shortStatus), "%lu DD", (unsigned long)PET_MANAGER.getFarmState().inkPoints);
     renderer.drawText(SMALL_FONT_ID, petX + 28, petY + (BaseMetrics::values.batteryHeight - renderer.getLineHeight(SMALL_FONT_ID)) / 2,
                       shortStatus, true);
   }
@@ -884,9 +884,8 @@ void BaseTheme::drawStatusBar(GfxRenderer& renderer, const float bookProgress, c
   // Draw IP counter
   PET_MANAGER.load();
   if (PET_MANAGER.exists() && PET_MANAGER.isAlive()) {
-    const auto& state = PET_MANAGER.getState();
     char ipBuf[32];
-    snprintf(ipBuf, sizeof(ipBuf), "%lu DD", (unsigned long)state.inkPoints);
+    snprintf(ipBuf, sizeof(ipBuf), "%lu DD", (unsigned long)PET_MANAGER.getFarmState().inkPoints);
     const bool hasLeftItem = leftClusterWidth > 0;
     const int ipX = leftClusterX + leftClusterWidth + (hasLeftItem ? statusItemGap : 0);
     renderer.drawText(SMALL_FONT_ID, ipX, textY, ipBuf, foregroundBlack);

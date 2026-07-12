@@ -57,13 +57,14 @@ bool PetActionMenu::isActionAvailable(PetAction action, const PetState& state) c
 
 // ---- Action labels ------------------------------------------------------
 
-void PetActionMenu::actionLabel(PetAction action, const PetState& state, char* outBuf, size_t bufSize) {
+void PetActionMenu::actionLabel(PetAction action, const PetState& state, const PetFarmState& farm,
+                                char* outBuf, size_t bufSize) {
   switch (action) {
     case PetAction::FEED_MEAL:
-      snprintf(outBuf, bufSize, "%s (%u/3)", tr(STR_PET_ACTION_FEED_MEAL), state.waterStock);
+      snprintf(outBuf, bufSize, "%s (%u/3)", tr(STR_PET_ACTION_FEED_MEAL), farm.waterStock);
       break;
     case PetAction::SCOLD:
-      snprintf(outBuf, bufSize, "%s (%u/3)", tr(STR_PET_ACTION_SCOLD), state.fertilizerStock);
+      snprintf(outBuf, bufSize, "%s (%u/3)", tr(STR_PET_ACTION_SCOLD), farm.fertilizerStock);
       break;
     case PetAction::FEED_SNACK:      snprintf(outBuf, bufSize, "%s", tr(STR_PET_ACTION_FEED_SNACK)); break;
     case PetAction::MEDICINE:        snprintf(outBuf, bufSize, "%s", tr(STR_PET_ACTION_MEDICINE)); break;
@@ -87,7 +88,7 @@ void PetActionMenu::actionLabel(PetAction action, const PetState& state, char* o
 
 // ---- Rendering ----------------------------------------------------------
 
-void PetActionMenu::render(GfxRenderer& renderer, const PetState& state,
+void PetActionMenu::render(GfxRenderer& renderer, const PetState& state, const PetFarmState& farm,
                            int x, int y, int w, int h) const {
   const int lh = renderer.getLineHeight(SMALL_FONT_ID);
   const int rowH = lh + 6;
@@ -113,7 +114,7 @@ void PetActionMenu::render(GfxRenderer& renderer, const PetState& state,
     const bool selected = (i == selectedIndex);
     
     char label[64];
-    actionLabel(action, state, label, sizeof(label));
+    actionLabel(action, state, farm, label, sizeof(label));
 
     if (i == static_cast<int>(PetAction::DAILY_QUESTS)) {
       renderer.drawLine(x + 4, rowY - 6, x + w - 4, rowY - 6, true);

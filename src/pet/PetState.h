@@ -43,7 +43,10 @@ namespace PetTypeNames {
   inline const char* get(uint8_t t) { return (t < COUNT) ? NAMES[t] : NAMES[0]; }
 }
 
-// Persistent pet state — serialized to JSON on SD card
+// Persistent state for a single growing plot — serialized to JSON on SD card.
+// Everything here grows/decays independently per plot; account-wide resources
+// (currency, shop boosts, water/fertilizer stock, quests, reading streak,
+// herbarium, weather) live in PetFarmState below instead.
 struct PetState {
   bool initialized = false;  // true after hatchNew(); prevents false-positive exists() with no clock
   PetStage stage = PetStage::EGG;
@@ -58,29 +61,8 @@ struct PetState {
   uint32_t birthTime = 0;    // unix timestamp of egg creation
   uint32_t lastTickTime = 0; // unix timestamp of last stat update
   uint32_t totalPagesRead = 0;
-  uint16_t currentStreak = 0;   // consecutive days with reading
   uint8_t daysAtStage = 0;      // days in current evolution stage
-  uint16_t lastReadDay = 0;     // day-of-year of last reading (for streak)
   uint16_t pageAccumulator = 0; // pages since last feed (batched every 20)
-
-  // Daily mission progress — reset each new day
-  uint16_t missionDay = 0;       // day-of-year when missions last reset
-  uint8_t  missionPagesRead = 0; // pages read today
-  uint8_t  missionPetCount = 0;  // times tended today
-  uint8_t  missionWaterCount = 0;
-  uint8_t  maxSessionPagesToday = 0;
-  uint8_t  pagesReadAfter9PM = 0;
-
-  bool     questReadClaimed = false;
-  bool     questPetClaimed = false;
-  bool     questWaterClaimed = false;
-  bool     questSpeedyClaimed = false;
-  bool     questNightOwlClaimed = false;
-  bool     questStreakSaverClaimed = false;
-
-  // Stock system
-  uint8_t  waterStock = 3;
-  uint8_t  fertilizerStock = 3;
 
   // Weight system (0-100, normal=50, overweight>80, underweight<20)
   uint8_t weight = 50;
@@ -112,6 +94,40 @@ struct PetState {
   uint8_t avgCareScore = 50;    // rolling average care quality (0-100)
   uint8_t evolutionVariant = 0; // 0=good, 1=chubby, 2=misbehaved
 
+  bool isAlive() const { return stage != PetStage::DEAD; }
+  bool exists() const { return initialized; }
+};
+
+// Account-wide state shared across every growing plot — one Dew wallet, one
+// water jug, one reading streak, one herbarium — serialized alongside the
+// plots[] array in the same state.json.
+struct PetFarmState {
+  // Plot ownership
+  uint8_t ownedPlotCount = 1;  // 1-PetConfig::MAX_PLOTS, how many plots are unlocked
+  uint8_t activePlotIndex = 0; // 0-based index of the currently viewed/tended plot
+
+  uint16_t currentStreak = 0;   // consecutive days with reading
+  uint16_t lastReadDay = 0;     // day-of-year of last reading (for streak)
+
+  // Daily mission progress — reset each new day
+  uint16_t missionDay = 0;       // day-of-year when missions last reset
+  uint8_t  missionPagesRead = 0; // pages read today
+  uint8_t  missionPetCount = 0;  // times tended today
+  uint8_t  missionWaterCount = 0;
+  uint8_t  maxSessionPagesToday = 0;
+  uint8_t  pagesReadAfter9PM = 0;
+
+  bool     questReadClaimed = false;
+  bool     questPetClaimed = false;
+  bool     questWaterClaimed = false;
+  bool     questSpeedyClaimed = false;
+  bool     questNightOwlClaimed = false;
+  bool     questStreakSaverClaimed = false;
+
+  // Stock system — one shared jug/bag for whichever plot is being tended
+  uint8_t  waterStock = 3;
+  uint8_t  fertilizerStock = 3;
+
   uint8_t booksFinished = 0;    // total books completed (lifetime)
   uint8_t streakTier = 0;       // 0-3, derived from currentStreak
 
@@ -134,23 +150,21 @@ struct PetState {
   // Herbarium discovery log (bitmask of unlocked species stages: 3 species * 4 stages = 12 bits)
   uint16_t unlockedStages = 0;
 
-  // Lazy-eval fields: track what GlobalReadingStats values the pet last consumed
+  // Lazy-eval fields: track what GlobalReadingStats values the farm last consumed
   uint32_t lastKnownReadSeconds = 0;   // GlobalReadingStats.totalReadingSeconds at last sync
   uint32_t lastKnownPagesTurned = 0;   // GlobalReadingStats.totalPagesTurned at last sync
-  uint32_t lastUpdateTimestamp = 0;    // epoch when pet state was last calculated
+  uint32_t lastUpdateTimestamp = 0;    // epoch when farm state was last calculated
 
   // Weather Sync
   uint8_t weatherCondition = 0; // 0=Unknown/Offline, 1=Sunny, 2=Rainy, 3=Cloudy, 4=Snowy
   int8_t  weatherTemp = 0;
   uint32_t lastWeatherSync = 0;
-
-  bool isAlive() const { return stage != PetStage::DEAD; }
-  bool exists() const { return initialized; }
 };
 
 // Game balance constants
 namespace PetConfig {
   constexpr uint8_t MAX_STAT = 100;
+  constexpr uint8_t MAX_PLOTS = 3;  // growing plots unlockable via the Dew Shop
   constexpr uint16_t PAGES_PER_MEAL = 20;
   constexpr uint8_t HUNGER_PER_MEAL = 25;
   constexpr uint8_t HAPPINESS_PER_PET = 10;

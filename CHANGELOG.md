@@ -2,6 +2,8 @@
 
 ### Added
 
+- Multiple Growing Plots: Grow up to 3 plants at once, one of each species. Plot 2 (800 DD) and Plot 3 (1200 DD) unlock in the Dew Shop as high-value purchases. The front bezel buttons (previously "Previous"/"Next") switch the active growing plot, while the side volume-rocker buttons now drive the plant action menu. The active plot ("Plot X/Y") is shown under the plant sprite once more than one plot is owned. Currency, water/fertilizer stock, shop upgrades, reading streak, and quests remain shared across all plots, while each plot grows and evolves independently based on its own care and reading history.
+- Boot Screen Trio: The boot screen now shows three mature plant portraits side by side (Monstera, Begonia, Alocasia) instead of a single plant logo.
 - Water & Fertilizer Stock System: Introduced a stock mechanic for plant care where watering consumes charges from a Water Jug (capacity 3) and fertilizing consumes Fertilizer (capacity 3). Stock levels are dynamically displayed next to actions in the right-hand action list.
 - Supplies Actions Section: Added a dedicated third section in the right-hand action menu containing Refill Water (Free), Buy Fertilizer (30 DD), and the Dew Shop.
 - Plant Shop Passive Boosts: Replaced cosmetic shop accessories with functional plant tools: Premium Fertilizer (100 DD, refills all vitals and HP), Moss Pole (250 DD, halves Sunlight decay rate), Self-Watering Pot (400 DD, halves Moisture decay rate), Slow-Release Fertilizer (500 DD, automatically regenerates +1 Nutrient/discipline every 2 hours), Greenhouse Cover (650 DD, halves Health decay rate), and Premium Sprayer (300 DD, adds +10 Sunlight/Happiness bonus on misting).

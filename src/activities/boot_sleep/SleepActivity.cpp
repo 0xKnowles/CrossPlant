@@ -344,7 +344,7 @@ void drawLastBookCover(const GfxRenderer& renderer, const RecentBook& book, cons
 // Fills leftover space below the plant-sleep-screen footer with aggregate reading stats plus a
 // small cover of the last book read on the left.
 void drawSleepReadingStatsCard(const GfxRenderer& renderer, const Rect& card, const RecentBook* lastBook,
-                               const GlobalReadingStats& stats, const PetState& state) {
+                               const GlobalReadingStats& stats, const PetFarmState& farm) {
   renderer.drawRoundedRect(card.x, card.y, card.width, card.height, 1, 8, true);
   const int dividerY = card.y + 24;
   renderer.drawLine(card.x, dividerY, card.x + card.width - 1, dividerY, true);
@@ -379,7 +379,7 @@ void drawSleepReadingStatsCard(const GfxRenderer& renderer, const Rect& card, co
   snprintf(l0, sizeof(l0), "Time Read: %s", timeBuf);
   snprintf(l1, sizeof(l1), "Books Read: %lu", static_cast<unsigned long>(stats.completedBooks));
   snprintf(l2, sizeof(l2), "Pages Read: %lu", static_cast<unsigned long>(stats.totalPagesTurned));
-  snprintf(l3, sizeof(l3), "Streak: %u days", static_cast<unsigned>(state.currentStreak));
+  snprintf(l3, sizeof(l3), "Streak: %u days", static_cast<unsigned>(farm.currentStreak));
 
   if (twoCols) {
     renderer.drawText(SMALL_FONT_ID, textX, firstRowY, l0);
@@ -698,6 +698,7 @@ void SleepActivity::renderPetSleepScreen() const {
   }
 
   const auto& state = PET_MANAGER.getState();
+  const auto& farm = PET_MANAGER.getFarmState();
 
   // 1. Draw Title Header
   renderer.drawCenteredText(UI_10_FONT_ID, 24, "CROSSPLANT DORMANT", true, EpdFontFamily::BOLD);
@@ -807,11 +808,11 @@ void SleepActivity::renderPetSleepScreen() const {
 
   // 6. Draw Bottom Footer
   std::string boostsStr = "";
-  if (state.hasMossPole && state.equipMossPole) boostsStr += "Moss Pole, ";
-  if (state.hasSelfWateringPot && state.equipSelfWateringPot) boostsStr += "Watering Pot, ";
-  if (state.hasSlowReleaseFertilizer && state.equipSlowReleaseFertilizer) boostsStr += "Slow-Fert, ";
-  if (state.hasGreenhouseCover && state.equipGreenhouseCover) boostsStr += "Greenhouse, ";
-  if (state.hasPremiumSprayer) boostsStr += "Sprayer, ";
+  if (farm.hasMossPole && farm.equipMossPole) boostsStr += "Moss Pole, ";
+  if (farm.hasSelfWateringPot && farm.equipSelfWateringPot) boostsStr += "Watering Pot, ";
+  if (farm.hasSlowReleaseFertilizer && farm.equipSlowReleaseFertilizer) boostsStr += "Slow-Fert, ";
+  if (farm.hasGreenhouseCover && farm.equipGreenhouseCover) boostsStr += "Greenhouse, ";
+  if (farm.hasPremiumSprayer) boostsStr += "Sprayer, ";
   if (!boostsStr.empty()) {
     boostsStr = boostsStr.substr(0, boostsStr.length() - 2);
   } else {
@@ -820,16 +821,16 @@ void SleepActivity::renderPetSleepScreen() const {
 
   const char* wLabel = "Offline";
   const char* wBonus = "None";
-  if (state.weatherCondition == 1) { wLabel = "Sunny"; wBonus = "Light (+1 Sun/h)"; }
-  else if (state.weatherCondition == 2) { wLabel = "Rainy"; wBonus = "Humidity (+1 Moist/h)"; }
-  else if (state.weatherCondition == 3) { wLabel = "Cloudy"; wBonus = "Nutrient (+1 Nut/h)"; }
-  else if (state.weatherCondition == 4) { wLabel = "Snowy"; wBonus = "Greenhouse (+1 HP/h)"; }
-  
+  if (farm.weatherCondition == 1) { wLabel = "Sunny"; wBonus = "Light (+1 Sun/h)"; }
+  else if (farm.weatherCondition == 2) { wLabel = "Rainy"; wBonus = "Humidity (+1 Moist/h)"; }
+  else if (farm.weatherCondition == 3) { wLabel = "Cloudy"; wBonus = "Nutrient (+1 Nut/h)"; }
+  else if (farm.weatherCondition == 4) { wLabel = "Snowy"; wBonus = "Greenhouse (+1 HP/h)"; }
+
   char weatherLine[128];
   snprintf(weatherLine, sizeof(weatherLine), "Weather: %s (%s)", wLabel, wBonus);
 
   char balanceLine[64];
-  snprintf(balanceLine, sizeof(balanceLine), "Balance: %lu $Dew", (unsigned long)state.inkPoints);
+  snprintf(balanceLine, sizeof(balanceLine), "Balance: %lu $Dew", (unsigned long)farm.inkPoints);
 
   const int footerY = coverRect.y + coverRect.height + 25;
   const int lineH = renderer.getLineHeight(SMALL_FONT_ID);
@@ -860,7 +861,7 @@ void SleepActivity::renderPetSleepScreen() const {
     const auto& books = RECENT_BOOKS.getBooks();
     const RecentBook* lastBook = books.empty() ? nullptr : &books.front();
     const Rect statsCard{coverRect.x, statsCardTop, rightX - coverRect.x, statsCardHeight};
-    drawSleepReadingStatsCard(renderer, statsCard, lastBook, globalStats, state);
+    drawSleepReadingStatsCard(renderer, statsCard, lastBook, globalStats, farm);
   }
 
   renderer.displayBuffer(HalDisplay::FULL_REFRESH, TURN_OFF_SCREEN_AFTER_SLEEP_REFRESH);

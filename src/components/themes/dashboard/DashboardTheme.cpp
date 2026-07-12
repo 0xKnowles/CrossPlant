@@ -487,6 +487,7 @@ void drawFooterStats(const GfxRenderer& renderer, const Rect& coverRect, const G
   PET_MANAGER.load();
   if (PET_MANAGER.exists() && PET_MANAGER.isAlive()) {
     const auto& state = PET_MANAGER.getState();
+    const auto& farm = PET_MANAGER.getFarmState();
     const PetMood mood = PET_MANAGER.getMood();
     // Slightly smaller than the other footer icons (kFooterIconSize) so it no longer crowds the
     // pet name/stage text drawn right next to it.
@@ -525,14 +526,14 @@ void drawFooterStats(const GfxRenderer& renderer, const Rect& coverRect, const G
 
     snprintf(statsLine2, sizeof(statsLine2), "%s: %u%%  Ht: %u cm  %lu DD",
              tr(STR_PET_HEALTH), state.health,
-             state.weight, (unsigned long)state.inkPoints);
+             state.weight, (unsigned long)farm.inkPoints);
 
-    bool pagesDone = (state.missionPagesRead >= 20);
-    bool petDone = (state.missionPetCount >= 3);
+    bool pagesDone = (farm.missionPagesRead >= 20);
+    bool petDone = (farm.missionPetCount >= 3);
     if (pagesDone && petDone) {
       snprintf(statsLine3, sizeof(statsLine3), "Quest: Completed! ");
     } else {
-      snprintf(statsLine3, sizeof(statsLine3), "Quest: %u/20 pgs  %u/3 tends", state.missionPagesRead, state.missionPetCount);
+      snprintf(statsLine3, sizeof(statsLine3), "Quest: %u/20 pgs  %u/3 tends", farm.missionPagesRead, farm.missionPetCount);
     }
 
     const int rightX = renderer.getScreenWidth() - inset - (gpio.deviceIsX3() ? kPairInwardShiftX3 : 0);
