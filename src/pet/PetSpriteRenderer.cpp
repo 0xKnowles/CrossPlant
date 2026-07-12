@@ -7,8 +7,25 @@
 #include "PetState.h"
 #include <Bitmap.h>
 #include "PetManager.h"
+#include "images/Seed144.h"
+#include "images/BakedPlantSprites.h"
 
 namespace {
+static void drawScaledImage(GfxRenderer& renderer, const uint8_t* img, int x, int y, int width, int height, int scale) {
+  if (scale <= 1) {
+    renderer.drawImage(img, x, y, width, height);
+    return;
+  }
+  for (int r = 0; r < height; r++) {
+    for (int c = 0; c < width; c++) {
+      int idx = (r * width + c) / 8;
+      int bit = (img[idx] >> (7 - (c % 8))) & 1;
+      if (bit == 0) {
+        renderer.fillRect(x + c * scale, y + r * scale, scale, scale);
+      }
+    }
+  }
+}
 static const char* getSpeciesPrefix(uint8_t petType) {
   switch (petType) {
     case 0:  return "mon";
@@ -252,6 +269,19 @@ void PetSpriteRenderer::drawPet(GfxRenderer& renderer, int x, int y, PetStage st
     if (loadSprite(path, SPRITE_BYTES) == SPRITE_BYTES && scale == 1) {
       renderer.drawImage(spriteBuffer, x, y, SPRITE_W, SPRITE_H);
       drawn = true;
+    }
+  }
+  if (!drawn) {
+    if (stage == PetStage::EGG) {
+      drawScaledImage(renderer, Seed, x, y, 144, 144, scale);
+      drawn = true;
+    } else {
+      int stageNum = getStageNum(stage);
+      const uint8_t* baked = getBakedPlantSprite(petType, stageNum);
+      if (baked != nullptr) {
+        drawScaledImage(renderer, baked, x, y, 144, 144, scale);
+        drawn = true;
+      }
     }
   }
   if (!drawn) {
