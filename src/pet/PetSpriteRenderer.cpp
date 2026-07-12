@@ -22,13 +22,25 @@ static const char* getSpeciesPrefix(uint8_t petType) {
 
 static int getStageNum(PetStage stage) {
   switch (stage) {
-    case PetStage::EGG:       return 0;
-    case PetStage::HATCHLING: return 1;
-    case PetStage::YOUNGSTER: return 2;
-    case PetStage::COMPANION: return 3;
+    case PetStage::EGG:       return 1;
+    case PetStage::HATCHLING: return 2;
+    case PetStage::YOUNGSTER: return 3;
+    case PetStage::COMPANION: return 4;
     case PetStage::ELDER:     return 4;
     case PetStage::DEAD:      return 5;
-    default:                  return 0;
+    default:                  return 1;
+  }
+}
+
+static void drawBakedImage(GfxRenderer& renderer, const uint8_t* img, int x, int y, int width, int height) {
+  for (int r = 0; r < height; r++) {
+    for (int c = 0; c < width; c++) {
+      int idx = (r * width + c) / 8;
+      int bit = (img[idx] >> (7 - (c % 8))) & 1;
+      if (bit == 0) {
+        renderer.drawPixel(x + c, y + r);
+      }
+    }
   }
 }
 
@@ -260,15 +272,23 @@ void PetSpriteRenderer::drawPet(GfxRenderer& renderer, int x, int y, PetStage st
     if (stage == PetStage::EGG) {
       int dx = (size - 144) / 2;
       int dy = (size - 144) / 2;
-      renderer.drawImage(Seed, x + dx, y + dy, 144, 144);
-      drawn = true;
+      if (petType == 0) {
+        drawBakedImage(renderer, Seed, x + dx, y + dy, 144, 144);
+        drawn = true;
+      } else {
+        const uint8_t* baked = getBakedPlantSprite(petType, 1);
+        if (baked != nullptr) {
+          drawBakedImage(renderer, baked, x + dx, y + dy, 144, 144);
+          drawn = true;
+        }
+      }
     } else {
       int stageNum = getStageNum(stage);
       const uint8_t* baked = getBakedPlantSprite(petType, stageNum);
       if (baked != nullptr) {
         int dx = (size - 144) / 2;
         int dy = (size - 144) / 2;
-        renderer.drawImage(baked, x + dx, y + dy, 144, 144);
+        drawBakedImage(renderer, baked, x + dx, y + dy, 144, 144);
         drawn = true;
       }
     }
@@ -376,11 +396,19 @@ void PetSpriteRenderer::drawMini(GfxRenderer& renderer, int x, int y, PetStage s
   if (loadSprite(path, MINI_BYTES) == MINI_BYTES) {
     renderer.drawImage(spriteBuffer, x, y, MINI_W, MINI_H);
   } else {
-    if (stage != PetStage::DEAD) {
+    if (stage == PetStage::EGG) {
+      if (petType > 0) {
+        const uint8_t* bakedMini = getBakedPlantMiniSprite(petType, 1);
+        if (bakedMini != nullptr) {
+          drawBakedImage(renderer, bakedMini, x, y, MINI_W, MINI_H);
+          return;
+        }
+      }
+    } else if (stage != PetStage::DEAD) {
       int stageNum = getStageNum(stage);
       const uint8_t* bakedMini = getBakedPlantMiniSprite(petType, stageNum);
       if (bakedMini != nullptr) {
-        renderer.drawImage(bakedMini, x, y, MINI_W, MINI_H);
+        drawBakedImage(renderer, bakedMini, x, y, MINI_W, MINI_H);
         return;
       }
     }

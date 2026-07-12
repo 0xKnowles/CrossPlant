@@ -20,7 +20,7 @@ void BootActivity::onEnter() {
   const int spriteX = (pageWidth - petSize) / 2;
   const int spriteY = (pageHeight - petSize) / 2 - 40;
 
-  PetSpriteRenderer::drawPet(renderer, spriteX, spriteY, PetStage::COMPANION, PetMood::HAPPY, PET_SCALE,
+  PetSpriteRenderer::drawPet(renderer, spriteX, spriteY, PetStage::YOUNGSTER, PetMood::HAPPY, PET_SCALE,
                              0, 2, 0, false, false);
 
   renderer.drawCenteredText(UI_12_FONT_ID, spriteY + petSize + 24, "CrossPlant", true, EpdFontFamily::BOLD);
