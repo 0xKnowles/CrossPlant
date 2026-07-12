@@ -128,7 +128,7 @@ void VirtualPetActivity::renderAlive() const {
     renderer.drawText(SMALL_FONT_ID, col1X + (col1W - weightAgeW) / 2, statusY + 42 + rowSpacing * 4 + 4, weightAge);
 
     char ipLine[64];
-    snprintf(ipLine, sizeof(ipLine), "Points: %lu DD", (unsigned long)state.inkPoints);
+    snprintf(ipLine, sizeof(ipLine), "Points: %lu $Dew", (unsigned long)state.inkPoints);
     int ipLineW = renderer.getTextWidth(UI_10_FONT_ID, ipLine, EpdFontFamily::BOLD);
     renderer.drawText(UI_10_FONT_ID, col1X + (col1W - ipLineW) / 2, statusY + 42 + rowSpacing * 5 + 10, ipLine, true, EpdFontFamily::BOLD);
 
@@ -174,7 +174,7 @@ void VirtualPetActivity::renderAlive() const {
     }
 
     char statsLine[120];
-    snprintf(statsLine, sizeof(statsLine), "Ht: %u cm  |  Age: %lu days  |  %lu DD", 
+    snprintf(statsLine, sizeof(statsLine), "Ht: %u cm  |  Age: %lu days  |  %lu $Dew", 
              state.weight, (unsigned long)PET_MANAGER.getDaysAlive(), (unsigned long)state.inkPoints);
     int statsLineW = renderer.getTextWidth(SMALL_FONT_ID, statsLine);
     renderer.drawText(SMALL_FONT_ID, col1X + (col1W - statsLineW) / 2, statusY + 98, statsLine);
@@ -330,7 +330,7 @@ void VirtualPetActivity::renderShop() const {
 
   // Draw Shop Title and Balance
   char balanceLine[64];
-  snprintf(balanceLine, sizeof(balanceLine), "Balance: %lu DD", (unsigned long)state.inkPoints);
+  snprintf(balanceLine, sizeof(balanceLine), "Balance: %lu $Dew", (unsigned long)state.inkPoints);
   renderer.drawCenteredText(UI_10_FONT_ID, contentTop, "TROPICAL DEW SHOP", true, EpdFontFamily::BOLD);
   renderer.drawCenteredText(UI_10_FONT_ID, contentTop + 24, balanceLine, true, EpdFontFamily::BOLD);
 
@@ -369,7 +369,7 @@ void VirtualPetActivity::renderShop() const {
         snprintf(itemText, sizeof(itemText), "%s - Owned (%s)", item.name, item.equipped ? "Equipped" : "Unequipped");
       }
     } else {
-      snprintf(itemText, sizeof(itemText), "%s - %lu DD", item.name, (unsigned long)item.cost);
+      snprintf(itemText, sizeof(itemText), "%s - %lu $Dew", item.name, (unsigned long)item.cost);
     }
 
     if (selected) {
@@ -411,26 +411,26 @@ void VirtualPetActivity::renderQuests() const {
   const int listW = pageWidth - listX * 2;
 
   for (int i = 0; i < 6; i++) {
-    const int rowY = listTop + i * 42;
+    const int rowY = listTop + i * 36;
     const auto& mission = missions[i];
 
-    // Quest Title (using UI_10_FONT_ID for crisp readability)
-    renderer.drawText(UI_10_FONT_ID, listX, rowY, mission.label, true, EpdFontFamily::BOLD);
+    // Quest Title (using SMALL_FONT_ID for compactness to prevent wrapping)
+    renderer.drawText(SMALL_FONT_ID, listX, rowY, mission.label, true, EpdFontFamily::BOLD);
 
     // Progress display directly under the title
     const int barX = listX;
-    const int barY = rowY + 18;
+    const int barY = rowY + 14;
     const int barW = 150;
 
     if (mission.done) {
-      const char* compText = "COMPLETED (+DD Claimed)";
+      const char* compText = "COMPLETED (+$Dew Claimed)";
       renderer.drawText(SMALL_FONT_ID, listX, barY - 1, compText, true, EpdFontFamily::BOLD);
     } else {
-      renderer.drawRect(barX, barY, barW, 8);
+      renderer.drawRect(barX, barY, barW, 6);
       if (mission.progress > 0) {
         int val = std::min<int>(mission.progress * 100 / mission.goal, 100);
         int fillW = (barW - 2) * val / 100;
-        renderer.fillRect(barX + 1, barY + 1, fillW, 6);
+        renderer.fillRect(barX + 1, barY + 1, fillW, 4);
       }
       char progressText[32];
       snprintf(progressText, sizeof(progressText), "%u/%u", mission.progress, mission.goal);
