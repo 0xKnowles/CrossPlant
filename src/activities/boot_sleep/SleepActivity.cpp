@@ -38,6 +38,34 @@
 
 namespace {
 
+int statsBlockHeight(const GfxRenderer& renderer) {
+  const int valueLineH = renderer.getLineHeight(UI_12_FONT_ID);
+  const int labelLineH = renderer.getLineHeight(SMALL_FONT_ID);
+  return valueLineH + 1 + labelLineH;
+}
+
+int statsBlockTop(const Rect& coverRect, const int index, const int blockH, const int rowCount) {
+  const int remainingH = std::max(0, coverRect.height - blockH * rowCount);
+  const int gapCount = rowCount - 1;
+  const int gap = gapCount > 0 ? remainingH / gapCount : 0;
+  const int remainder = gapCount > 0 ? remainingH % gapCount : 0;
+  return coverRect.y + index * (blockH + gap) + std::min(index, remainder);
+}
+
+void drawRightAlignedText(const GfxRenderer& renderer, const int fontId, const int rightX, const int y,
+                          const char* text, const bool bold = false, const bool black = true) {
+  const EpdFontFamily::Style style = bold ? EpdFontFamily::BOLD : EpdFontFamily::REGULAR;
+  const int width = renderer.getTextWidth(fontId, text, style);
+  renderer.drawText(fontId, rightX - width, y, text, black, style);
+}
+
+void drawStatsRow(const GfxRenderer& renderer, const int rightX, const int y, const char* value, const char* label,
+                  const bool black = true) {
+  const int valueLineH = renderer.getLineHeight(UI_12_FONT_ID);
+  drawRightAlignedText(renderer, UI_12_FONT_ID, rightX, y, value, true, black);
+  drawRightAlignedText(renderer, SMALL_FONT_ID, rightX, y + valueLineH + 1, label, false, black);
+}
+
 constexpr bool TURN_OFF_SCREEN_AFTER_SLEEP_REFRESH = true;
 constexpr int sleepBuildInfoSideMargin = 20;
 
@@ -562,121 +590,91 @@ void SleepActivity::renderPetSleepScreen() const {
 
   const auto& state = PET_MANAGER.getState();
 
-  // Layout variables
-  int rectX, rectY, rectW, rectH;
-  int spriteX, spriteY, nameY;
-  int frameX, frameY, frameW, frameH;
+  // 1. Draw Title Header
+  renderer.drawCenteredText(UI_10_FONT_ID, 24, "CROSSPLANT DORMANT", true, EpdFontFamily::BOLD);
+  renderer.drawLine(20, 48, pageWidth - 20, 48, true);
 
-  if (isX3) {
-    // X3 Stacked: Diary on top, Pet on bottom
-    rectW = 460;
-    rectH = 320;
-    rectX = (pageWidth - rectW) / 2;
-    rectY = 40;
-
-    frameW = 240;
-    frameH = 245;
-    frameX = (pageWidth - frameW) / 2;
-    frameY = rectY + rectH + 30;
-
-    constexpr int PET_SCALE = 3;
-    const int petSize = PetSpriteRenderer::displaySize(PET_SCALE);
-    spriteX = frameX + (frameW - petSize) / 2;
-    spriteY = frameY + 20;
-    nameY = spriteY + petSize + 12;
-  } else {
-    // X4 2-Column: Left Pet, Right Diary
-    rectX = 390;
-    rectY = 40;
-    rectW = 370;
-    rectH = 380;
-
-    frameW = 240;
-    frameH = 380;
-    frameX = 60;
-    frameY = 40;
-
-    constexpr int PET_SCALE = 3;
-    const int petSize = PetSpriteRenderer::displaySize(PET_SCALE);
-    spriteX = frameX + (frameW - petSize) / 2;
-    spriteY = frameY + 60;
-    nameY = spriteY + petSize + 16;
-  }
-
-  // 1. Draw Sleeping Pet in its Cozy Frame
-  renderer.drawRoundedRect(frameX, frameY, frameW, frameH, 1, 8, true);
+  // 2. Dashboard Layout Calculations
+  const bool isWide = (pageWidth >= 560);
+  const int inset = isWide ? 75 : 20;
+  const int statsW = isWide ? 120 : 105;
+  constexpr int kCoverStatsGap = 15;
+  const int shift = isX3 ? 15 : 0;
   
-  // Draw a cozy frame title "RESTING"
-  renderer.drawLine(frameX, frameY + 30, frameX + frameW - 1, frameY + 30, true);
-  renderer.drawCenteredText(SMALL_FONT_ID, frameY + 8, "RESTING", true, EpdFontFamily::BOLD);
+  const int maxCoverW = pageWidth - inset * 2 - statsW - kCoverStatsGap;
+  const int coverW = std::min(296, maxCoverW);
+  const int maxCoverH = pageHeight - 70 - 100; // 70px top header, 100px bottom footer
+  const int coverH = std::min(maxCoverH, (coverW * 3) / 2);
+  
+  const Rect coverRect{
+    inset + shift,
+    70,
+    coverW,
+    coverH
+  };
+
+  // 3. Draw Left Card Frame
+  renderer.fillRoundedRect(coverRect.x, coverRect.y, coverRect.width, coverRect.height, 8, Color::White);
+  renderer.drawRoundedRect(coverRect.x, coverRect.y, coverRect.width, coverRect.height, 1, 8, true);
+
+  // 4. Draw Pet Sprite & Information inside Left Card
+  constexpr int PET_SCALE = 3;
+  const int petSize = PetSpriteRenderer::displaySize(PET_SCALE); // 144
+  const int spriteX = coverRect.x + (coverRect.width - petSize) / 2;
+  const int spriteY = coverRect.y + (coverRect.height - petSize) / 2 - 20;
 
   PetSpriteRenderer::drawPet(renderer, spriteX, spriteY, state.stage, PetMood::SLEEPING, 3,
                              state.evolutionVariant, state.petType);
 
-  const char* stageName = PetEvolution::variantStageName(state.stage, state.evolutionVariant);
   const char* petName = state.petName[0] ? state.petName : PetTypeNames::get(state.petType);
+  const char* stageName = PetEvolution::variantStageName(state.stage, state.evolutionVariant);
 
+  const int nameY = spriteY + petSize + 12;
   const int nameW = renderer.getTextWidth(UI_10_FONT_ID, petName, EpdFontFamily::BOLD);
-  renderer.drawText(UI_10_FONT_ID, spriteX + 72 - nameW / 2, nameY, petName, true, EpdFontFamily::BOLD);
+  renderer.drawText(UI_10_FONT_ID, coverRect.x + (coverRect.width - nameW) / 2, nameY, petName, true, EpdFontFamily::BOLD);
 
   const int stageW = renderer.getTextWidth(SMALL_FONT_ID, stageName);
-  renderer.drawText(SMALL_FONT_ID, spriteX + 72 - stageW / 2, nameY + renderer.getLineHeight(UI_10_FONT_ID) + 2, stageName);
+  renderer.drawText(SMALL_FONT_ID, coverRect.x + (coverRect.width - stageW) / 2, nameY + renderer.getLineHeight(UI_10_FONT_ID) + 2, stageName, true);
 
-  // 2. Draw Diary Page Card
-  renderer.drawRoundedRect(rectX, rectY, rectW, rectH, 1, 8, true);
-  renderer.drawLine(rectX, rectY + 40, rectX + rectW - 1, rectY + 40, true);
+  // 5. Draw Right Column Stats
+  const int rightX = pageWidth - inset - shift;
+  const int blockH = statsBlockHeight(renderer);
+  const int rowCount = 6;
+  int rowIndex = 0;
 
-  const char* diaryTitle = "PLANT DIARY";
-  const int titleW = renderer.getTextWidth(UI_10_FONT_ID, diaryTitle, EpdFontFamily::BOLD);
-  renderer.drawText(UI_10_FONT_ID, rectX + (rectW - titleW) / 2, rectY + 12, diaryTitle, true, EpdFontFamily::BOLD);
+  // Row 0: Age
+  int rowY = statsBlockTop(coverRect, rowIndex, blockH, rowCount);
+  char ageVal[32];
+  snprintf(ageVal, sizeof(ageVal), "Day %lu", (unsigned long)(PET_MANAGER.getDaysAlive() + 1));
+  drawStatsRow(renderer, rightX, rowY, ageVal, "PLANT AGE", true);
 
-  // Red/solid notebook margin line
-  renderer.drawLine(rectX + 24, rectY + 40, rectX + 24, rectY + rectH - 1, true);
+  // Row 1: Moisture
+  rowY = statsBlockTop(coverRect, ++rowIndex, blockH, rowCount);
+  char moistureVal[32];
+  snprintf(moistureVal, sizeof(moistureVal), "%u%%", state.hunger);
+  drawStatsRow(renderer, rightX, rowY, moistureVal, "SOIL MOISTURE", true);
 
-  char line1[64];
-  char line2[64];
-  char line3[64];
-  char line4[64];
-  char line5[64];
-  char line6[64];
+  // Row 2: Sunlight
+  rowY = statsBlockTop(coverRect, ++rowIndex, blockH, rowCount);
+  char sunlightVal[32];
+  snprintf(sunlightVal, sizeof(sunlightVal), "%u%%", state.happiness);
+  drawStatsRow(renderer, rightX, rowY, sunlightVal, "SUN EXPOSURE", true);
 
-  snprintf(line1, sizeof(line1), "Dear Diary, today is Day %lu.", (unsigned long)(PET_MANAGER.getDaysAlive() + 1));
-  snprintf(line2, sizeof(line2), "My reader read %d pages today.", state.missionPagesRead);
-  snprintf(line3, sizeof(line3), "I was tended %d times.", state.missionPetCount);
+  // Row 3: Nutrients
+  rowY = statsBlockTop(coverRect, ++rowIndex, blockH, rowCount);
+  char nutrientsVal[32];
+  snprintf(nutrientsVal, sizeof(nutrientsVal), "%u%%", state.discipline);
+  drawStatsRow(renderer, rightX, rowY, nutrientsVal, "NUTRIENTS", true);
 
-  std::string lastBookTitle = "";
-  const auto& books = RECENT_BOOKS.getBooks();
-  if (!books.empty()) {
-    lastBookTitle = books.front().title;
-  }
-  if (!lastBookTitle.empty()) {
-    if (lastBookTitle.length() > 32) {
-      lastBookTitle = lastBookTitle.substr(0, 29) + "...";
-    }
-    snprintf(line4, sizeof(line4), "Last read: %s", lastBookTitle.c_str());
-  } else {
-    snprintf(line4, sizeof(line4), "No books read recently.");
-  }
+  // Row 4: Health
+  rowY = statsBlockTop(coverRect, ++rowIndex, blockH, rowCount);
+  char healthVal[32];
+  snprintf(healthVal, sizeof(healthVal), "%u%%", state.health);
+  drawStatsRow(renderer, rightX, rowY, healthVal, "PLANT HEALTH", true);
 
-  const char* wLabel = "Offline";
-  const char* wBonus = "None";
-  if (state.weatherCondition == 1) { wLabel = "Sunny"; wBonus = "Light"; }
-  else if (state.weatherCondition == 2) { wLabel = "Rainy"; wBonus = "Humidity"; }
-  else if (state.weatherCondition == 3) { wLabel = "Cloudy"; wBonus = "Nutrient"; }
-  else if (state.weatherCondition == 4) { wLabel = "Snowy"; wBonus = "Greenhouse"; }
-
-  if (state.weatherCondition > 0) {
-    snprintf(line5, sizeof(line5), "Weather: %s (%s bonus!)", wLabel, wBonus);
-  } else {
-    if (state.isSick) {
-      snprintf(line5, sizeof(line5), "I had some pests today... Ouch.");
-    } else if (state.hunger < 30) {
-      snprintf(line5, sizeof(line5), "I was very dry! Watered.");
-    } else {
-      snprintf(line5, sizeof(line5), "I felt happy and healthy!");
-    }
-  }
-
+  // Row 5: Slept time
+  rowY = statsBlockTop(coverRect, ++rowIndex, blockH, rowCount);
+  char sleepVal[48] = "Slept soundly";
   uint16_t year;
   uint8_t month, day, hour, minute;
   if (halClock.isAvailable() && halClock.getDateTime(year, month, day, hour, minute)) {
@@ -684,32 +682,50 @@ void SleepActivity::renderPetSleepScreen() const {
     const char* ampm = (h >= 12) ? "PM" : "AM";
     if (h > 12) h -= 12;
     if (h == 0) h = 12;
-    snprintf(line6, sizeof(line6), "Slept at %d:%02d %s.", h, (int)minute, ampm);
+    snprintf(sleepVal, sizeof(sleepVal), "%d:%02d %s", h, (int)minute, ampm);
+  }
+  drawStatsRow(renderer, rightX, rowY, sleepVal, "REST TIME", true);
+
+  // 6. Draw Bottom Footer
+  std::string boostsStr = "";
+  if (state.hasMossPole && state.equipMossPole) boostsStr += "Moss Pole, ";
+  if (state.hasSelfWateringPot && state.equipSelfWateringPot) boostsStr += "Watering Pot, ";
+  if (state.hasSlowReleaseFertilizer && state.equipSlowReleaseFertilizer) boostsStr += "Slow-Fert, ";
+  if (state.hasGreenhouseCover && state.equipGreenhouseCover) boostsStr += "Greenhouse, ";
+  if (state.hasPremiumSprayer) boostsStr += "Sprayer, ";
+  if (!boostsStr.empty()) {
+    boostsStr = boostsStr.substr(0, boostsStr.length() - 2);
   } else {
-    snprintf(line6, sizeof(line6), "Slept soundly tonight.");
+    boostsStr = "None";
   }
 
-  // Draw bullet list entries with spacing
-  auto drawDiaryEntry = [&](int index, const char* text) {
-    const int textYPos = rectY + 52 + index * (isX3 ? 42 : 50);
-    const int bulletX = rectX + 32;
-    const int bulletY = textYPos + 5;
-    
-    // Draw a neat solid square bullet point
-    renderer.fillRect(bulletX, bulletY + 1, 4, 4, true);
-    
-    // Draw text next to the bullet
-    renderer.drawText(SMALL_FONT_ID, rectX + 42, textYPos, text);
-  };
+  const char* wLabel = "Offline";
+  const char* wBonus = "None";
+  if (state.weatherCondition == 1) { wLabel = "Sunny"; wBonus = "Light (+1 Sun/h)"; }
+  else if (state.weatherCondition == 2) { wLabel = "Rainy"; wBonus = "Humidity (+1 Moist/h)"; }
+  else if (state.weatherCondition == 3) { wLabel = "Cloudy"; wBonus = "Nutrient (+1 Nut/h)"; }
+  else if (state.weatherCondition == 4) { wLabel = "Snowy"; wBonus = "Greenhouse (+1 HP/h)"; }
+  
+  char weatherLine[128];
+  snprintf(weatherLine, sizeof(weatherLine), "Weather: %s (%s)", wLabel, wBonus);
 
-  drawDiaryEntry(0, line1);
-  drawDiaryEntry(1, line2);
-  drawDiaryEntry(2, line3);
-  drawDiaryEntry(3, line4);
-  drawDiaryEntry(4, line5);
-  drawDiaryEntry(5, line6);
+  char balanceLine[64];
+  snprintf(balanceLine, sizeof(balanceLine), "Balance: %lu $Dew", (unsigned long)state.inkPoints);
 
-  renderer.drawCenteredText(SMALL_FONT_ID, pageHeight - 20, tr(STR_SLEEPING));
+  const int footerY = coverRect.y + coverRect.height + 25;
+  const int lineH = renderer.getLineHeight(SMALL_FONT_ID);
+  
+  renderer.drawLine(inset, footerY - 10, pageWidth - inset, footerY - 10, true);
+  
+  // Footer Line 1: Left active boosts, Right balance
+  char boostsLine[128];
+  snprintf(boostsLine, sizeof(boostsLine), "Active Boosts: %s", boostsStr.c_str());
+  renderer.drawText(SMALL_FONT_ID, inset, footerY, boostsLine);
+  drawRightAlignedText(renderer, SMALL_FONT_ID, rightX, footerY, balanceLine, false, true);
+  
+  // Footer Line 2: Left weather line, Right sleep status
+  renderer.drawText(SMALL_FONT_ID, inset, footerY + lineH + 6, weatherLine);
+  drawRightAlignedText(renderer, SMALL_FONT_ID, rightX, footerY + lineH + 6, "CrossPlant Dormant", false, true);
 
   renderer.displayBuffer(HalDisplay::FULL_REFRESH, TURN_OFF_SCREEN_AFTER_SLEEP_REFRESH);
 }
