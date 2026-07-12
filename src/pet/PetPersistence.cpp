@@ -58,11 +58,22 @@ bool PetManager::load() {
   state.missionDay      = doc["missionDay"]      | (uint16_t)0;
   state.missionPagesRead = doc["missionPagesRead"] | (uint8_t)0;
   state.missionPetCount = doc["missionPetCount"] | (uint8_t)0;
+  state.missionWaterCount = doc["missionWaterCount"] | (uint8_t)0;
+  state.maxSessionPagesToday   = doc["maxSessionPagesToday"] | doc["missionPruneCount"] | (uint8_t)0;
+  state.pagesReadAfter9PM      = doc["pagesReadAfter9PM"] | doc["missionWeedCount"] | (uint8_t)0;
+  state.questReadClaimed = doc["questReadClaimed"] | false;
+  state.questPetClaimed = doc["questPetClaimed"] | false;
+  state.questWaterClaimed = doc["questWaterClaimed"] | false;
+  state.questSpeedyClaimed = doc["questSpeedyClaimed"] | doc["questPruneClaimed"] | false;
+  state.questNightOwlClaimed = doc["questNightOwlClaimed"] | doc["questWeedClaimed"] | false;
+  state.questStreakSaverClaimed = doc["questStreakSaverClaimed"] | doc["questFertilizerClaimed"] | false;
 
   // New fields — backward-compat: missing keys use struct defaults
   state.weight           = doc["weight"]           | (uint8_t)50;
   state.isSick           = doc["isSick"]           | false;
   state.sicknessTimer    = doc["sicknessTimer"]    | (uint8_t)0;
+  state.waterStock       = doc["waterStock"]       | (uint8_t)3;
+  state.fertilizerStock  = doc["fertilizerStock"]  | (uint8_t)3;
   state.wasteCount       = doc["wasteCount"]       | (uint8_t)0;
   state.mealsSinceClean  = doc["mealsSinceClean"]  | (uint8_t)0;
   state.discipline       = doc["discipline"]       | (uint8_t)50;
@@ -78,6 +89,23 @@ bool PetManager::load() {
   state.evolutionVariant = doc["evolutionVariant"] | (uint8_t)0;
   state.booksFinished    = doc["booksFinished"]    | (uint8_t)0;
   state.streakTier       = doc["streakTier"]       | (uint8_t)0;
+
+  state.inkPoints        = doc["inkPoints"]        | (uint32_t)0;
+  state.hasMossPole               = doc["hasMossPole"] | doc["hasGlasses"] | false;
+  state.equipMossPole             = doc["equipMossPole"] | doc["equipGlasses"] | false;
+  state.hasSelfWateringPot        = doc["hasSelfWateringPot"] | doc["hasHat"] | false;
+  state.equipSelfWateringPot      = doc["equipSelfWateringPot"] | doc["equipHat"] | false;
+  state.hasSlowReleaseFertilizer  = doc["hasSlowReleaseFertilizer"] | doc["hasCrown"] | false;
+  state.equipSlowReleaseFertilizer= doc["equipSlowReleaseFertilizer"] | doc["equipCrown"] | false;
+  state.hasGreenhouseCover        = doc["hasGreenhouseCover"] | doc["hasScarf"] | false;
+  state.equipGreenhouseCover      = doc["equipGreenhouseCover"] | doc["equipScarf"] | false;
+  state.hasPremiumSprayer         = doc["hasPremiumSprayer"] | doc["hasToy"] | false;
+  state.longestReadingStreak = doc["longestReadingStreak"] | (uint16_t)0;
+  state.lastKnownSessions = doc["lastKnownSessions"] | (uint32_t)0;
+  state.unlockedStages    = doc["unlockedStages"] | (uint16_t)0;
+  state.weatherCondition = doc["weatherCondition"] | (uint8_t)0;
+  state.weatherTemp      = doc["weatherTemp"]      | (int8_t)0;
+  state.lastWeatherSync  = doc["lastWeatherSync"]  | (uint32_t)0;
 
   // Lazy-eval fields
   state.lastKnownReadSeconds = doc["lastKnownReadSeconds"] | (uint32_t)0;
@@ -97,14 +125,24 @@ bool PetManager::load() {
     }
   }
 
+  updateSleepState();
   loaded = true;
-  LOG_DBG("PET", "Loaded pet: stage=%d hunger=%d happy=%d health=%d",
-          (int)state.stage, state.hunger, state.happiness, state.health);
+  LOG_DBG("PET", "Loaded pet: stage=%d hunger=%d happy=%d health=%d isSleeping=%d",
+          (int)state.stage, state.hunger, state.happiness, state.health, state.isSleeping);
   return true;
 }
 
 bool PetManager::save() {
   Storage.mkdir(PetConfig::PET_DIR);
+
+  // Auto-unlock current plant species and stage
+  if (state.initialized && state.petType < 3) {
+    uint8_t st = (uint8_t)state.stage; // PetStage: 0=Egg, 1=Hatchling, 2=Youngster, 3=Companion, 4=Prized
+    if (st >= 1 && st <= 4) {
+      uint8_t bit = (state.petType * 4) + (st - 1);
+      state.unlockedStages |= (1 << bit);
+    }
+  }
 
   JsonDocument doc;
   // Customization
@@ -126,11 +164,22 @@ bool PetManager::save() {
   doc["missionDay"]     = state.missionDay;
   doc["missionPagesRead"] = state.missionPagesRead;
   doc["missionPetCount"]  = state.missionPetCount;
+  doc["missionWaterCount"] = state.missionWaterCount;
+  doc["maxSessionPagesToday"]   = state.maxSessionPagesToday;
+  doc["pagesReadAfter9PM"]      = state.pagesReadAfter9PM;
+  doc["questReadClaimed"] = state.questReadClaimed;
+  doc["questPetClaimed"] = state.questPetClaimed;
+  doc["questWaterClaimed"] = state.questWaterClaimed;
+  doc["questSpeedyClaimed"] = state.questSpeedyClaimed;
+  doc["questNightOwlClaimed"] = state.questNightOwlClaimed;
+  doc["questStreakSaverClaimed"] = state.questStreakSaverClaimed;
 
   // New fields
   doc["weight"]           = state.weight;
   doc["isSick"]           = state.isSick;
   doc["sicknessTimer"]    = state.sicknessTimer;
+  doc["waterStock"]       = state.waterStock;
+  doc["fertilizerStock"]  = state.fertilizerStock;
   doc["wasteCount"]       = state.wasteCount;
   doc["mealsSinceClean"]  = state.mealsSinceClean;
   doc["discipline"]       = state.discipline;
@@ -146,6 +195,23 @@ bool PetManager::save() {
   doc["evolutionVariant"] = state.evolutionVariant;
   doc["booksFinished"]    = state.booksFinished;
   doc["streakTier"]       = state.streakTier;
+
+  doc["inkPoints"]        = state.inkPoints;
+  doc["hasMossPole"]               = state.hasMossPole;
+  doc["equipMossPole"]             = state.equipMossPole;
+  doc["hasSelfWateringPot"]        = state.hasSelfWateringPot;
+  doc["equipSelfWateringPot"]      = state.equipSelfWateringPot;
+  doc["hasSlowReleaseFertilizer"]  = state.hasSlowReleaseFertilizer;
+  doc["equipSlowReleaseFertilizer"]= state.equipSlowReleaseFertilizer;
+  doc["hasGreenhouseCover"]        = state.hasGreenhouseCover;
+  doc["equipGreenhouseCover"]      = state.equipGreenhouseCover;
+  doc["hasPremiumSprayer"]         = state.hasPremiumSprayer;
+  doc["longestReadingStreak"] = state.longestReadingStreak;
+  doc["lastKnownSessions"] = state.lastKnownSessions;
+  doc["unlockedStages"]    = state.unlockedStages;
+  doc["weatherCondition"] = state.weatherCondition;
+  doc["weatherTemp"]      = state.weatherTemp;
+  doc["lastWeatherSync"]  = state.lastWeatherSync;
 
   // Lazy-eval fields
   doc["lastKnownReadSeconds"] = state.lastKnownReadSeconds;

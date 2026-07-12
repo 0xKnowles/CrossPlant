@@ -28,6 +28,9 @@
 #include "components/icons/night.h"
 #include "components/icons/streak.h"
 #include "fontIds.h"
+#include "pet/PetManager.h"
+#include "pet/PetSpriteRenderer.h"
+#include "pet/PetEvolution.h"
 
 namespace {
 constexpr int kContentInsetX4 = 20;
@@ -479,6 +482,75 @@ void drawFooterStats(const GfxRenderer& renderer, const Rect& coverRect, const G
   const int inset = contentInset(renderer);
   const int footerY = renderer.getScreenHeight() - DashboardMetrics::values.buttonHintsHeight - kFooterBottomGap;
   const int centerY = std::max(coverRect.y + coverRect.height + 120, footerY);
+
+  // If a virtual pet is hatched and alive, draw its status instead of the global reading stats
+  PET_MANAGER.load();
+  if (PET_MANAGER.exists() && PET_MANAGER.isAlive()) {
+    const auto& state = PET_MANAGER.getState();
+    const PetMood mood = PET_MANAGER.getMood();
+    const int iconX = coverRect.x;
+    const int iconY = centerY - kFooterIconSize / 2;
+
+    // Draw mini pet sprite
+    PetSpriteRenderer::drawMini(const_cast<GfxRenderer&>(renderer), iconX, iconY, state.stage, mood,
+                                state.evolutionVariant, state.petType);
+
+    // Draw pet name & stage
+    const int lineH10 = renderer.getLineHeight(UI_10_FONT_ID);
+    const int lineH8 = renderer.getLineHeight(SMALL_FONT_ID);
+    const int totalTextH = lineH10 + 4 + lineH8 + 4 + lineH8;
+    const int textY = centerY - totalTextH / 2;
+    const int textX = iconX + kFooterIconSize + 6; // Shipped left by reducing gap from 18 to 6
+
+    const char* petName = state.petName[0] ? state.petName : PetTypeNames::get(state.petType);
+    const char* stageName = PetEvolution::variantStageName(state.stage, state.evolutionVariant);
+
+    // Draw pet stats right-aligned
+    char statsLine1[64];
+    char statsLine2[64];
+    char statsLine3[64];
+
+    if (state.isSick) {
+      snprintf(statsLine1, sizeof(statsLine1), "PESTS!");
+    } else if (state.attentionCall) {
+      snprintf(statsLine1, sizeof(statsLine1), "NEEDS ATTENTION");
+    } else {
+      snprintf(statsLine1, sizeof(statsLine1), "%s: %u%%  %s: %u%%",
+               tr(STR_PET_HUNGER), state.hunger,
+               tr(STR_PET_STAT_HAPPY), state.happiness);
+    }
+
+    snprintf(statsLine2, sizeof(statsLine2), "%s: %u%%  Ht: %u cm  %lu DD",
+             tr(STR_PET_HEALTH), state.health,
+             state.weight, (unsigned long)state.inkPoints);
+
+    bool pagesDone = (state.missionPagesRead >= 20);
+    bool petDone = (state.missionPetCount >= 3);
+    if (pagesDone && petDone) {
+      snprintf(statsLine3, sizeof(statsLine3), "Quest: Completed! ");
+    } else {
+      snprintf(statsLine3, sizeof(statsLine3), "Quest: %u/20 pgs  %u/3 tends", state.missionPagesRead, state.missionPetCount);
+    }
+
+    const int rightX = renderer.getScreenWidth() - inset - (gpio.deviceIsX3() ? kPairInwardShiftX3 : 0);
+
+    // Truncate name and stage dynamically to guarantee a 15px gap with stats
+    const int statsLine1Width = renderer.getTextWidth(UI_10_FONT_ID, statsLine1, EpdFontFamily::BOLD);
+    const int statsLine2Width = renderer.getTextWidth(SMALL_FONT_ID, statsLine2);
+    const int availableNameW = rightX - textX - statsLine1Width - 15;
+    const int availableStageW = rightX - textX - statsLine2Width - 15;
+
+    std::string visibleName = renderer.truncatedText(UI_10_FONT_ID, petName, availableNameW, EpdFontFamily::BOLD);
+    std::string visibleStage = renderer.truncatedText(SMALL_FONT_ID, stageName, availableStageW);
+
+    renderer.drawText(UI_10_FONT_ID, textX, textY + 2, visibleName.c_str(), !inverted, EpdFontFamily::BOLD);
+    renderer.drawText(SMALL_FONT_ID, textX, textY + 2 + lineH10 + 4, visibleStage.c_str(), !inverted);
+
+    drawRightAlignedText(renderer, UI_10_FONT_ID, rightX, textY + 2, statsLine1, true, !inverted);
+    drawRightAlignedText(renderer, SMALL_FONT_ID, rightX, textY + 2 + lineH10 + 4, statsLine2, false, !inverted);
+    drawRightAlignedText(renderer, SMALL_FONT_ID, rightX, textY + 2 + lineH10 + 4 + lineH8 + 4, statsLine3, false, !inverted);
+    return;
+  }
 
   if (gpio.deviceIsX4()) {
     char totalTime[40];

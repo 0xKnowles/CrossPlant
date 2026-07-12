@@ -1,158 +1,72 @@
-> **This is a personal fork of [CrossPoint Reader](https://github.com/crosspoint-reader/crosspoint-reader)** with a focus on improved fonts and minimal reading stats.
+# Hi there, I'm Cameron (0xKnowles) 👋
 
-## What's different in this fork
+I am a Software and Hardware Developer specializing in full-stack applications, custom embedded firmware, and physical hardware telemetry. I build solutions that bridge the gap between elegant user interfaces and physical device engineering.
 
-My goal with this fork was to maintain the core Crosspoint firmware while integrating my preferred typography and some lightweight reading statistics. I’ve focused on keeping the underlying system stable while layering in a few "nice-to-have" features and UI refinements along the way.
+- 🚀 **Core Stack:** TypeScript, React, Angular, Node.js, C/C++, and KiCad for hardware design.
+- 🛠️ **Current Focus:** Custom embedded firmware optimizations, e-ink interfaces, and automated cultivation monitors.
+- 🌱 **Domain Expertise:** A strong background in IT infrastructure paired with deep experience in Integrated Pest Management (IPM) and greenhouse automation.
+
+---
+
+### 📂 Featured Projects
+
+#### 🌿🐣 [CrossPlant XTEink](https://github.com/0xKnowles/CrossPlant-Xteink)
+An open-source custom firmware fork for the **XTEink X3 and X4 mini e-ink readers**. It merges the advanced typography and performance optimizations of *CrossInk* with a re-engineered virtual plant companion mechanics system (*CrossPet*).
+
+* **The Virtual Plant System:** Features a reading-driven ecosystem where plant stats (Moisture, Sunlight, Health, Nutrients) decay in real time while awake, evolving through branches based on actual reading habits, streaks, and local environmental factors.
+* **Premium Features:** 
+  * A space-efficient **Two-Column UI** separating plant vitals from detailed reading stats.
+  * **Water & Fertilizer Stock System:** Integrated Water Jug (3 charges) and Fertilizer (3 charges) stock mechanics. Water is refilled for free, and fertilizer can be purchased for 30 DD directly from the main action list.
+  * **Dew Shop & Passive Upgrades:** Replaced cosmetic accessories with functional tools that grant passive vitals boosts, such as the Moss Pole (halves sunlight decay), Self-Watering Pot (halves moisture decay), Greenhouse Cover (halves health decay), and Slow-Release Fertilizer (auto-regenerates nutrients).
+  * **Real-time Weather Sync:** Periodically geolocates the device using the wireless IP and queries Open-Meteo to apply passive hourly growth boosts based on local conditions (Sunny, Rainy, Cloudy, Snowy), visible on both the main UI card and the sleep screen.
+  * **Herbarium Catalog:** A built-in discovery log showing discovery percentages (e.g., 4/12) and unlocking progress for the 4 growth stages of the 3 plant types (Alocasia, Begonia, Monstera).
+  * **Dynamic Reading-Based Quests:** Replaced standard tasks with reading-focused achievements (Speedy Reader, Night Owl, Streak Saver) rendered in a clean, non-overlapping stacked UI.
+  * **Plant Diary Sleep Screen:** A dual-pane standby screen displaying your sleeping plant alongside an RTC-synced daily achievement summary and local weather bonus telemetry.
+  * **Hardware Optimizations:** High-fidelity SD card `.bmp` asset probing, custom bezel key long-press shortcuts, and a research-backed typography engine featuring *Lexend Deca* and *Bitter*.
+
+#### 🎣 [Bio Tackle Box](https://github.com/0xKnowles/Bio-Tackle-Box)
+A dedicated, full-stack application designed for agricultural management. It streamlines digital tracking, workflows, and essential data management for specialized growing environments.
+* **Stack:** TypeScript, React, and Angular framework infrastructure.
+
+#### 💧 HydroLogix / DWC Monitor (Custom Hardware)
+An automated Deep Water Culture (DWC) environmental monitor built from the ground up to track real-time reservoir metrics.
+* **Hardware & Firmware:** Custom schematic capture and PCB layout routed entirely in **KiCad**.
+* **Features:** Utilizes an Elegoo HC-SR04 ultrasonic sensor for precise, real-time liquid-level tracking and environmental telemetry, all housed in a custom-designed, 3D-printed enclosure.
+
+---
+
+### 💻 Technical Toolbelt
 
 <table>
   <tr>
-    <td align="center">
-      <img src="./docs/images/bitter-small-15-margin.jpg" alt="Font: Bitter, Size: 12 pt, Margin: 15" /><br/>
-      <em>Font: Bitter, Size: 12 pt, Margin: 15</em>
+    <td align="center" width="100">
+      <img src="https://skillicons.dev/icons?i=cpp" width="48" height="48" alt="C++" />
+      <br>C / C++
     </td>
-    <td align="center">
-      <img src="./docs/images/reading-stats.jpg" alt="Reading Stats with custom front button mapping shown" /><br/>
-      <em>Reading Stats with custom front button mapping shown</em>
+    <td align="center" width="100">
+      <img src="https://skillicons.dev/icons?i=kicad" width="48" height="48" alt="KiCad" />
+      <br>KiCad
+    </td>
+    <td align="center" width="100">
+      <img src="https://skillicons.dev/icons?i=react" width="48" height="48" alt="React" />
+      <br>React
+    </td>
+    <td align="center" width="100">
+      <img src="https://skillicons.dev/icons?i=angular" width="48" height="48" alt="Angular" />
+      <br>Angular
+    </td>
+    <td align="center" width="100">
+      <img src="https://skillicons.dev/icons?i=ts" width="48" height="48" alt="TypeScript" />
+      <br>TypeScript
+    </td>
+    <td align="center" width="100">
+      <img src="https://skillicons.dev/icons?i=nodejs" width="48" height="48" alt="Node.js" />
+      <br>Node.js
     </td>
   </tr>
 </table>
 
----
-
-**Note**: This firmware is confirmed to be working on both the X3 and X4.
-
-### Highlights
-
-- New reader fonts: Lexend Deca and Bitter.
-- Unicode emoji and miscellaneous symbols support (a limited subset).
-- Adjusted font sizes: 8 pt, 9 pt, 10 pt, 12 pt, 14 pt, 16 pt, 18 pt, and 20 pt. See [Font Build Variants](./docs/font-build-variants.md) for more details.
-- Added ~~strikethrough~~ support.
-- Made <u>underlines</u> thicker for better visibility.
-- Added a custom `Minimal` theme and sleep screen option for the minimalists out there.
-- Added a custom `Dashboard` theme and sleep screen option for reading stats enthusiasts.
-- Added support for `<hr>` section breaks.
-- Added support for "redaction" style rendering.
-- Added improved support for tables with simple markup.
-- Added ability to add bookmarks.
-- Added ability to remap front buttons that only applies in the reader.
-- Added Bionic Reading and Guide Dots as optional reader modes.
-- Added Force Paragraph Indents for books that render as one giant wall of text.
-- Added ability to pin a sleep image as a favorite. The favorited image will always be displayed when your sleep settings are set to `Custom` or `Cover + Custom` (when no cover is available).
-- Added more in-reader control remapping options for side buttons, short power button clicks, and long-press menu actions.
-- Added ability to mark a book as finished from the in-book menu. A pop-up will also display once 99% of the book is reached. This status allows tracking of total books read.
-- Added ability to move finished books to "Read" folder.
-- In-book menu to quickly adjust reader options without having to exit the book.
-- Reading stats: total books read, total reading time, number of sessions, pages turned, average session time, pages turned per minute. You can also set your reading stats as your sleep screen.
-- All-time reading stats [syncing](./docs/reading-stats-sync.md) between two CrossInk devices.
-- Reading [progress sync](./docs/nearby-position-sync.md) between two CrossInk devices.
-- Added customizable Auto Page Turn Interval (anything between 5-120 seconds).
-- Added ability to view Recent Books as a 3x3 grid view.
-- To view a more detailed list for each version, visit the [releases](https://github.com/uxjulia/CrossInk/releases) page to read release notes.
-
----
-
-### Reader Fonts
-
-The default fonts have been replaced with Lexend Deca and Bitter. These fonts have been chosen specifically to improve reading fluency and e-ink performance. These 'sturdier' typefaces feature uniform stroke weights and open geometries, allowing the X4/X3 to render crisp, high-contrast text with font-aliasing on while significantly reducing ghosting and artifacts.
-
-- [Lexend Deca](https://fonts.google.com/specimen/Lexend+Deca) - A research-backed sans-serif typeface designed to improve reading fluency. Lexend was engineered based on the theory that reading issues are often a design problem (visual crowding) rather than a cognitive one.
-- [Bitter](https://fonts.google.com/specimen/Bitter) - A "contemporary" slab serif typeface for text, it is specially designed for comfortably reading on digital screens. The consistent stroke weight of Bitter helps it render particularly well on e-ink devices. The medium weight has been chosen specifically for improved rendering on the X4/X3.
-
-The UI now uses [Inter](https://fonts.google.com/specimen/Inter) as the display font which has improved readability at smaller sizes.
-
-### Emojis and Misc Glyphs
-
-- Support for a limited set of Unicode [Emoticons](https://unicode-explorer.com/b/1F600) and [Miscellaneous Symbols](https://unicode-explorer.com/b/2600) using [Noto Emoji](https://fonts.google.com/noto/specimen/Noto+Emoji) and [Noto Sans Symbols](https://fonts.google.com/noto/specimen/Noto+Sans+Symbols) font.
-
----
-
-### Font Sizes
-
-There are 2 available build variants to choose from due to build size constraints: `tiny`, and `xlarge`.
-
-See [Font Build Variants](./docs/font-build-variants.md) for the full point-size and emoji-support matrix.
-
----
-
-### Reader features
-
-Reader Options, Bionic Reading, Guide Dots, Force Paragraph Indents, reading stats, and finished-book behavior are documented in [Reader Features](./docs/reader-features.md).
-
-### Custom button actions
-
-CrossInk adds configurable button shortcuts.
-
-See [Controls](./docs/controls.md) for the full action list and defaults.
-
----
-
-## Tips for the best reading experience
-
-CrossInk runs on an ESP32-C3 with limited RAM, so very large folders or complex EPUBs can be slower than they would be on a phone, tablet, or desktop app.
-
-- Keep folders under about 200 files. For the smoothest browsing, aim for 50-100 files per folder.
-- Having 1000+ books on the SD card is fine if they are split into smaller folders, such as by author, series, genre, or read/unread status.
-- Avoid putting every book in the SD card root. The file browser has to scan and sort the current folder before it can show it.
-- Text-first EPUBs are the best fit. Large image-heavy EPUBs, scanned books, comics, and omnibus files with thousands of sections may load slowly or fail under memory pressure.
-- As a rough target, EPUBs under 20 MB tend to work the best. Files over 50 MB may still work, but they are more likely to be slow or memory-sensitive, especially if they contain many large images.
-- If an EPUB is unusually slow, try [optimizing](./docs/webserver.md#epub-optimization) it with the built-in web optimizer (via File Transfer) before copying it to the SD card: remove unused high-resolution images, split very large omnibus files, and avoid embedding multiple full font families when possible.
-- Use a reliable SD card and leave some free space. CrossInk stores settings, reading progress, cache files, stats, and generated book data on the card.
-
-## Development Device Simulator
-
-The [device simulator](https://github.com/uxjulia/crosspoint-simulator) renders the e-ink display in an SDL2 window so firmware changes can be sanity-checked without flashing hardware.
-
-See [Simulator](./docs/simulator.md) for setup, platform notes, keyboard controls, and cache tips.
-
----
-
-## Installation
-
-Download a `firmware-*.bin` from the [releases page](https://github.com/uxjulia/CrossInk/releases), then flash it with the web installer or command line.
-
-See [Installation](./docs/installation.md) for step-by-step flashing and revert instructions.
-
----
-
-## Documentation
-
-- [User Guide](./USER_GUIDE.md)
-- [Installation](./docs/installation.md)
-- [Font Build Variants](./docs/font-build-variants.md)
-- [Reader Features](./docs/reader-features.md)
-- [Controls](./docs/controls.md)
-- [Simulator](./docs/simulator.md)
-- [Data Cache](./docs/data-cache.md)
-- [Web server usage](./docs/webserver.md)
-- [Web server endpoints](./docs/webserver-endpoints.md)
-- [Common issues](./docs/troubleshooting.md)
-- [Project scope](./SCOPE.md)
-- [Contributing docs](./docs/contributing/README.md)
-
----
-
-## Development quick start
-
-CrossInk uses PlatformIO for building and flashing firmware.
-
-See [Getting Started](./docs/contributing/getting-started.md) for prerequisites, clone setup, hooks, and validation commands.
-
-### Build / flash / monitor
-
-Connect your Xteink X4 or X3 via USB-C and run:
-
-```sh
-pio run -e tiny --target upload
-```
-
-Replace `tiny` with another build variant if needed. See [Font Build Variants](./docs/font-build-variants.md).
-
-See [Testing and Debugging](./docs/contributing/testing-debugging.md) for serial logging, simulator checks, static analysis, and bug-report guidance.
-
----
-
-## Internals
-
-The ESP32-C3 has about 380 KB of usable RAM, so CrossInk stores reusable book and device data on the SD card instead of rebuilding everything in memory.
-
-See [Data Cache](./docs/data-cache.md) for the `.crosspoint` layout and [File Formats](./docs/file-formats.md) for binary cache details.
+### 🛠️ Hardware & Fabrication Capabilities
+* **PCB Routing & Embedded Design:** Multilayer board layouts, physical input re-mapping, low-power display optimization, and hardware interrupt handling.
+* **Rapid Prototyping:** 3D printing custom mechanical enclosures tailored to exact circuit and button configurations.
+* **Telemetry & I/O:** Interfacing custom edge sensor arrays with digital frontend dashboards and embedded UI layouts.

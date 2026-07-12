@@ -10,6 +10,7 @@ struct PetMission {
   uint8_t     progress;
   uint8_t     goal;
   bool        done;
+  uint16_t    reward;
 };
 
 // Manages virtual pet game logic, stat decay, evolution, and persistence.
@@ -37,6 +38,7 @@ class PetManager {
   // of the lazy syncFromReadingStats() sync (which only runs when the pet
   // screen is opened).
   void onPageTurned();
+  void onChapterFinished();
 
   // User interaction — petting gives happiness (with cooldown)
   bool pet();
@@ -47,6 +49,31 @@ class PetManager {
   // Rename/retype an existing pet
   bool renamePet(const char* name);
   bool changeType(uint8_t type);
+  void resetData();
+  void applyPremiumFertilizer();
+  void updateWeather(uint8_t condition, int temp);
+  void forceWeatherSync();
+  void setFeedback(const char* msg) { lastFeedback = msg; }
+  void refillWater();
+  void refillFertilizer();
+
+  // Shop & customization helper methods
+  bool deductPoints(uint32_t points) {
+    if (state.inkPoints >= points) {
+      state.inkPoints -= points;
+      return true;
+    }
+    return false;
+  }
+  void setHasPremiumSprayer(bool val) { state.hasPremiumSprayer = val; save(); }
+  void setHasMossPole(bool val) { state.hasMossPole = val; save(); }
+  void setEquipMossPole(bool val) { state.equipMossPole = val; save(); }
+  void setHasSelfWateringPot(bool val) { state.hasSelfWateringPot = val; save(); }
+  void setEquipSelfWateringPot(bool val) { state.equipSelfWateringPot = val; save(); }
+  void setHasSlowReleaseFertilizer(bool val) { state.hasSlowReleaseFertilizer = val; save(); }
+  void setEquipSlowReleaseFertilizer(bool val) { state.equipSlowReleaseFertilizer = val; save(); }
+  void setHasGreenhouseCover(bool val) { state.hasGreenhouseCover = val; save(); }
+  void setEquipGreenhouseCover(bool val) { state.equipGreenhouseCover = val; save(); }
 
   // --- User actions (PetActions.cpp) ---
   bool feedMeal();       // fill hunger + add weight + waste tracking
@@ -66,8 +93,9 @@ class PetManager {
   uint32_t getDaysAlive() const;
   const char* getLastFeedback() const { return lastFeedback; }
 
-  // Daily missions — returns 3 missions for today
-  void getMissions(PetMission out[3]) const;
+  // Daily missions — returns 6 missions for today
+  void getMissions(PetMission out[6]) const;
+  void startReadingSession();
 
  private:
   PetManager() = default;
@@ -77,6 +105,7 @@ class PetManager {
   unsigned long lastExerciseMs = 0;     // millis() of last exercise (cooldown)
   bool loaded = false;
   const char* lastFeedback = nullptr;   // feedback string for UI display
+  uint8_t sessionPagesRead = 0;        // pages read in current reading session
 
   // Internal helpers
   void updateStreak();
@@ -85,6 +114,7 @@ class PetManager {
   uint16_t getDayOfYear() const;
   void resetMissionsIfNewDay();
   void feedFromPages(uint32_t pages);
+  void updateSleepState();
 
   static uint8_t clampSub(uint8_t val, uint8_t amount);
   static uint8_t clampAdd(uint8_t val, uint8_t amount);

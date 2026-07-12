@@ -25,6 +25,7 @@
 #include "XtcReaderMenuActivity.h"
 #include "activities/boot_sleep/SleepCoverAssets.h"
 #include "activities/util/ConfirmationActivity.h"
+#include "pet/PetManager.h"
 #include "components/UITheme.h"
 #include "components/themes/lyra/LyraCarouselTheme.h"
 #include "fontIds.h"
@@ -71,6 +72,9 @@ void XtcReaderActivity::onEnter() {
 
   stats = BookReadingStats::load(xtc->getCachePath());
   globalStats = GlobalReadingStats::load();
+  if (PET_MANAGER.load()) {
+    PET_MANAGER.startReadingSession();
+  }
   sessionReadingSeconds = 0;
   hasSessionStartLocalDateTime = getCurrentLocalReadingStatsDateTime(sessionStartLocalDateTime);
 
@@ -208,6 +212,9 @@ void XtcReaderActivity::loop() {
         return true;
       case CrossPointSettings::SHORT_PWRBTN::FILE_BROWSER:
         activityManager.goToFileBrowser(xtc ? xtc->getPath() : "");
+        return true;
+      case CrossPointSettings::SHORT_PWRBTN::VIRTUAL_PET:
+        activityManager.goToVirtualPet();
         return true;
       case CrossPointSettings::SHORT_PWRBTN::CREATE_CLIPPING:
         return false;
@@ -422,6 +429,10 @@ void XtcReaderActivity::recordForwardPageTurn(uint32_t seconds) {
   (void)seconds;
   stats.totalPagesTurned++;
   globalStats.totalPagesTurned++;
+  if (SETTINGS.shouldTrackReadingStats()) {
+    PET_MANAGER.syncFromReadingStats(globalStats);
+    PET_MANAGER.onPageTurned();
+  }
 }
 
 void XtcReaderActivity::commitReadingStats() {
@@ -448,6 +459,11 @@ void XtcReaderActivity::commitReadingStats() {
   }
   stats.save(xtc->getCachePath());
   globalStats.save();
+
+  if (PET_MANAGER.load()) {
+    PET_MANAGER.syncFromReadingStats(globalStats);
+    PET_MANAGER.save();
+  }
 }
 
 void XtcReaderActivity::resetCurrentBookStatsAfterDelete() {
@@ -652,6 +668,9 @@ bool XtcReaderActivity::executeLongPressBackAction() {
       return true;
     case CrossPointSettings::LONG_PRESS_MENU_ACTION::LONG_MENU_FILE_BROWSER:
       activityManager.goToFileBrowser(xtc ? xtc->getPath() : "");
+      return true;
+    case CrossPointSettings::LONG_PRESS_MENU_ACTION::LONG_MENU_VIRTUAL_PET:
+      activityManager.goToVirtualPet();
       return true;
     case CrossPointSettings::LONG_PRESS_MENU_ACTION::LONG_MENU_CREATE_CLIPPING:
       return false;

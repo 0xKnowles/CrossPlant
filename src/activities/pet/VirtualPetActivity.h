@@ -24,18 +24,23 @@ class VirtualPetActivity final : public Activity {
   bool skipLoopDelay() override { return animActive(); }
 
  private:
-  enum class ScreenMode { NORMAL, TYPE_SELECT };
+  enum class ScreenMode { NORMAL, TYPE_SELECT, SHOP, QUESTS, ALBUM };
 
   void renderNoPet() const;
   void renderDead() const;
   void renderAlive() const;
   void renderTypeSelect() const;
+  void renderShop() const;
+  void renderQuests() const;
+  void renderAlbum() const;
 
   void executeSelectedAction();
+  void buyShopItem(int index);
 
   // Hatch/customize helpers
   void startHatchFlow();
   void startRenameFlow();
+  void startResetFlow();
   void startTypeSelectForHatch();
   void startTypeSelectForChange();
   void confirmTypeSelect();

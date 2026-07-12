@@ -1844,6 +1844,7 @@ void EpubReaderActivity::onExit() {
 
     if (PET_MANAGER.load()) {
       PET_MANAGER.syncFromReadingStats(globalStats);
+      PET_MANAGER.startReadingSession();
       PET_MANAGER.save();
     }
   }
@@ -3242,6 +3243,9 @@ void EpubReaderActivity::executeReaderQuickAction(CrossPointSettings::LONG_PRESS
     case CrossPointSettings::LONG_MENU_FILE_BROWSER:
       activityManager.goToFileBrowser(epub ? epub->getPath() : "");
       break;
+    case CrossPointSettings::LONG_MENU_VIRTUAL_PET:
+      activityManager.goToVirtualPet();
+      break;
     case CrossPointSettings::LONG_MENU_CREATE_CLIPPING:
       startClipSelection();
       break;
@@ -3370,6 +3374,9 @@ bool EpubReaderActivity::executeShortPowerButtonAction() {
     case CrossPointSettings::SHORT_PWRBTN::FILE_BROWSER:
       executeReaderQuickAction(CrossPointSettings::LONG_MENU_FILE_BROWSER);
       return true;
+    case CrossPointSettings::SHORT_PWRBTN::VIRTUAL_PET:
+      executeReaderQuickAction(CrossPointSettings::LONG_MENU_VIRTUAL_PET);
+      return true;
     case CrossPointSettings::SHORT_PWRBTN::CREATE_CLIPPING:
       mappedInput.suppressNextPowerConfirmRelease();
       executeReaderQuickAction(CrossPointSettings::LONG_MENU_CREATE_CLIPPING);
@@ -3462,6 +3469,9 @@ bool EpubReaderActivity::executeLongPowerButtonAction() {
       return true;
     case CrossPointSettings::SHORT_PWRBTN::FILE_BROWSER:
       executeReaderQuickAction(CrossPointSettings::LONG_MENU_FILE_BROWSER);
+      return true;
+    case CrossPointSettings::SHORT_PWRBTN::VIRTUAL_PET:
+      executeReaderQuickAction(CrossPointSettings::LONG_MENU_VIRTUAL_PET);
       return true;
     case CrossPointSettings::SHORT_PWRBTN::CREATE_CLIPPING:
       mappedInput.suppressNextPowerConfirmRelease();
@@ -3702,6 +3712,9 @@ void EpubReaderActivity::pageTurn(bool isForwardTurn, const char* source) {
         nextPageNumber = 0;
         currentSpineIndex++;
         section.reset();
+        if (SETTINGS.shouldTrackReadingStats()) {
+          PET_MANAGER.onChapterFinished();
+        }
       }
     }
     if (shouldRecordForwardRead) {
@@ -3711,11 +3724,15 @@ void EpubReaderActivity::pageTurn(bool isForwardTurn, const char* source) {
       stats.totalPagesTurned++;
       globalStats.totalPagesTurned++;
       if (SETTINGS.shouldTrackReadingStats()) {
+        PET_MANAGER.syncFromReadingStats(globalStats);
         PET_MANAGER.onPageTurned();
       }
     }
   } else {
     recordCurrentPageReadingTime(source);
+    if (SETTINGS.shouldTrackReadingStats()) {
+      PET_MANAGER.syncFromReadingStats(globalStats);
+    }
     armReadingPaceWarmup("back_page");
     if (section->currentPage > 0) {
       section->currentPage--;

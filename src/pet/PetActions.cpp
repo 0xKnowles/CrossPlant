@@ -13,6 +13,12 @@ bool PetManager::feedMeal() {
   if (state.isSleeping) { lastFeedback = tr(STR_PET_BLOCKED_SLEEPING); return false; }
   if (state.isSick)     { lastFeedback = tr(STR_PET_BLOCKED_SICK); return false; }
 
+  if (state.waterStock == 0) {
+    lastFeedback = tr(STR_PET_NO_WATER);
+    return false;
+  }
+  state.waterStock--;
+
   state.hunger = clampAdd(state.hunger, PetConfig::HUNGER_PER_MEAL);
   state.weight = clampAdd(state.weight, PetConfig::WEIGHT_PER_MEAL);
   if (state.health < PetConfig::MAX_STAT && state.hunger > 0)
@@ -22,6 +28,15 @@ bool PetManager::feedMeal() {
   if (state.mealsSinceClean >= PetConfig::MEALS_UNTIL_WASTE) {
     state.mealsSinceClean = 0;
     if (state.wasteCount < PetConfig::MAX_WASTE) state.wasteCount++;
+  }
+
+  resetMissionsIfNewDay();
+  if (state.missionWaterCount < 3) {
+    state.missionWaterCount++;
+    if (state.missionWaterCount >= 3 && !state.questWaterClaimed) {
+      state.inkPoints += 20;
+      state.questWaterClaimed = true;
+    }
   }
 
   lastFeedback = tr(STR_PET_FED_MEAL);
@@ -35,8 +50,19 @@ bool PetManager::feedSnack() {
   if (state.isSleeping) { lastFeedback = tr(STR_PET_BLOCKED_SLEEPING); return false; }
   if (state.isSick)     { lastFeedback = tr(STR_PET_BLOCKED_SICK); return false; }
 
-  state.happiness = clampAdd(state.happiness, PetConfig::HAPPINESS_PER_SNACK);
+  uint8_t boost = state.hasPremiumSprayer ? 10 : 0;
+  state.happiness = clampAdd(state.happiness, PetConfig::HAPPINESS_PER_SNACK + boost);
   state.weight    = clampAdd(state.weight, PetConfig::WEIGHT_PER_SNACK);
+
+  resetMissionsIfNewDay();
+  if (state.missionWaterCount < 3) {
+    state.missionWaterCount++;
+    if (state.missionWaterCount >= 3 && !state.questWaterClaimed) {
+      state.inkPoints += 20;
+      state.questWaterClaimed = true;
+    }
+  }
+
   lastFeedback = tr(STR_PET_FED_SNACK);
   save();
   return true;
@@ -69,6 +95,9 @@ bool PetManager::exercise() {
   lastExerciseMs = now;
   state.weight    = clampSub(state.weight, PetConfig::WEIGHT_PER_EXERCISE);
   state.happiness = clampAdd(state.happiness, 10);
+
+
+
   lastFeedback = tr(STR_PET_EXERCISED);
   LOG_DBG("PET", "exercise: weight=%d", state.weight);
   save();
@@ -79,6 +108,8 @@ bool PetManager::cleanBathroom() {
   if (!state.exists() || !state.isAlive()) { lastFeedback = tr(STR_PET_NO_PET_ERR); return false; }
   if (state.wasteCount == 0) { lastFeedback = tr(STR_PET_ALREADY_CLEAN); return false; }
 
+
+
   lastFeedback = tr(STR_PET_CLEANED);
   LOG_DBG("PET", "cleanBathroom: removed %d waste piles", state.wasteCount);
   state.wasteCount = 0;
@@ -88,27 +119,21 @@ bool PetManager::cleanBathroom() {
 
 bool PetManager::disciplinePet() {
   if (!state.exists() || !state.isAlive()) { lastFeedback = tr(STR_PET_NO_PET_ERR); return false; }
+  if (state.isSleeping) { lastFeedback = tr(STR_PET_BLOCKED_SLEEPING); return false; }
 
-  if (state.attentionCall) {
-    if (state.isFakeCall) {
-      // Scolding a fake call = good discipline
-      state.discipline = clampAdd(state.discipline, PetConfig::DISCIPLINE_PER_SCOLD);
-      lastFeedback = tr(STR_PET_SCOLDED_GOOD);
-    } else {
-      // Scolding a real need = cruelty
-      state.discipline = clampSub(state.discipline, PetConfig::DISCIPLINE_PER_SCOLD);
-      if (state.careMistakes < 255) state.careMistakes++;
-      lastFeedback = tr(STR_PET_SCOLDED_BAD);
-    }
+  if (state.fertilizerStock == 0) {
+    lastFeedback = tr(STR_PET_NO_FERTILIZER);
+    return false;
+  }
+  state.fertilizerStock--;
+
+  state.discipline = clampAdd(state.discipline, 25);
+
+  if (state.attentionCall && state.currentNeed == PetNeed::NONE) {
     state.attentionCall = false;
-    state.isFakeCall = false;
-    state.currentNeed = PetNeed::NONE;
-  } else {
-    // Random scolding with no reason = bad
-    state.discipline = clampSub(state.discipline, 3);
-    lastFeedback = tr(STR_PET_SCOLDED_UNFAIR);
   }
 
+  lastFeedback = tr(STR_PET_SCOLDED_GOOD);
   save();
   return true;
 }

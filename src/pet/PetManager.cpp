@@ -3,6 +3,14 @@
 #include "PetCareTracker.h"
 #include "PetDecayEngine.h"
 #include "PetEvolution.h"
+#include "CrossPointSettings.h"
+#include <HalStorage.h>
+
+#ifndef SIMULATOR
+#include <WiFi.h>
+#include <ArduinoJson.h>
+#include "network/HttpDownloader.h"
+#endif
 
 #include <Arduino.h>
 #include <I18n.h>
@@ -14,6 +22,8 @@
 #include <algorithm>
 #include <cstring>
 #include <ctime>
+
+static bool localTimeNow(struct tm& out);
 
 PetManager& PetManager::getInstance() {
   static PetManager instance;
@@ -27,6 +37,57 @@ void PetManager::tick() {
   if (!isTimeValid()) return;
 
   uint32_t now = getCurrentTime();
+
+#ifndef SIMULATOR
+  if (WiFi.status() == WL_CONNECTED && (now - state.lastWeatherSync > 14400)) {
+    state.lastWeatherSync = now;
+    save();
+    xTaskCreate([](void* param) {
+      LOG_INF("PET", "Starting background weather sync task...");
+      bool success = false;
+      std::string ipJson;
+      if (HttpDownloader::fetchUrl("http://ip-api.com/json/", ipJson)) {
+        JsonDocument doc;
+        DeserializationError error = deserializeJson(doc, ipJson);
+        if (!error) {
+          double lat = doc["lat"] | 0.0;
+          double lon = doc["lon"] | 0.0;
+          if (lat != 0.0 || lon != 0.0) {
+            char url[128];
+            snprintf(url, sizeof(url), "http://api.open-meteo.com/v1/forecast?latitude=%.4f&longitude=%.4f&current_weather=true", lat, lon);
+            std::string weatherJson;
+            if (HttpDownloader::fetchUrl(url, weatherJson)) {
+              JsonDocument wdoc;
+              error = deserializeJson(wdoc, weatherJson);
+              if (!error) {
+                int weathercode = wdoc["current_weather"]["weathercode"] | -1;
+                float temp = wdoc["current_weather"]["temperature"] | 0.0f;
+                
+                uint8_t cond = 3; // default Cloudy
+                if (weathercode >= 0 && weathercode <= 3) {
+                  cond = 1; // Sunny / Clear
+                } else if ((weathercode >= 51 && weathercode <= 67) || (weathercode >= 80 && weathercode <= 82)) {
+                  cond = 2; // Rainy
+                } else if ((weathercode >= 71 && weathercode <= 77) || weathercode == 85 || weathercode == 86) {
+                  cond = 4; // Snowy
+                }
+                
+                PET_MANAGER.updateWeather(cond, (int)temp);
+                PET_MANAGER.setFeedback(tr(STR_PET_WEATHER_SYNCED));
+                LOG_INF("PET", "Weather synced: condition=%d temp=%d", cond, (int)temp);
+                success = true;
+              }
+            }
+          }
+        }
+      }
+      if (!success) {
+        PET_MANAGER.setFeedback(tr(STR_PET_WEATHER_FAILED));
+      }
+      vTaskDelete(nullptr);
+    }, "weather_task", 4096, nullptr, 1, nullptr);
+  }
+#endif
   if (state.lastTickTime == 0) {
     state.lastTickTime = now;
     save();
@@ -41,7 +102,8 @@ void PetManager::tick() {
   // Determine the hour-of-day at the start of the elapsed period for sleep simulation
   struct tm startTm;
   time_t startTime = static_cast<time_t>(state.lastTickTime);
-  localtime_r(&startTime, &startTm);
+  time_t localStartTime = startTime + (static_cast<int>(SETTINGS.clockUtcOffsetQ) - 48) * 900;
+  gmtime_r(&localStartTime, &startTm);
   uint8_t startHour = static_cast<uint8_t>(startTm.tm_hour);
 
   PetDecayEngine::applyDecay(state, elapsedHours, startHour);
@@ -90,6 +152,15 @@ void PetManager::resetMissionsIfNewDay() {
     state.missionDay = today;
     state.missionPagesRead = 0;
     state.missionPetCount = 0;
+    state.missionWaterCount = 0;
+    state.maxSessionPagesToday = 0;
+    state.pagesReadAfter9PM = 0;
+    state.questReadClaimed = false;
+    state.questPetClaimed = false;
+    state.questWaterClaimed = false;
+    state.questSpeedyClaimed = false;
+    state.questNightOwlClaimed = false;
+    state.questStreakSaverClaimed = false;
   }
 }
 
@@ -140,7 +211,29 @@ void PetManager::syncFromReadingStats(const GlobalReadingStats& stats) {
   ReadingStatsDateTime today;
   state.currentStreak = getCurrentLocalReadingStatsDateTime(today) ? stats.currentReadingStreak(&today.date) : 0;
   state.lastReadDay = getDayOfYear();  // keep in sync to prevent tick() from resetting streak
+  if (stats.completedBooks > state.booksFinished) {
+    uint32_t diff = stats.completedBooks - state.booksFinished;
+    state.inkPoints += diff * 100;
+  }
   state.booksFinished = (stats.completedBooks > 255) ? 255 : static_cast<uint8_t>(stats.completedBooks);
+
+  state.longestReadingStreak = stats.longestReadingStreak;
+
+  if (state.lastKnownSessions == 0) {
+    state.lastKnownSessions = stats.totalSessions;
+  } else if (stats.totalSessions > state.lastKnownSessions) {
+    uint32_t diffSessions = stats.totalSessions - state.lastKnownSessions;
+    state.inkPoints += diffSessions * 5;
+    state.lastKnownSessions = stats.totalSessions;
+  }
+
+  if (state.lastKnownReadSeconds == 0) {
+    state.lastKnownReadSeconds = stats.totalReadingSeconds;
+  } else if (stats.totalReadingSeconds > state.lastKnownReadSeconds) {
+    uint32_t diffSeconds = stats.totalReadingSeconds - state.lastKnownReadSeconds;
+    state.inkPoints += diffSeconds / 30;
+    state.lastKnownReadSeconds = stats.totalReadingSeconds;
+  }
 
   // Real page count for evolution thresholds (crossink tracks this precisely,
   // unlike the reading-time estimate the original pet used)
@@ -166,17 +259,68 @@ void PetManager::syncFromReadingStats(const GlobalReadingStats& stats) {
 }
 
 void PetManager::onPageTurned() {
+  load();
   if (!state.exists() || !state.isAlive()) return;
+  updateSleepState();
   if (state.isSleeping || state.isSick) return;
 
   resetMissionsIfNewDay();
-  if (state.missionPagesRead < PetConfig::DAILY_GOAL_PAGES) state.missionPagesRead++;
+  
+  // 1. Daily Reading Goal (30 pages)
+  if (state.missionPagesRead < 30) {
+    state.missionPagesRead++;
+    if (state.missionPagesRead >= 30 && !state.questReadClaimed) {
+      state.inkPoints += 50;
+      state.questReadClaimed = true;
+    }
+  }
+
+  // 2. Speedy Reader (15 pages in one session)
+  sessionPagesRead++;
+  if (sessionPagesRead > state.maxSessionPagesToday) {
+    state.maxSessionPagesToday = sessionPagesRead;
+    if (state.maxSessionPagesToday >= 15 && !state.questSpeedyClaimed) {
+      state.inkPoints += 30;
+      state.questSpeedyClaimed = true;
+    }
+  }
+
+  // 3. Night Owl (10 pages after 9 PM)
+  struct tm timeinfo;
+  if (localTimeNow(timeinfo)) {
+    if (timeinfo.tm_hour >= 21) {
+      if (state.pagesReadAfter9PM < 10) {
+        state.pagesReadAfter9PM++;
+        if (state.pagesReadAfter9PM >= 10 && !state.questNightOwlClaimed) {
+          state.inkPoints += 30;
+          state.questNightOwlClaimed = true;
+        }
+      }
+    }
+  }
+
+  // 4. Streak Saver (3 day reading streak)
+  if (state.currentStreak >= 3 && !state.questStreakSaverClaimed) {
+    state.inkPoints += 40;
+    state.questStreakSaverClaimed = true;
+  }
+
   state.totalPagesRead++;
   state.lastKnownPagesTurned++;
+  state.inkPoints++;
   feedFromPages(1);
   // Not saved here — per-page-turn SD writes are a debounce violation.
   // EpubReaderActivity::onExit() persists this via PET_MANAGER.save() when
   // the reading session ends.
+}
+
+void PetManager::onChapterFinished() {
+  load();
+  if (!state.exists() || !state.isAlive()) return;
+  updateSleepState();
+  if (state.isSleeping || state.isSick) return;
+
+  state.inkPoints += 10;
 }
 
 // --- User interaction ---
@@ -190,10 +334,54 @@ bool PetManager::pet() {
   lastPetTimeMs = now;
   state.happiness = clampAdd(state.happiness, PetConfig::HAPPINESS_PER_PET);
   resetMissionsIfNewDay();
-  if (state.missionPetCount < 3) state.missionPetCount++;
-  LOG_DBG("PET", "Petted! happiness=%d", state.happiness);
+  if (state.missionPetCount < 5) {
+    state.missionPetCount++;
+    if (state.missionPetCount >= 5 && !state.questPetClaimed) {
+      state.inkPoints += 30;
+      state.questPetClaimed = true;
+    }
+  }
+  LOG_DBG("PET", "Tended! happiness=%d", state.happiness);
   save();
   return true;
+}
+
+void PetManager::resetData() {
+  state = PetState();
+  Storage.remove(PetConfig::STATE_PATH);
+  loaded = true;
+  save();
+}
+
+void PetManager::applyPremiumFertilizer() {
+  state.hunger = 100;
+  state.happiness = 100;
+  state.health = 100;
+  state.discipline = 100;
+  state.isSick = false;
+  save();
+}
+
+void PetManager::updateWeather(uint8_t condition, int temp) {
+  state.weatherCondition = condition;
+  state.weatherTemp = temp;
+  state.lastWeatherSync = getCurrentTime();
+  save();
+}
+
+void PetManager::forceWeatherSync() {
+  state.lastWeatherSync = 0;
+  save();
+}
+
+void PetManager::refillWater() {
+  state.waterStock = 3;
+  save();
+}
+
+void PetManager::refillFertilizer() {
+  state.fertilizerStock = 3;
+  save();
 }
 
 void PetManager::hatchNew(const char* name, uint8_t type) {
@@ -254,10 +442,17 @@ uint32_t PetManager::getDaysAlive() const {
   return (now - state.birthTime) / 86400;
 }
 
-void PetManager::getMissions(PetMission out[3]) const {
-  out[0] = {tr(STR_PET_MISSION_READ), state.missionPagesRead, 20, state.missionPagesRead >= 20};
-  out[1] = {tr(STR_PET_MISSION_PET),  state.missionPetCount,   3, state.missionPetCount  >=  3};
-  out[2] = {tr(STR_PET_MISSION_FED),  state.hunger,            40, state.hunger           >= 40};
+void PetManager::startReadingSession() {
+  sessionPagesRead = 0;
+}
+
+void PetManager::getMissions(PetMission out[6]) const {
+  out[0] = {tr(STR_PET_MISSION_READ), state.missionPagesRead, 30, state.missionPagesRead >= 30, 50};
+  out[1] = {tr(STR_PET_MISSION_PET),  state.missionPetCount,   5, state.missionPetCount  >=  5, 30};
+  out[2] = {tr(STR_PET_MISSION_WATER), state.missionWaterCount,  3, state.missionWaterCount >=  3, 20};
+  out[3] = {tr(STR_PET_MISSION_SPEEDY), state.maxSessionPagesToday, 15, state.maxSessionPagesToday >= 15, 30};
+  out[4] = {tr(STR_PET_MISSION_NIGHTOWL), state.pagesReadAfter9PM, 10, state.pagesReadAfter9PM >= 10, 30};
+  out[5] = {tr(STR_PET_MISSION_STREAK), (uint8_t)state.currentStreak, 3, state.currentStreak >= 3, 40};
 }
 
 // --- Helpers ---
@@ -268,7 +463,8 @@ void PetManager::getMissions(PetMission out[3]) const {
 // builds on both hardware and the simulator.
 static bool localTimeNow(struct tm& out) {
   time_t now = time(nullptr);
-  localtime_r(&now, &out);
+  time_t localNow = now + (static_cast<int>(SETTINGS.clockUtcOffsetQ) - 48) * 900;
+  gmtime_r(&localNow, &out);
   return out.tm_year >= 125;  // tm_year is years since 1900; 125 => 2025
 }
 
@@ -285,6 +481,18 @@ uint16_t PetManager::getDayOfYear() const {
   struct tm timeinfo;
   if (!localTimeNow(timeinfo)) return 0;
   return static_cast<uint16_t>(timeinfo.tm_yday + 1);
+}
+
+void PetManager::updateSleepState() {
+  if (!state.exists()) return;
+
+  struct tm timeinfo;
+  if (localTimeNow(timeinfo)) {
+    uint8_t hour = static_cast<uint8_t>(timeinfo.tm_hour);
+    state.isSleeping = (hour >= PetConfig::SLEEP_HOUR || hour < PetConfig::WAKE_HOUR);
+  } else {
+    state.isSleeping = false;
+  }
 }
 
 uint8_t PetManager::clampSub(uint8_t val, uint8_t amount) {

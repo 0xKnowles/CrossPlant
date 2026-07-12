@@ -516,6 +516,12 @@ bool handleGlobalPowerButtonAction(const CrossPointSettings::SHORT_PWRBTN action
       }
       activityManager.goToHotspotFileTransfer();
       return true;
+    case CrossPointSettings::SHORT_PWRBTN::VIRTUAL_PET:
+      if (activityManager.canSnapshotForSleepOverlay()) {
+        return false;
+      }
+      activityManager.goToVirtualPet();
+      return true;
     default:
       return false;
   }
@@ -971,6 +977,8 @@ void loop() {
     lastActivityTime = millis();
     return;
   }
+
+
 
   // Refresh the battery icon when USB is plugged or unplugged.
   // Placed after sleep guards so we never queue a render that won't be processed.

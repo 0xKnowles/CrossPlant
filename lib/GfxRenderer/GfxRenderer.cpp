@@ -1684,8 +1684,18 @@ void GfxRenderer::drawBitmap(const Bitmap& bitmap, const int x, const int y, con
 
       const uint8_t val = outputRow[bmpX / 4] >> (6 - ((bmpX * 2) % 8)) & 0x3;
 
-      if (renderMode == BW && val < 3) {
-        drawPixel(screenX, screenY);
+      if (renderMode == BW) {
+        static constexpr uint8_t bayerMatrix[4][4] = {
+          {  12, 204,  60, 252 },
+          { 140,  76, 188, 124 },
+          {  44, 236,  28, 220 },
+          { 172, 108, 156,  92 }
+        };
+        uint8_t threshold = bayerMatrix[screenY & 3][screenX & 3];
+        uint8_t brightness = (val == 0) ? 0 : (val == 1) ? 85 : (val == 2) ? 170 : 255;
+        if (brightness < threshold) {
+          drawPixel(screenX, screenY);
+        }
       } else if (renderMode == GRAYSCALE_MSB && (val == 1 || val == 2)) {
         drawPixel(screenX, screenY, false);
       } else if (renderMode == GRAYSCALE_LSB && val == 1) {

@@ -38,6 +38,7 @@
 #include "components/themes/lyra/LyraCarouselTheme.h"
 #include "components/themes/minimal/MinimalTheme.h"
 #include "fontIds.h"
+#include "pet/PetManager.h"
 
 namespace {
 constexpr uint32_t CAROUSEL_CACHE_MAGIC = 0x43434152;  // "CCAR"
@@ -58,6 +59,7 @@ enum class HomeMenuAction {
   Bookmarks,
   FileTransfer,
   Settings,
+  VirtualPet,
 };
 
 struct HomeMenuEntry {
@@ -67,7 +69,7 @@ struct HomeMenuEntry {
 };
 
 struct HomeMenuEntries {
-  static constexpr int kCapacity = 8;
+  static constexpr int kCapacity = 10;
   std::array<HomeMenuEntry, kCapacity> entries{};
   int count = 0;
 
@@ -263,6 +265,11 @@ void appendHomeMenuItems(HomeMenuEntries& items, bool hasOpdsServers, bool hasRe
     items.push({savedItemsLabel(hasBookmarks, hasClippings), BookmarkIcon, HomeMenuAction::Bookmarks});
   }
 
+  PET_MANAGER.load();
+  if (PET_MANAGER.exists() && PET_MANAGER.isAlive()) {
+    items.push({tr(STR_SLEEP_PET), Chart, HomeMenuAction::VirtualPet});
+  }
+
   items.push({tr(STR_FILE_TRANSFER), Transfer, HomeMenuAction::FileTransfer});
   items.push({tr(STR_SETTINGS_TITLE), Settings, HomeMenuAction::Settings});
 }
@@ -287,7 +294,13 @@ HomeMenuEntries buildMinimalMenuItems(bool hasOpdsServers, bool hasReadingStats,
     items.push({tr(STR_READING_STATS), Chart, HomeMenuAction::ReadingStats});
   }
 
+  PET_MANAGER.load();
+  if (PET_MANAGER.exists() && PET_MANAGER.isAlive()) {
+    items.push({tr(STR_SLEEP_PET), Chart, HomeMenuAction::VirtualPet});
+  }
+
   items.push({tr(STR_FILE_TRANSFER), Transfer, HomeMenuAction::FileTransfer});
+  items.push({tr(STR_SETTINGS_TITLE), Settings, HomeMenuAction::Settings});
   return items;
 }
 
@@ -336,7 +349,11 @@ bool isDashboardTheme() {
   return static_cast<CrossPointSettings::UI_THEME>(SETTINGS.uiTheme) == CrossPointSettings::UI_THEME::DASHBOARD;
 }
 
-bool usesMinimalHomeInteraction() { return isMinimalTheme() || isDashboardTheme(); }
+bool isCoverPetTheme() {
+  return false;
+}
+
+bool usesMinimalHomeInteraction() { return isMinimalTheme() || isDashboardTheme() || isCoverPetTheme(); }
 
 bool isAnyFrontButtonPressed(const MappedInputManager& mappedInput) {
   return mappedInput.isFrontButtonPressed(HalGPIO::BTN_BACK) ||
@@ -388,6 +405,28 @@ std::string dashboardHomeCoverPath(const RecentBook& book, int coverHeight) {
   }
   return UITheme::getCoverThumbPath(book.coverBmpPath, dashboardHomeCoverWidth(coverHeight),
                                     dashboardHomeCoverHeight(coverHeight));
+}
+
+int coverPetHomeCoverWidth(int coverHeight) {
+  (void)coverHeight;
+  return 146;
+}
+
+int coverPetHomeCoverHeight(int coverHeight) {
+  (void)coverHeight;
+  return 220;
+}
+
+std::string coverPetHomeCoverPath(const RecentBook& book, int coverHeight) {
+  if (book.coverBmpPath.empty()) {
+    return {};
+  }
+  if (FsHelpers::hasEpubExtension(book.path)) {
+    return Epub(book.path, "/.crosspoint")
+        .getAdaptiveThumbBmpPath(coverPetHomeCoverWidth(coverHeight), coverPetHomeCoverHeight(coverHeight));
+  }
+  return UITheme::getCoverThumbPath(book.coverBmpPath, coverPetHomeCoverWidth(coverHeight),
+                                    coverPetHomeCoverHeight(coverHeight));
 }
 
 void appendCarouselCoverStateToKey(std::string& key, const RecentBook& book) {
@@ -650,6 +689,7 @@ void HomeActivity::loadRecentCovers(int coverHeight) {
       static_cast<CrossPointSettings::UI_THEME>(SETTINGS.uiTheme) == CrossPointSettings::UI_THEME::LYRA_CAROUSEL;
   const bool isMinimal = isMinimalTheme();
   const bool isDashboard = isDashboardTheme();
+  const bool isCoverPet = isCoverPetTheme();
   const size_t recentBookCount = recentBooks.size();
   // Home only loads kMaxCachedBooks recents; fixed storage avoids an aborting std::vector allocation on low heap.
   std::array<char, kMaxCachedBooks> bookUpdated{};
@@ -740,11 +780,13 @@ void HomeActivity::loadRecentCovers(int coverHeight) {
             FsHelpers::hasEpubExtension(book.path) || FsHelpers::hasXtcExtension(book.path);
         const bool useDashboardThumb = isDashboard && supportsExactHomeThumb;
         const bool useMinimalThumb = isMinimal && supportsExactHomeThumb;
-        const bool useExactHomeThumb = useDashboardThumb || useMinimalThumb;
+        const bool useCoverPetThumb = isCoverPet && supportsExactHomeThumb;
+        const bool useExactHomeThumb = useDashboardThumb || useMinimalThumb || useCoverPetThumb;
         const std::string coverPath =
             useDashboardThumb ? dashboardHomeCoverPath(book, coverHeight)
                               : (useMinimalThumb ? minimalHomeCoverPath(book, coverHeight)
-                                                 : UITheme::getCoverThumbPath(book.coverBmpPath, coverHeight));
+                                                 : (useCoverPetThumb ? coverPetHomeCoverPath(book, coverHeight)
+                                                                     : UITheme::getCoverThumbPath(book.coverBmpPath, coverHeight)));
         if (coverPath.empty() || !Storage.exists(coverPath.c_str())) {
           if (FsHelpers::hasEpubExtension(book.path)) {
             Epub epub(book.path, "/.crosspoint");
@@ -767,11 +809,15 @@ void HomeActivity::loadRecentCovers(int coverHeight) {
                     ? epub.generateAdaptiveThumbBmp(dashboardHomeCoverWidth(coverHeight),
                                                     dashboardHomeCoverHeight(coverHeight), &renderer,
                                                     SETTINGS.getReaderFontId())
-                    : (useExactHomeThumb
-                           ? epub.generateAdaptiveThumbBmp(minimalHomeCoverWidth(coverHeight),
-                                                           minimalHomeCoverHeight(coverHeight), &renderer,
+                    : (useCoverPetThumb
+                           ? epub.generateAdaptiveThumbBmp(coverPetHomeCoverWidth(coverHeight),
+                                                           coverPetHomeCoverHeight(coverHeight), &renderer,
                                                            SETTINGS.getReaderFontId())
-                           : epub.generateThumbBmp(0, coverHeight, &renderer, SETTINGS.getReaderFontId()));
+                           : (useExactHomeThumb
+                                  ? epub.generateAdaptiveThumbBmp(minimalHomeCoverWidth(coverHeight),
+                                                                  minimalHomeCoverHeight(coverHeight), &renderer,
+                                                                  SETTINGS.getReaderFontId())
+                                  : epub.generateThumbBmp(0, coverHeight, &renderer, SETTINGS.getReaderFontId())));
             if (!success) {
               updateRecentBookCoverPath(book, "");
               book.coverBmpPath = "";
@@ -792,10 +838,13 @@ void HomeActivity::loadRecentCovers(int coverHeight) {
                   useDashboardThumb
                       ? xtc.generateThumbBmp(static_cast<uint16_t>(dashboardHomeCoverWidth(coverHeight)),
                                              static_cast<uint16_t>(dashboardHomeCoverHeight(coverHeight)))
-                      : (useExactHomeThumb
-                             ? xtc.generateThumbBmp(static_cast<uint16_t>(minimalHomeCoverWidth(coverHeight)),
-                                                    static_cast<uint16_t>(minimalHomeCoverHeight(coverHeight)))
-                             : xtc.generateThumbBmp(coverHeight));
+                      : (useCoverPetThumb
+                             ? xtc.generateThumbBmp(static_cast<uint16_t>(coverPetHomeCoverWidth(coverHeight)),
+                                                    static_cast<uint16_t>(coverPetHomeCoverHeight(coverHeight)))
+                             : (useExactHomeThumb
+                                    ? xtc.generateThumbBmp(static_cast<uint16_t>(minimalHomeCoverWidth(coverHeight)),
+                                                           static_cast<uint16_t>(minimalHomeCoverHeight(coverHeight)))
+                                    : xtc.generateThumbBmp(coverHeight)));
               if (!success) {
                 updateRecentBookCoverPath(book, "");
                 book.coverBmpPath = "";
@@ -1467,8 +1516,13 @@ void HomeActivity::loop() {
           case HomeMenuAction::FileTransfer:
             onFileTransferOpen();
             break;
-          case HomeMenuAction::ContinueReading:
+          case HomeMenuAction::VirtualPet:
+            onVirtualPetOpen();
+            break;
           case HomeMenuAction::Settings:
+            onSettingsOpen();
+            break;
+          case HomeMenuAction::ContinueReading:
             break;
         }
       }
@@ -1500,6 +1554,23 @@ void HomeActivity::loop() {
     }
 
     auto activateMinimalHomeNav = [this](int index) {
+      if (isCoverPetTheme()) {
+        switch (index) {
+          case 0:
+            onFileBrowserOpen();
+            break;
+          case 1:
+            onSettingsOpen();
+            break;
+          case 2:
+            onVirtualPetOpen();
+            break;
+          case 3:
+            onContinueReading();
+            break;
+        }
+        return;
+      }
       switch (index) {
         case 0:
           minimalMenuOpen = true;
@@ -1510,7 +1581,11 @@ void HomeActivity::loop() {
           onFileBrowserOpen();
           break;
         case 2:
-          onSettingsOpen();
+          if (isDashboardTheme()) {
+            onVirtualPetOpen();
+          } else {
+            onSettingsOpen();
+          }
           break;
         case 3:
           onContinueReading();
@@ -1666,6 +1741,9 @@ void HomeActivity::loop() {
       case HomeMenuAction::Settings:
         onSettingsOpen();
         break;
+      case HomeMenuAction::VirtualPet:
+        onVirtualPetOpen();
+        break;
     }
   }
 }
@@ -1711,8 +1789,14 @@ void HomeActivity::render(RenderLock&&) {
       minimalHomeNavIndex = homeNavCount - 1;
     }
     MinimalTheme::setHomeButtonHintSelection(minimalHomeNavIndex);
-    GUI.drawButtonHints(renderer, tr(STR_MENU), tr(STR_BROWSE), tr(STR_SETTINGS_SHORT),
-                        recentBooks.empty() ? "" : tr(STR_READ));
+    if (isCoverPetTheme()) {
+      GUI.drawButtonHints(renderer, tr(STR_BROWSE), tr(STR_SETTINGS_SHORT), tr(STR_SLEEP_PET),
+                          recentBooks.empty() ? "" : tr(STR_READ));
+    } else {
+      GUI.drawButtonHints(renderer, tr(STR_MENU), tr(STR_BROWSE),
+                          isDashboardTheme() ? tr(STR_SLEEP_PET) : tr(STR_SETTINGS_SHORT),
+                          recentBooks.empty() ? "" : tr(STR_READ));
+    }
 
     renderer.displayBuffer();
 
@@ -1937,3 +2021,5 @@ void HomeActivity::onSavedItemsOpen() {
   startActivityForResult(std::make_unique<SavedItemsHomeActivity>(renderer, mappedInput),
                          [this](const ActivityResult&) { requestUpdate(); });
 }
+
+void HomeActivity::onVirtualPetOpen() { activityManager.goToVirtualPet(); }

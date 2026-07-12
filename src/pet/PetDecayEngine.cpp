@@ -32,26 +32,52 @@ static void applyOneHour(PetState& state, uint8_t currentHour, uint32_t h) {
   }
   state.isSleeping = false;
 
-  // Hunger decays every hour while awake
-  state.hunger = clampSub(state.hunger, PetConfig::HUNGER_DECAY_PER_HOUR);
+  // Hunger (Moisture) decays every hour while awake, halved if Self-Watering Pot is equipped
+  uint8_t hungerDecay = PetConfig::HUNGER_DECAY_PER_HOUR;
+  if (state.equipSelfWateringPot) {
+    if (h % 2 != 0) hungerDecay = 0;
+  }
+  state.hunger = clampSub(state.hunger, hungerDecay);
 
-  // Happiness decays every ~2 hours
+  // Slow-Release Fertilizer passive: regenerates nutrients (+1 discipline every 2 hours)
+  if (state.equipSlowReleaseFertilizer && h % 2 == 0) {
+    state.discipline = clampAdd(state.discipline, 1);
+  }
+
+  // Happiness (Sunlight) decays every ~2 hours
   if (h % 2 == 0) {
     uint8_t decay = PetConfig::HAPPINESS_DECAY_PER_HOUR;
     // Sickness doubles happiness decay
     if (state.isSick) decay += PetConfig::SICK_HAPPINESS_PENALTY;
     // Each waste pile drains happiness
     if (state.wasteCount > 0) decay += state.wasteCount * PetConfig::WASTE_HAPPINESS_PENALTY;
+
+    // Moss Pole halves the happiness decay!
+    if (state.equipMossPole) {
+      if (decay > 1) {
+        decay /= 2;
+      } else if (decay == 1 && h % 4 == 0) {
+        decay = 0;
+      }
+    }
     state.happiness = clampSub(state.happiness, decay);
   }
 
   // Health drains when starving
   if (state.hunger == 0) {
-    state.health = clampSub(state.health, PetConfig::HEALTH_DECAY_PER_HOUR);
+    uint8_t healthDecay = PetConfig::HEALTH_DECAY_PER_HOUR;
+    if (state.equipGreenhouseCover) {
+      healthDecay /= 2;
+    }
+    state.health = clampSub(state.health, healthDecay);
   }
   // Underweight also drains health slowly
   if (state.weight < PetConfig::UNDERWEIGHT_THRESHOLD && h % 4 == 0) {
-    state.health = clampSub(state.health, 1);
+    uint8_t healthDecay = 1;
+    if (state.equipGreenhouseCover && h % 8 != 0) {
+      healthDecay = 0;
+    }
+    state.health = clampSub(state.health, healthDecay);
   }
 
   // Weight trends toward normal (1 point per 12 awake hours)

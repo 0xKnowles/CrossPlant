@@ -40,8 +40,15 @@ bool PetActionMenu::isActionAvailable(PetAction action, const PetState& state) c
       return true;
     case PetAction::PET_PET:
       return !state.isSleeping;
+    case PetAction::DAILY_QUESTS:
     case PetAction::RENAME:
     case PetAction::CHANGE_TYPE:
+    case PetAction::SHOP:
+    case PetAction::ALBUM:
+    case PetAction::CONNECT_WEATHER:
+    case PetAction::REFILL_WATER:
+    case PetAction::BUY_FERTILIZER:
+    case PetAction::RESET_DATA:
       return true;
     default:
       return false;
@@ -50,20 +57,31 @@ bool PetActionMenu::isActionAvailable(PetAction action, const PetState& state) c
 
 // ---- Action labels ------------------------------------------------------
 
-const char* PetActionMenu::actionLabel(PetAction action) {
+void PetActionMenu::actionLabel(PetAction action, const PetState& state, char* outBuf, size_t bufSize) {
   switch (action) {
-    case PetAction::FEED_MEAL:     return tr(STR_PET_ACTION_FEED_MEAL);
-    case PetAction::FEED_SNACK:    return tr(STR_PET_ACTION_FEED_SNACK);
-    case PetAction::MEDICINE:      return tr(STR_PET_ACTION_MEDICINE);
-    case PetAction::EXERCISE:      return tr(STR_PET_ACTION_EXERCISE);
-    case PetAction::CLEAN:         return tr(STR_PET_ACTION_CLEAN);
-    case PetAction::SCOLD:         return tr(STR_PET_ACTION_SCOLD);
-    case PetAction::IGNORE_CRY:    return tr(STR_PET_ACTION_IGNORE);
-    case PetAction::TOGGLE_LIGHTS: return tr(STR_PET_ACTION_LIGHTS);
-    case PetAction::PET_PET:       return tr(STR_PET_ACTION_PET);
-    case PetAction::RENAME:        return tr(STR_PET_ACTION_RENAME);
-    case PetAction::CHANGE_TYPE:   return tr(STR_PET_ACTION_TYPE);
-    default:                       return "???";
+    case PetAction::FEED_MEAL:
+      snprintf(outBuf, bufSize, "%s (%u/3)", tr(STR_PET_ACTION_FEED_MEAL), state.waterStock);
+      break;
+    case PetAction::SCOLD:
+      snprintf(outBuf, bufSize, "%s (%u/3)", tr(STR_PET_ACTION_SCOLD), state.fertilizerStock);
+      break;
+    case PetAction::FEED_SNACK:      snprintf(outBuf, bufSize, "%s", tr(STR_PET_ACTION_FEED_SNACK)); break;
+    case PetAction::MEDICINE:        snprintf(outBuf, bufSize, "%s", tr(STR_PET_ACTION_MEDICINE)); break;
+    case PetAction::EXERCISE:        snprintf(outBuf, bufSize, "%s", tr(STR_PET_ACTION_EXERCISE)); break;
+    case PetAction::CLEAN:           snprintf(outBuf, bufSize, "%s", tr(STR_PET_ACTION_CLEAN)); break;
+    case PetAction::IGNORE_CRY:      snprintf(outBuf, bufSize, "%s", tr(STR_PET_ACTION_IGNORE)); break;
+    case PetAction::TOGGLE_LIGHTS:   snprintf(outBuf, bufSize, "%s", tr(STR_PET_ACTION_LIGHTS)); break;
+    case PetAction::PET_PET:         snprintf(outBuf, bufSize, "%s", tr(STR_PET_ACTION_PET)); break;
+    case PetAction::DAILY_QUESTS:    snprintf(outBuf, bufSize, "%s", tr(STR_PET_ACTION_QUESTS)); break;
+    case PetAction::RENAME:          snprintf(outBuf, bufSize, "%s", tr(STR_PET_ACTION_RENAME)); break;
+    case PetAction::CHANGE_TYPE:     snprintf(outBuf, bufSize, "%s", tr(STR_PET_ACTION_TYPE)); break;
+    case PetAction::SHOP:            snprintf(outBuf, bufSize, "%s", tr(STR_PET_ACTION_SHOP)); break;
+    case PetAction::ALBUM:           snprintf(outBuf, bufSize, "%s", tr(STR_PET_ACTION_ALBUM)); break;
+    case PetAction::CONNECT_WEATHER: snprintf(outBuf, bufSize, "%s", tr(STR_PET_ACTION_WEATHER)); break;
+    case PetAction::REFILL_WATER:    snprintf(outBuf, bufSize, "%s", tr(STR_PET_ACTION_REFILL_WATER)); break;
+    case PetAction::BUY_FERTILIZER:  snprintf(outBuf, bufSize, "%s", tr(STR_PET_ACTION_BUY_FERTILIZER)); break;
+    case PetAction::RESET_DATA:      snprintf(outBuf, bufSize, "%s", tr(STR_PET_ACTION_RESET)); break;
+    default:                         snprintf(outBuf, bufSize, "???"); break;
   }
 }
 
@@ -81,22 +99,35 @@ void PetActionMenu::render(GfxRenderer& renderer, const PetState& state,
 
   for (int i = 0; i < ACTION_TOTAL && (i - scrollOffset) < visibleRows; i++) {
     if (i < scrollOffset) continue;
-    const int rowY = y + (i - scrollOffset) * rowH;
+    
+    int rowY = y + (i - scrollOffset) * rowH;
+    if (i >= static_cast<int>(PetAction::DAILY_QUESTS)) {
+      rowY += 10; // 10px spacing gap for separator 1
+    }
+    if (i >= static_cast<int>(PetAction::REFILL_WATER)) {
+      rowY += 10; // additional 10px spacing gap for separator 2
+    }
+
     const PetAction action = static_cast<PetAction>(i);
     const bool available = isActionAvailable(action, state);
     const bool selected = (i == selectedIndex);
-    const char* label = actionLabel(action);
+    
+    char label[64];
+    actionLabel(action, state, label, sizeof(label));
+
+    if (i == static_cast<int>(PetAction::DAILY_QUESTS)) {
+      renderer.drawLine(x + 4, rowY - 6, x + w - 4, rowY - 6, true);
+    }
+    if (i == static_cast<int>(PetAction::REFILL_WATER)) {
+      renderer.drawLine(x + 4, rowY - 6, x + w - 4, rowY - 6, true);
+    }
 
     if (selected) {
       // Highlight selected row with an inverted rect
       renderer.fillRect(x, rowY, w, rowH);
       renderer.drawText(SMALL_FONT_ID, x + 4, rowY + 3, label, /*invert=*/false);
-    } else if (!available) {
-      // Grayed out: show label with brackets to indicate unavailable
-      char buf[32];
-      snprintf(buf, sizeof(buf), "(%s)", label);
-      renderer.drawText(SMALL_FONT_ID, x + 4, rowY + 3, buf);
     } else {
+      // No brackets for unavailable items, draw directly as requested
       renderer.drawText(SMALL_FONT_ID, x + 4, rowY + 3, label);
     }
   }

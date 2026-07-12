@@ -19,6 +19,7 @@
 #include "SdCardFontSystem.h"
 #include "activities/boot_sleep/SleepCoverAssets.h"
 #include "components/UITheme.h"
+#include "pet/PetManager.h"
 #include "fontIds.h"
 
 namespace {
@@ -103,6 +104,10 @@ void TxtReaderActivity::onEnter() {
     return;
   }
 
+  if (PET_MANAGER.load()) {
+    PET_MANAGER.startReadingSession();
+  }
+
   ReaderUtils::applyOrientation(renderer, SETTINGS.orientation);
 
   // Activate reader-specific front button mapping (if configured).
@@ -125,6 +130,10 @@ void TxtReaderActivity::onEnter() {
 
 void TxtReaderActivity::onExit() {
   Activity::onExit();
+
+  if (SETTINGS.shouldTrackReadingStats()) {
+    PET_MANAGER.save();
+  }
 
   // Deactivate reader-specific front button mapping.
   mappedInput.setReaderMode(false);
@@ -256,6 +265,9 @@ void TxtReaderActivity::loop() {
   } else if (nextTriggered) {
     if (currentPage < totalPages - 1) {
       currentPage++;
+      if (SETTINGS.shouldTrackReadingStats()) {
+        PET_MANAGER.onPageTurned();
+      }
       requestUpdate();
     }
   }
@@ -312,6 +324,9 @@ bool TxtReaderActivity::executePowerButtonAction() {
       case CrossPointSettings::SHORT_PWRBTN::FILE_BROWSER:
         activityManager.goToFileBrowser(txt ? txt->getPath() : "");
         return true;
+      case CrossPointSettings::SHORT_PWRBTN::VIRTUAL_PET:
+        activityManager.goToVirtualPet();
+        return true;
       case CrossPointSettings::SHORT_PWRBTN::CREATE_CLIPPING:
         return false;
       default:
@@ -362,6 +377,9 @@ bool TxtReaderActivity::executeLongPressBackAction() {
       return true;
     case CrossPointSettings::LONG_PRESS_MENU_ACTION::LONG_MENU_FILE_BROWSER:
       activityManager.goToFileBrowser(txt ? txt->getPath() : "");
+      return true;
+    case CrossPointSettings::LONG_PRESS_MENU_ACTION::LONG_MENU_VIRTUAL_PET:
+      activityManager.goToVirtualPet();
       return true;
     case CrossPointSettings::LONG_PRESS_MENU_ACTION::LONG_MENU_CREATE_CLIPPING:
       return false;
