@@ -488,19 +488,22 @@ void drawFooterStats(const GfxRenderer& renderer, const Rect& coverRect, const G
   if (PET_MANAGER.exists() && PET_MANAGER.isAlive()) {
     const auto& state = PET_MANAGER.getState();
     const PetMood mood = PET_MANAGER.getMood();
+    // Slightly smaller than the other footer icons (kFooterIconSize) so it no longer crowds the
+    // pet name/stage text drawn right next to it.
+    constexpr int kFooterPlantIconSize = 20;
     const int iconX = coverRect.x;
-    const int iconY = centerY - kFooterIconSize / 2;
+    const int iconY = centerY - kFooterPlantIconSize / 2;
 
     // Draw mini pet sprite
     PetSpriteRenderer::drawMini(const_cast<GfxRenderer&>(renderer), iconX, iconY, state.stage, mood,
-                                state.evolutionVariant, state.petType);
+                                state.evolutionVariant, state.petType, kFooterPlantIconSize);
 
     // Draw pet name & stage
     const int lineH10 = renderer.getLineHeight(UI_10_FONT_ID);
     const int lineH8 = renderer.getLineHeight(SMALL_FONT_ID);
     const int totalTextH = lineH10 + 4 + lineH8 + 4 + lineH8;
     const int textY = centerY - totalTextH / 2;
-    const int textX = iconX + kFooterIconSize + 6; // Shipped left by reducing gap from 18 to 6
+    const int textX = iconX + kFooterPlantIconSize + 10;
 
     const char* petName = state.petName[0] ? state.petName : PetTypeNames::get(state.petType);
     const char* stageName = PetEvolution::variantStageName(state.stage, state.evolutionVariant);
