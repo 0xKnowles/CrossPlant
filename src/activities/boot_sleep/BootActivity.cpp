@@ -15,16 +15,16 @@ void BootActivity::onEnter() {
 
   renderer.clearScreen();
 
-  constexpr int PET_SCALE = 4;
-  const int petSize = PetSpriteRenderer::displaySize(PET_SCALE);
+  constexpr int PET_TARGET_SIZE = 240;
+  const int petSize = PET_TARGET_SIZE;
   const int spriteX = (pageWidth - petSize) / 2;
   const int spriteY = (pageHeight - petSize) / 2 - 40;
 
-  PetSpriteRenderer::drawPet(renderer, spriteX, spriteY, PetStage::YOUNGSTER, PetMood::HAPPY, PET_SCALE,
-                             0, 2, 0, false, false);
+  PetSpriteRenderer::drawPet(renderer, spriteX, spriteY, PetStage::YOUNGSTER, PetMood::HAPPY, /*scale=*/4,
+                             0, 2, 0, false, false, /*targetSize=*/petSize);
 
   renderer.drawCenteredText(UI_12_FONT_ID, spriteY + petSize + 24, "CrossPlant", true, EpdFontFamily::BOLD);
   renderer.drawCenteredText(UI_10_FONT_ID, spriteY + petSize + 24 + 30, tr(STR_BOOTING));
-  renderer.drawCenteredText(UI_10_FONT_ID, pageHeight - 50, "v1.1.2 by 0xKnowles");
+  renderer.drawCenteredText(UI_10_FONT_ID, pageHeight - 50, "v1.12.0 by 0xKnowles");
   renderer.displayBuffer();
 }

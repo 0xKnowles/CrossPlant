@@ -314,20 +314,28 @@ bool tryDrawCoverBmp(const GfxRenderer& renderer, const std::string& bmpPath, co
   return drawn;
 }
 
-// Draws the most-recently-read book's cover into r. Tries the adaptive EPUB thumb and a few cached
-// thumbnail sizes (letting drawBitmap scale a larger cached cover down), falling back to an empty
-// framed box when no cover art has been cached yet.
+// Draws the most-recently-read book's cover into r. For EPUBs, generates (or reuses) the exact
+// same fixed-size adaptive-fit thumbnail the Dashboard theme's own cover UI uses —
+// generateAdaptiveThumbBmp short-circuits instantly when a matching-size file is already cached,
+// so calling it on every render is cheap. tryDrawCoverBmp then scale-fits that bitmap into r
+// regardless of r's own size, so this cover box can be any size. Non-EPUB formats fall back to
+// whatever cover thumb the recent-books store already has cached. Falls back to an empty framed
+// box only if no source cover exists at all (e.g. the book file was removed).
 void drawLastBookCover(const GfxRenderer& renderer, const RecentBook& book, const Rect& r) {
+  std::string bmpPath;
   if (FsHelpers::hasEpubExtension(book.path)) {
-    const std::string adaptive = Epub(book.path, "/.crosspoint").getAdaptiveThumbBmpPath(r.width, r.height);
-    if (tryDrawCoverBmp(renderer, adaptive, r)) return;
+    Epub epub(book.path, "/.crosspoint");
+    bmpPath = epub.getAdaptiveThumbBmpPath(DashboardMetrics::homeCoverImageWidth, DashboardMetrics::homeCoverImageHeight);
+    if (!Storage.exists(bmpPath.c_str()) && epub.load(/*buildIfMissing=*/true, /*skipLoadingCss=*/true)) {
+      epub.generateAdaptiveThumbBmp(DashboardMetrics::homeCoverImageWidth, DashboardMetrics::homeCoverImageHeight,
+                                    &renderer, SETTINGS.getReaderFontId());
+    }
+  } else {
+    bmpPath = UITheme::getCoverThumbPath(book.coverBmpPath, DashboardMetrics::homeCoverImageWidth,
+                                         DashboardMetrics::homeCoverImageHeight);
   }
-  if (tryDrawCoverBmp(renderer, UITheme::getCoverThumbPath(book.coverBmpPath, r.width, r.height), r)) return;
-  if (tryDrawCoverBmp(renderer, UITheme::getCoverThumbPath(book.coverBmpPath, r.height), r)) return;
-  if (tryDrawCoverBmp(renderer,
-                      UITheme::getCoverThumbPath(book.coverBmpPath, DashboardMetrics::homeCoverImageWidth,
-                                                 DashboardMetrics::homeCoverImageHeight),
-                      r)) {
+
+  if (tryDrawCoverBmp(renderer, bmpPath, r)) {
     return;
   }
   renderer.drawRoundedRect(r.x, r.y, r.width, r.height, 1, 4, true);
@@ -338,14 +346,16 @@ void drawLastBookCover(const GfxRenderer& renderer, const RecentBook& book, cons
 void drawSleepReadingStatsCard(const GfxRenderer& renderer, const Rect& card, const RecentBook* lastBook,
                                const GlobalReadingStats& stats, const PetState& state) {
   renderer.drawRoundedRect(card.x, card.y, card.width, card.height, 1, 8, true);
-  const int dividerY = card.y + 28;
+  const int dividerY = card.y + 24;
   renderer.drawLine(card.x, dividerY, card.x + card.width - 1, dividerY, true);
   const char* title = "READING STATS";
   const int titleW = renderer.getTextWidth(UI_10_FONT_ID, title, EpdFontFamily::BOLD);
-  renderer.drawText(UI_10_FONT_ID, card.x + (card.width - titleW) / 2, card.y + 6, title, true, EpdFontFamily::BOLD);
+  renderer.drawText(UI_10_FONT_ID, card.x + (card.width - titleW) / 2, card.y + 5, title, true, EpdFontFamily::BOLD);
 
-  const int pad = 14;
-  const int coverTop = dividerY + 10;
+  // Give the cover as much of the card's height as possible; pad kept tight so it reads as a
+  // real book cover rather than a small icon.
+  const int pad = 10;
+  const int coverTop = dividerY + 6;
   const int coverH = card.y + card.height - coverTop - pad;
   const int coverW = std::max(1, coverH * 2 / 3);
   if (lastBook != nullptr) {
@@ -718,9 +728,9 @@ void SleepActivity::renderPetSleepScreen() const {
 
   // 4. Draw Pet Sprite & Information inside Left Card
   // Scale the plant up to fill more of the card (was a fixed 144px); bounded by both card
-  // dimensions so there's still room below it for the name/stage lines and card margins.
-  constexpr int kMaxPetSize = 200;
-  const int petSize = std::min({kMaxPetSize, coverRect.width - 24, coverRect.height - 90});
+  // dimensions so there's still room below it for the name/stage/species lines and card margins.
+  constexpr int kMaxPetSize = 220;
+  const int petSize = std::min({kMaxPetSize, coverRect.width - 24, coverRect.height - 110});
   const int spriteX = coverRect.x + (coverRect.width - petSize) / 2;
   const int spriteY = coverRect.y + (coverRect.height - petSize) / 2 - 20;
 
@@ -730,13 +740,20 @@ void SleepActivity::renderPetSleepScreen() const {
 
   const char* petName = state.petName[0] ? state.petName : PetTypeNames::get(state.petType);
   const char* stageName = PetEvolution::variantStageName(state.stage, state.evolutionVariant);
+  const char* speciesName = PetTypeNames::get(state.petType);
 
   const int nameY = spriteY + petSize + 12;
+  const int lineH10 = renderer.getLineHeight(UI_10_FONT_ID);
+  const int lineH8 = renderer.getLineHeight(SMALL_FONT_ID);
   const int nameW = renderer.getTextWidth(UI_10_FONT_ID, petName, EpdFontFamily::BOLD);
   renderer.drawText(UI_10_FONT_ID, coverRect.x + (coverRect.width - nameW) / 2, nameY, petName, true, EpdFontFamily::BOLD);
 
   const int stageW = renderer.getTextWidth(SMALL_FONT_ID, stageName);
-  renderer.drawText(SMALL_FONT_ID, coverRect.x + (coverRect.width - stageW) / 2, nameY + renderer.getLineHeight(UI_10_FONT_ID) + 2, stageName, true);
+  renderer.drawText(SMALL_FONT_ID, coverRect.x + (coverRect.width - stageW) / 2, nameY + lineH10 + 2, stageName, true);
+
+  const int speciesW = renderer.getTextWidth(SMALL_FONT_ID, speciesName);
+  renderer.drawText(SMALL_FONT_ID, coverRect.x + (coverRect.width - speciesW) / 2,
+                    nameY + lineH10 + 2 + lineH8 + 2, speciesName, true);
 
   // 5. Draw Right Column Stats
   const int rightX = pageWidth - inset - shift;
@@ -833,7 +850,9 @@ void SleepActivity::renderPetSleepScreen() const {
   // footer (mainly present on the taller X3 panel).
   constexpr int kStatsCardTopGap = 14;
   constexpr int kBottomMargin = 16;
-  constexpr int kMinStatsCardHeight = 90;
+  // Below this, the cover would be too small to read as a book cover; skip the card entirely
+  // rather than draw a cramped sliver (mainly relevant on the shorter X4 panel).
+  constexpr int kMinStatsCardHeight = 140;
   const int statsCardTop = footerY + lineH + 6 + lineH + kStatsCardTopGap;
   const int statsCardHeight = pageHeight - kBottomMargin - statsCardTop;
   if (statsCardHeight >= kMinStatsCardHeight) {
