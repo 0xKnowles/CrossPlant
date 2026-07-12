@@ -40,10 +40,12 @@ class PetActionMenu {
   bool isActionAvailable(PetAction action, const PetState& state) const;
 
   // Render the action list at (x, y) within (w x h) pixels
-  void render(GfxRenderer& renderer, const PetState& state, int x, int y, int w, int h) const;
+  void render(GfxRenderer& renderer, const PetState& state, const PetFarmState& farm,
+              int x, int y, int w, int h) const;
 
-  // Label string for a given action
-  static void actionLabel(PetAction action, const PetState& state, char* outBuf, size_t bufSize);
+  // Label string for a given action. farm supplies water/fertilizer stock counts.
+  static void actionLabel(PetAction action, const PetState& state, const PetFarmState& farm,
+                          char* outBuf, size_t bufSize);
 
  private:
   int selectedIndex = 0;

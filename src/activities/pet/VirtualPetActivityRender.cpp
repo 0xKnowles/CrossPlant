@@ -73,6 +73,7 @@ void VirtualPetActivity::renderDead() const {
 
 void VirtualPetActivity::renderAlive() const {
   const auto& state = PET_MANAGER.getState();
+  const auto& farm = PET_MANAGER.getFarmState();
   const auto mood = PET_MANAGER.getMood();
   const auto& metrics = UITheme::getInstance().getMetrics();
   const int pageWidth = renderer.getScreenWidth();
@@ -128,17 +129,17 @@ void VirtualPetActivity::renderAlive() const {
     renderer.drawText(SMALL_FONT_ID, col1X + (col1W - weightAgeW) / 2, statusY + 42 + rowSpacing * 4 + 4, weightAge);
 
     char ipLine[64];
-    snprintf(ipLine, sizeof(ipLine), "Points: %lu $Dew", (unsigned long)state.inkPoints);
+    snprintf(ipLine, sizeof(ipLine), "Points: %lu $Dew", (unsigned long)farm.inkPoints);
     int ipLineW = renderer.getTextWidth(UI_10_FONT_ID, ipLine, EpdFontFamily::BOLD);
     renderer.drawText(UI_10_FONT_ID, col1X + (col1W - ipLineW) / 2, statusY + 42 + rowSpacing * 5 + 10, ipLine, true, EpdFontFamily::BOLD);
 
     // Weather bonus display
     char weatherLine[120];
     const char* wCond = "Weather: Offline";
-    if (state.weatherCondition == 1) wCond = "Weather: Sunny (Light Boost)";
-    else if (state.weatherCondition == 2) wCond = "Weather: Rainy (Humidity Boost)";
-    else if (state.weatherCondition == 3) wCond = "Weather: Cloudy (Nutrient Boost)";
-    else if (state.weatherCondition == 4) wCond = "Weather: Snowy (Greenhouse Boost)";
+    if (farm.weatherCondition == 1) wCond = "Weather: Sunny (Light Boost)";
+    else if (farm.weatherCondition == 2) wCond = "Weather: Rainy (Humidity Boost)";
+    else if (farm.weatherCondition == 3) wCond = "Weather: Cloudy (Nutrient Boost)";
+    else if (farm.weatherCondition == 4) wCond = "Weather: Snowy (Greenhouse Boost)";
     snprintf(weatherLine, sizeof(weatherLine), "%s", wCond);
     int weatherLineW = renderer.getTextWidth(SMALL_FONT_ID, weatherLine);
     renderer.drawText(SMALL_FONT_ID, col1X + (col1W - weatherLineW) / 2, statusY + 42 + rowSpacing * 5 + 32, weatherLine);
@@ -174,18 +175,18 @@ void VirtualPetActivity::renderAlive() const {
     }
 
     char statsLine[120];
-    snprintf(statsLine, sizeof(statsLine), "Ht: %u cm  |  Age: %lu days  |  %lu $Dew", 
-             state.weight, (unsigned long)PET_MANAGER.getDaysAlive(), (unsigned long)state.inkPoints);
+    snprintf(statsLine, sizeof(statsLine), "Ht: %u cm  |  Age: %lu days  |  %lu $Dew",
+             state.weight, (unsigned long)PET_MANAGER.getDaysAlive(), (unsigned long)farm.inkPoints);
     int statsLineW = renderer.getTextWidth(SMALL_FONT_ID, statsLine);
     renderer.drawText(SMALL_FONT_ID, col1X + (col1W - statsLineW) / 2, statusY + 98, statsLine);
 
     // Weather bonus display
     char weatherLine[120];
     const char* wCond = "Weather: Offline";
-    if (state.weatherCondition == 1) wCond = "Weather: Sunny (Light Boost)";
-    else if (state.weatherCondition == 2) wCond = "Weather: Rainy (Humidity Boost)";
-    else if (state.weatherCondition == 3) wCond = "Weather: Cloudy (Nutrient Boost)";
-    else if (state.weatherCondition == 4) wCond = "Weather: Snowy (Greenhouse Boost)";
+    if (farm.weatherCondition == 1) wCond = "Weather: Sunny (Light Boost)";
+    else if (farm.weatherCondition == 2) wCond = "Weather: Rainy (Humidity Boost)";
+    else if (farm.weatherCondition == 3) wCond = "Weather: Cloudy (Nutrient Boost)";
+    else if (farm.weatherCondition == 4) wCond = "Weather: Snowy (Greenhouse Boost)";
     snprintf(weatherLine, sizeof(weatherLine), "%s", wCond);
     int weatherLineW = renderer.getTextWidth(SMALL_FONT_ID, weatherLine);
     renderer.drawText(SMALL_FONT_ID, col1X + (col1W - weatherLineW) / 2, statusY + 116, weatherLine);
@@ -223,8 +224,18 @@ void VirtualPetActivity::renderAlive() const {
     drawPetActionIcon(renderer, actionIcon, spriteX + petSize + 4, spriteY + 8);
   }
 
+  // Plot indicator — "Plot X/Y" left-aligned directly under the sprite, shown
+  // only once more than one growing plot is owned so the common single-plot
+  // layout is unchanged.
+  int iconsY = spriteY + petSize + (isX3 ? 12 : 4);
+  if (PET_MANAGER.ownedPlotCount() > 1) {
+    char plotBuf[24];
+    snprintf(plotBuf, sizeof(plotBuf), "Plot %d/%d", PET_MANAGER.activePlotIndex() + 1, PET_MANAGER.ownedPlotCount());
+    renderer.drawText(SMALL_FONT_ID, col1X + 10, iconsY, plotBuf);
+    iconsY += renderer.getLineHeight(SMALL_FONT_ID) + 4;
+  }
+
   // Status icons
-  const int iconsY = spriteY + petSize + (isX3 ? 12 : 4);
   statsPanel.renderStatusIcons(renderer, state, col1X, iconsY, col1W);
 
   // Reading Stats at bottom on X3
@@ -236,7 +247,7 @@ void VirtualPetActivity::renderAlive() const {
 
     const int rStatsLinesY = rStatsY + renderer.getLineHeight(SMALL_FONT_ID) + 6;
     char progressLine1[80];
-    snprintf(progressLine1, sizeof(progressLine1), "Streak: %u days  |  Books: %u", state.currentStreak, state.booksFinished);
+    snprintf(progressLine1, sizeof(progressLine1), "Streak: %u days  |  Books: %u", farm.currentStreak, farm.booksFinished);
     int progressLine1W = renderer.getTextWidth(SMALL_FONT_ID, progressLine1);
     renderer.drawText(SMALL_FONT_ID, col1X + (col1W - progressLine1W) / 2, rStatsLinesY, progressLine1);
 
@@ -254,7 +265,7 @@ void VirtualPetActivity::renderAlive() const {
 
   const int menuY = contentTop + 38;
   const int menuH = contentBottom - menuY - (PET_MANAGER.getLastFeedback() ? 32 : 12);
-  actionMenu.render(renderer, state, col2X, menuY, col2W, menuH);
+  actionMenu.render(renderer, state, farm, col2X, menuY, col2W, menuH);
 
   // Action Feedback Text
   if (PET_MANAGER.getLastFeedback() != nullptr) {
@@ -321,7 +332,7 @@ void VirtualPetActivity::renderTypeSelect() const {
 }
 
 void VirtualPetActivity::renderShop() const {
-  const auto& state = PET_MANAGER.getState();
+  const auto& state = PET_MANAGER.getFarmState();
   const auto& metrics = UITheme::getInstance().getMetrics();
   const int pageWidth = renderer.getScreenWidth();
   const int pageHeight = renderer.getScreenHeight();
@@ -345,29 +356,36 @@ void VirtualPetActivity::renderShop() const {
     bool equipped;
   };
 
-  ShopItem items[5] = {
+  const int ownedPlots = PET_MANAGER.ownedPlotCount();
+  ShopItem items[7] = {
     {"Moss Pole (Passive Boost)", 250, state.hasMossPole, state.equipMossPole},
     {"Self-Watering Pot (Passive Boost)", 400, state.hasSelfWateringPot, state.equipSelfWateringPot},
     {"Slow-Release Fertilizer (Passive Boost)", 500, state.hasSlowReleaseFertilizer, state.equipSlowReleaseFertilizer},
     {"Greenhouse Cover (Passive Boost)", 650, state.hasGreenhouseCover, state.equipGreenhouseCover},
-    {"Premium Sprayer (Passive Boost)", 300, state.hasPremiumSprayer, false}
+    {"Premium Sprayer (Passive Boost)", 300, state.hasPremiumSprayer, false},
+    {"Growing Plot 2 (Grow a 2nd Crop)", 800, ownedPlots >= 2, false},
+    {"Growing Plot 3 (Grow a 3rd Crop)", 1200, ownedPlots >= 3, false},
   };
 
   const int listX = metrics.contentSidePadding + 10;
   const int listW = pageWidth - listX * 2;
 
-  for (int i = 0; i < 5; i++) {
+  for (int i = 0; i < 7; i++) {
     const int rowY = listTop + i * rowH;
     const bool selected = (i == typeSelectIndex);
     const auto& item = items[i];
+    const bool isPlotItem = (i == 5 || i == 6);
+    const bool plotLocked = (i == 6 && ownedPlots < 2);  // Plot 3 requires Plot 2 first
 
     char itemText[128];
     if (item.owned) {
-      if (i == 4) {
-        snprintf(itemText, sizeof(itemText), "%s - Owned (Active)", item.name);
+      if (isPlotItem || i == 4) {
+        snprintf(itemText, sizeof(itemText), "%s - Owned", item.name);
       } else {
         snprintf(itemText, sizeof(itemText), "%s - Owned (%s)", item.name, item.equipped ? "Equipped" : "Unequipped");
       }
+    } else if (plotLocked) {
+      snprintf(itemText, sizeof(itemText), "%s - Buy Plot 2 first", item.name);
     } else {
       snprintf(itemText, sizeof(itemText), "%s - %lu $Dew", item.name, (unsigned long)item.cost);
     }
@@ -387,6 +405,8 @@ void VirtualPetActivity::renderShop() const {
   if (typeSelectIndex == 2) desc = "Slow-Release Fertilizer: Regens +1 nutrient every 2h when equipped.";
   if (typeSelectIndex == 3) desc = "Greenhouse Cover: Halves health decay rate when equipped.";
   if (typeSelectIndex == 4) desc = "Premium Sprayer: Provides +10 Sunlight/Happiness bonus on misting.";
+  if (typeSelectIndex == 5) desc = "Unlocks a 2nd growing plot so you can grow another species alongside your first.";
+  if (typeSelectIndex == 6) desc = "Unlocks a 3rd growing plot — grow one of each species at once.";
 
   renderer.drawCenteredText(SMALL_FONT_ID, contentBottom - 18, desc);
 
@@ -448,12 +468,12 @@ void VirtualPetActivity::renderAlbum() const {
   const int pageHeight = renderer.getScreenHeight();
   const int contentTop = metrics.topPadding + metrics.headerHeight + metrics.verticalSpacing;
 
-  const auto& state = PET_MANAGER.getState();
+  const auto& farm = PET_MANAGER.getFarmState();
 
   // Count total unlocked
   int totalUnlocked = 0;
   for (int i = 0; i < 12; i++) {
-    if ((state.unlockedStages & (1 << i)) != 0) {
+    if ((farm.unlockedStages & (1 << i)) != 0) {
       totalUnlocked++;
     }
   }
@@ -497,7 +517,7 @@ void VirtualPetActivity::renderAlbum() const {
   for (int st = 1; st <= 4; st++) {
     const int rowY = listTop + 32 + (st - 1) * 18;
     uint8_t bit = (typeSelectIndex * 4) + (st - 1);
-    bool unlocked = (state.unlockedStages & (1 << bit)) != 0;
+    bool unlocked = (farm.unlockedStages & (1 << bit)) != 0;
 
     renderer.drawText(SMALL_FONT_ID, col2X + 12, rowY, stageNames[st - 1]);
     if (unlocked) {

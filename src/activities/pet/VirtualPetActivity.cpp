@@ -58,11 +58,11 @@ void VirtualPetActivity::loop() {
       return;
     }
     buttonNavigator.onPrevious([this] {
-      typeSelectIndex = (typeSelectIndex > 0) ? typeSelectIndex - 1 : 4;
+      typeSelectIndex = (typeSelectIndex > 0) ? typeSelectIndex - 1 : 6;
       requestUpdate();
     });
     buttonNavigator.onNext([this] {
-      typeSelectIndex = (typeSelectIndex + 1) % 5;
+      typeSelectIndex = (typeSelectIndex + 1) % 7;
       requestUpdate();
     });
     if (mappedInput.wasReleased(MappedInputManager::Button::Confirm)) {
@@ -106,6 +106,23 @@ void VirtualPetActivity::loop() {
     return;
   }
 
+  // Front buttons (bezel, hinted Previous/Next) switch the active growing
+  // plot; side buttons (volume rocker, Up/Down) drive the action menu below.
+  // Plot switching works even before the active plot has been hatched, so
+  // checked ahead of the "no pet" branch.
+  if (PET_MANAGER.ownedPlotCount() > 1) {
+    if (mappedInput.wasReleased(MappedInputManager::Button::Left)) {
+      PET_MANAGER.switchPlot(-1);
+      requestUpdate();
+      return;
+    }
+    if (mappedInput.wasReleased(MappedInputManager::Button::Right)) {
+      PET_MANAGER.switchPlot(1);
+      requestUpdate();
+      return;
+    }
+  }
+
   if (!PET_MANAGER.exists() || !PET_MANAGER.isAlive()) {
     if (mappedInput.wasReleased(MappedInputManager::Button::Confirm)) {
       startHatchFlow();
@@ -114,11 +131,11 @@ void VirtualPetActivity::loop() {
   }
 
   bool changed = false;
-  buttonNavigator.onPrevious([&] {
+  buttonNavigator.onPressAndContinuous({MappedInputManager::Button::Up}, [&] {
     actionMenu.moveUp();
     changed = true;
   });
-  buttonNavigator.onNext([&] {
+  buttonNavigator.onPressAndContinuous({MappedInputManager::Button::Down}, [&] {
     actionMenu.moveDown();
     changed = true;
   });
@@ -180,8 +197,8 @@ void VirtualPetActivity::executeSelectedAction() {
       break;
     }
     case PetAction::BUY_FERTILIZER: {
-      if (PET_MANAGER.getState().inkPoints >= 30) {
-        if (PET_MANAGER.getState().fertilizerStock < 3) {
+      if (PET_MANAGER.getFarmState().inkPoints >= 30) {
+        if (PET_MANAGER.getFarmState().fertilizerStock < 3) {
           PET_MANAGER.deductPoints(30);
           PET_MANAGER.refillFertilizer();
           PET_MANAGER.setFeedback(tr(STR_PET_FERTILIZER_BOUGHT));
@@ -303,7 +320,7 @@ void VirtualPetActivity::confirmTypeSelect() {
 }
 
 void VirtualPetActivity::buyShopItem(int index) {
-  const auto& state = PET_MANAGER.getState();
+  const auto& state = PET_MANAGER.getFarmState();
   if (index == 0) {
     // Moss Pole (250 DD)
     if (!state.hasMossPole) {
@@ -353,6 +370,16 @@ void VirtualPetActivity::buyShopItem(int index) {
     if (!state.hasPremiumSprayer && state.inkPoints >= 300) {
       PET_MANAGER.deductPoints(300);
       PET_MANAGER.setHasPremiumSprayer(true);
+    }
+  } else if (index == 5) {
+    // Unlock Growing Plot 2 (800 DD)
+    if (PET_MANAGER.ownedPlotCount() == 1) {
+      PET_MANAGER.unlockNextPlot(800);
+    }
+  } else if (index == 6) {
+    // Unlock Growing Plot 3 (1200 DD) — only offered once Plot 2 is owned
+    if (PET_MANAGER.ownedPlotCount() == 2) {
+      PET_MANAGER.unlockNextPlot(1200);
     }
   }
 }

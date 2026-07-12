@@ -8,20 +8,20 @@ namespace {
 // Determine reading-based variant at an evolution branching point.
 // Returns 0=Scholar, 1=Balanced, 2=Wild.
 // Called after state.stage is already advanced; prevStageIdx = new stage index - 1.
-static uint8_t determineVariant(const PetState& state) {
+static uint8_t determineVariant(const PetState& state, uint16_t currentStreak, uint8_t booksFinished) {
   uint8_t prevStageIdx = static_cast<uint8_t>(state.stage) - 1;
   uint16_t minPages = PetConfig::EVOLUTION[prevStageIdx].minPages;
   uint16_t scholarThreshold = minPages + (minPages / 2);  // 1.5x
 
   // Scholar: active reader with streaks and at least one book finished
-  if (state.currentStreak >= 7 &&
-      state.booksFinished >= 1 &&
+  if (currentStreak >= 7 &&
+      booksFinished >= 1 &&
       state.totalPagesRead >= scholarThreshold) {
     return 0;  // Scholar
   }
 
   // Wild: barely reading, no streak maintenance
-  if (state.currentStreak < 3 &&
+  if (currentStreak < 3 &&
       state.totalPagesRead <= minPages + 50) {
     return 2;  // Wild
   }
@@ -33,7 +33,7 @@ static uint8_t determineVariant(const PetState& state) {
 
 namespace PetEvolution {
 
-void checkEvolution(PetState& state) {
+void checkEvolution(PetState& state, uint16_t currentStreak, uint8_t booksFinished) {
   uint8_t stageIdx = static_cast<uint8_t>(state.stage);
   if (stageIdx >= static_cast<uint8_t>(PetStage::ELDER)) return;
 
@@ -44,7 +44,7 @@ void checkEvolution(PetState& state) {
 
   // Additional reading gate for Companion → Elder
   if (stageIdx == 3) {
-    if (state.currentStreak < 7 || state.booksFinished < 1) return;
+    if (currentStreak < 7 || booksFinished < 1) return;
   }
 
   // Advance to next stage
@@ -53,7 +53,7 @@ void checkEvolution(PetState& state) {
 
   // Assign variant at branching stages (YOUNGSTER and COMPANION)
   if (state.stage == PetStage::YOUNGSTER || state.stage == PetStage::COMPANION) {
-    state.evolutionVariant = determineVariant(state);
+    state.evolutionVariant = determineVariant(state, currentStreak, booksFinished);
   }
 
   LOG_DBG("PET", "Evolved to stage %d variant %d", (int)state.stage, state.evolutionVariant);

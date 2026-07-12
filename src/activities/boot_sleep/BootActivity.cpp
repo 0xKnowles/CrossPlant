@@ -15,16 +15,25 @@ void BootActivity::onEnter() {
 
   renderer.clearScreen();
 
-  constexpr int PET_TARGET_SIZE = 240;
-  const int petSize = PET_TARGET_SIZE;
-  const int spriteX = (pageWidth - petSize) / 2;
-  const int spriteY = (pageHeight - petSize) / 2 - 40;
+  // Three mature (baked stage 3) portraits side by side: Monstera, Begonia, Alocasia.
+  constexpr int PORTRAIT_COUNT = 3;
+  constexpr int BAKED_MATURE_STAGE = 3;
+  constexpr int OUTER_MARGIN = 60;
+  constexpr int GAP = 20;
+  const int portraitSize = (pageWidth - OUTER_MARGIN - (PORTRAIT_COUNT - 1) * GAP) / PORTRAIT_COUNT;
+  const int rowWidth = PORTRAIT_COUNT * portraitSize + (PORTRAIT_COUNT - 1) * GAP;
+  const int rowX = (pageWidth - rowWidth) / 2;
+  const int rowY = (pageHeight - portraitSize) / 2 - 40;
 
-  PetSpriteRenderer::drawPet(renderer, spriteX, spriteY, PetStage::YOUNGSTER, PetMood::HAPPY, /*scale=*/4,
-                             0, 2, 0, false, false, /*targetSize=*/petSize);
+  const uint8_t speciesOrder[PORTRAIT_COUNT] = {0, 1, 2};  // Monstera, Begonia, Alocasia
+  for (int i = 0; i < PORTRAIT_COUNT; i++) {
+    const int x = rowX + i * (portraitSize + GAP);
+    PetSpriteRenderer::drawBakedPortrait(renderer, speciesOrder[i], BAKED_MATURE_STAGE, x, rowY,
+                                         portraitSize);
+  }
 
-  renderer.drawCenteredText(UI_12_FONT_ID, spriteY + petSize + 24, "CrossPlant", true, EpdFontFamily::BOLD);
-  renderer.drawCenteredText(UI_10_FONT_ID, spriteY + petSize + 24 + 30, tr(STR_BOOTING));
+  renderer.drawCenteredText(UI_12_FONT_ID, rowY + portraitSize + 24, "CrossPlant", true, EpdFontFamily::BOLD);
+  renderer.drawCenteredText(UI_10_FONT_ID, rowY + portraitSize + 24 + 30, tr(STR_BOOTING));
   renderer.drawCenteredText(UI_10_FONT_ID, pageHeight - 50, "v1.12.0 by 0xKnowles");
   renderer.displayBuffer();
 }

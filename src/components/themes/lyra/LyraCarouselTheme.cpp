@@ -481,7 +481,7 @@ void LyraCarouselTheme::drawRecentBookCover(GfxRenderer& renderer, Rect rect,
 
       char petStatus[64];
       snprintf(petStatus, sizeof(petStatus), "%s (%s) | Mo:%u%% Su:%u%% %lu DD",
-               petName, stageName, state.hunger, state.happiness, (unsigned long)state.inkPoints);
+               petName, stageName, state.hunger, state.happiness, (unsigned long)PET_MANAGER.getFarmState().inkPoints);
 
       const int centerY = infoY + footerLabelLineHeight / 2;
       const int textW = renderer.getTextWidth(SMALL_FONT_ID, petStatus);

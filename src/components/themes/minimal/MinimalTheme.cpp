@@ -205,7 +205,7 @@ void drawStatsOverlay(const GfxRenderer& renderer, const GlobalReadingStats& glo
     // Draw pet vitals + IP on the bottom row
     char petStatus[64];
     snprintf(petStatus, sizeof(petStatus), "Mo: %u%%  Su: %u%%  He: %u%%  %lu DD",
-             state.hunger, state.happiness, state.health, (unsigned long)state.inkPoints);
+             state.hunger, state.happiness, state.health, (unsigned long)PET_MANAGER.getFarmState().inkPoints);
 
     const int streakRegionTop = progressLabelBottomY(renderer, coverRect, progressPercent);
     const int streakRegionBottom = renderer.getScreenHeight();

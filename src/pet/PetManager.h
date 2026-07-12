@@ -16,6 +16,13 @@ struct PetMission {
 // Manages virtual pet game logic, stat decay, evolution, and persistence.
 // Implementation split across PetManager.cpp, PetPersistence.cpp, PetActions.cpp.
 // Singleton accessed via PET_MANAGER macro.
+//
+// Holds up to PetConfig::MAX_PLOTS independent growing plots plus one shared
+// PetFarmState (currency, shop boosts, water/fertilizer stock, quests, reading
+// streak, herbarium, weather). getState() always returns the *active* plot, so
+// existing plot-level call sites (render code, PetActionMenu, PetStatsPanel)
+// don't need to know about plots at all — only code that cares about currency,
+// shop, quests, streak, or plot count needs getFarmState()/switchPlot().
 class PetManager {
  public:
   PetManager(const PetManager&) = delete;
@@ -43,10 +50,11 @@ class PetManager {
   // User interaction — petting gives happiness (with cooldown)
   bool pet();
 
-  // Start a new pet from egg (optionally with custom name and type)
+  // Start a new pet from egg (optionally with custom name and type) in the
+  // currently active plot.
   void hatchNew(const char* name = nullptr, uint8_t type = 0);
 
-  // Rename/retype an existing pet
+  // Rename/retype the active plot's pet
   bool renamePet(const char* name);
   bool changeType(uint8_t type);
   void resetData();
@@ -57,23 +65,33 @@ class PetManager {
   void refillWater();
   void refillFertilizer();
 
+  // --- Growing plots ---
+  int activePlotIndex() const { return farm.activePlotIndex; }
+  int ownedPlotCount() const { return farm.ownedPlotCount; }
+  static int maxPlots() { return PetConfig::MAX_PLOTS; }
+  // Moves the active plot by +1/-1, wrapping within owned plots. No-op with 1 plot owned.
+  void switchPlot(int direction);
+  // Buys the next locked plot slot (deducts price, increments ownedPlotCount).
+  // Returns false if already at MAX_PLOTS or insufficient Dew.
+  bool unlockNextPlot(uint32_t price);
+
   // Shop & customization helper methods
   bool deductPoints(uint32_t points) {
-    if (state.inkPoints >= points) {
-      state.inkPoints -= points;
+    if (farm.inkPoints >= points) {
+      farm.inkPoints -= points;
       return true;
     }
     return false;
   }
-  void setHasPremiumSprayer(bool val) { state.hasPremiumSprayer = val; save(); }
-  void setHasMossPole(bool val) { state.hasMossPole = val; save(); }
-  void setEquipMossPole(bool val) { state.equipMossPole = val; save(); }
-  void setHasSelfWateringPot(bool val) { state.hasSelfWateringPot = val; save(); }
-  void setEquipSelfWateringPot(bool val) { state.equipSelfWateringPot = val; save(); }
-  void setHasSlowReleaseFertilizer(bool val) { state.hasSlowReleaseFertilizer = val; save(); }
-  void setEquipSlowReleaseFertilizer(bool val) { state.equipSlowReleaseFertilizer = val; save(); }
-  void setHasGreenhouseCover(bool val) { state.hasGreenhouseCover = val; save(); }
-  void setEquipGreenhouseCover(bool val) { state.equipGreenhouseCover = val; save(); }
+  void setHasPremiumSprayer(bool val) { farm.hasPremiumSprayer = val; save(); }
+  void setHasMossPole(bool val) { farm.hasMossPole = val; save(); }
+  void setEquipMossPole(bool val) { farm.equipMossPole = val; save(); }
+  void setHasSelfWateringPot(bool val) { farm.hasSelfWateringPot = val; save(); }
+  void setEquipSelfWateringPot(bool val) { farm.equipSelfWateringPot = val; save(); }
+  void setHasSlowReleaseFertilizer(bool val) { farm.hasSlowReleaseFertilizer = val; save(); }
+  void setEquipSlowReleaseFertilizer(bool val) { farm.equipSlowReleaseFertilizer = val; save(); }
+  void setHasGreenhouseCover(bool val) { farm.hasGreenhouseCover = val; save(); }
+  void setEquipGreenhouseCover(bool val) { farm.equipGreenhouseCover = val; save(); }
 
   // --- User actions (PetActions.cpp) ---
   bool feedMeal();       // fill hunger + add weight + waste tracking
@@ -85,11 +103,12 @@ class PetManager {
   bool ignoreCry();      // ignore attention call (good if fake, bad if real)
   bool toggleLights();   // toggle sleep lights-off flag
 
-  // State queries
-  const PetState& getState() const { return state; }
+  // State queries — all target the active plot
+  const PetState& getState() const { return plots[farm.activePlotIndex]; }
+  const PetFarmState& getFarmState() const { return farm; }
   PetMood getMood() const;
-  bool isAlive() const { return state.isAlive(); }
-  bool exists() const { return state.exists(); }
+  bool isAlive() const { return getState().isAlive(); }
+  bool exists() const { return getState().exists(); }
   uint32_t getDaysAlive() const;
   const char* getLastFeedback() const { return lastFeedback; }
 
@@ -100,12 +119,15 @@ class PetManager {
  private:
   PetManager() = default;
 
-  PetState state;
+  PetFarmState farm;
+  PetState plots[PetConfig::MAX_PLOTS];
   unsigned long lastPetTimeMs = 0;      // millis() of last petting (cooldown)
   unsigned long lastExerciseMs = 0;     // millis() of last exercise (cooldown)
   bool loaded = false;
   const char* lastFeedback = nullptr;   // feedback string for UI display
   uint8_t sessionPagesRead = 0;        // pages read in current reading session
+
+  PetState& activePlot() { return plots[farm.activePlotIndex]; }
 
   // Internal helpers
   void updateStreak();
@@ -113,7 +135,7 @@ class PetManager {
   uint32_t getCurrentTime() const;
   uint16_t getDayOfYear() const;
   void resetMissionsIfNewDay();
-  void feedFromPages(uint32_t pages);
+  void feedFromPages(PetState& plot, uint32_t pages);
   void updateSleepState();
 
   static uint8_t clampSub(uint8_t val, uint8_t amount);

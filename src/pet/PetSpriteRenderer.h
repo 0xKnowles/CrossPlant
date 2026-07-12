@@ -41,6 +41,14 @@ class PetSpriteRenderer {
   static void drawMini(GfxRenderer& renderer, int x, int y, PetStage stage, PetMood mood,
                        uint8_t variant = 0, uint8_t petType = 0, int size = MINI_W);
 
+  // Draw a static baked plant portrait (no BMP/SD lookup, no fallback pixel-art) at (x,y),
+  // scaled to size x size. stage here is the raw baked-art stage index (see BakedPlantSprites.h),
+  // not a PetStage — e.g. stage 3 = mature/companion art. Used by the boot screen, which just
+  // wants a fixed portrait per species and doesn't have a live PetState to read a PetStage from.
+  // No-op if petType/stage has no baked art.
+  static void drawBakedPortrait(GfxRenderer& renderer, uint8_t petType, uint8_t stage, int x,
+                                int y, int size);
+
  private:
   // Shared 288-byte buffer — large enough for a full sprite frame.
   static uint8_t spriteBuffer[SPRITE_BYTES];

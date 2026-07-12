@@ -13,6 +13,8 @@ namespace PetDecayEngine {
   // Apply decay for the given number of elapsed hours.
   // startHour: the hour-of-day (0-23) at the START of the elapsed period
   //            (used to determine sleep windows for hour-by-hour simulation).
-  void applyDecay(PetState& state, uint32_t elapsedHours, uint8_t startHour);
+  // farm: shop passive-boost flags (equipMossPole etc.) — account-wide, so the
+  //       same boosts apply while decaying any plot.
+  void applyDecay(PetState& state, const PetFarmState& farm, uint32_t elapsedHours, uint8_t startHour);
 
 }  // namespace PetDecayEngine
