@@ -4,6 +4,7 @@
 #include "PetDecayEngine.h"
 #include "PetEvolution.h"
 #include "CrossPointSettings.h"
+#include <HalStorage.h>
 
 #include <Arduino.h>
 #include <I18n.h>
@@ -252,6 +253,13 @@ bool PetManager::pet() {
   LOG_DBG("PET", "Tended! happiness=%d", state.happiness);
   save();
   return true;
+}
+
+void PetManager::resetData() {
+  state = PetState();
+  Storage.remove(PetConfig::STATE_PATH);
+  loaded = true;
+  save();
 }
 
 void PetManager::hatchNew(const char* name, uint8_t type) {

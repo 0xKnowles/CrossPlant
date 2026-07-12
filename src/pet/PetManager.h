@@ -49,6 +49,7 @@ class PetManager {
   // Rename/retype an existing pet
   bool renamePet(const char* name);
   bool changeType(uint8_t type);
+  void resetData();
 
   // Shop & customization helper methods
   bool deductPoints(uint32_t points) {

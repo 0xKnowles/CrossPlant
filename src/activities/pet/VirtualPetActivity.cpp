@@ -7,6 +7,7 @@
 
 #include "activities/reader/GlobalReadingStats.h"
 #include "activities/util/KeyboardEntryActivity.h"
+#include "activities/util/ConfirmationActivity.h"
 #include "pet/PetManager.h"
 #include "pet/PetState.h"
 
@@ -125,6 +126,7 @@ void VirtualPetActivity::executeSelectedAction() {
     case PetAction::RENAME:        startRenameFlow();           return;
     case PetAction::CHANGE_TYPE:   startTypeSelectForChange();  return;
     case PetAction::SHOP:          typeSelectIndex = 0; screenMode = ScreenMode::SHOP; return;
+    case PetAction::RESET_DATA:    startResetFlow();            return;
     default: break;
   }
 }
@@ -187,6 +189,20 @@ void VirtualPetActivity::startRenameFlow() {
         if (!result.isCancelled) {
           auto text = std::get<KeyboardResult>(result.data).text;
           PET_MANAGER.renamePet(text.c_str());
+        }
+        screenMode = ScreenMode::NORMAL;
+        requestUpdate();
+      });
+}
+
+void VirtualPetActivity::startResetFlow() {
+  startActivityForResult(
+      std::make_unique<ConfirmationActivity>(
+          renderer, mappedInput, tr(STR_PET_RESET_CONFIRM_TITLE),
+          tr(STR_PET_RESET_CONFIRM_BODY), /*ignoreInitialConfirmRelease=*/false),
+      [this](const ActivityResult& result) {
+        if (!result.isCancelled) {
+          PET_MANAGER.resetData();
         }
         screenMode = ScreenMode::NORMAL;
         requestUpdate();

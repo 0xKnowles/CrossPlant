@@ -39,6 +39,7 @@ class VirtualPetActivity final : public Activity {
   // Hatch/customize helpers
   void startHatchFlow();
   void startRenameFlow();
+  void startResetFlow();
   void startTypeSelectForHatch();
   void startTypeSelectForChange();
   void confirmTypeSelect();

@@ -44,6 +44,7 @@ bool PetActionMenu::isActionAvailable(PetAction action, const PetState& state) c
     case PetAction::RENAME:
     case PetAction::CHANGE_TYPE:
     case PetAction::SHOP:
+    case PetAction::RESET_DATA:
       return true;
     default:
       return false;
@@ -67,6 +68,7 @@ const char* PetActionMenu::actionLabel(PetAction action) {
     case PetAction::RENAME:        return tr(STR_PET_ACTION_RENAME);
     case PetAction::CHANGE_TYPE:   return tr(STR_PET_ACTION_TYPE);
     case PetAction::SHOP:          return tr(STR_PET_ACTION_SHOP);
+    case PetAction::RESET_DATA:    return tr(STR_PET_ACTION_RESET);
     default:                       return "???";
   }
 }
@@ -85,22 +87,27 @@ void PetActionMenu::render(GfxRenderer& renderer, const PetState& state,
 
   for (int i = 0; i < ACTION_TOTAL && (i - scrollOffset) < visibleRows; i++) {
     if (i < scrollOffset) continue;
-    const int rowY = y + (i - scrollOffset) * rowH;
+    
+    int rowY = y + (i - scrollOffset) * rowH;
+    if (i >= static_cast<int>(PetAction::DAILY_QUESTS)) {
+      rowY += 10; // 10px spacing gap for separator
+    }
+
     const PetAction action = static_cast<PetAction>(i);
     const bool available = isActionAvailable(action, state);
     const bool selected = (i == selectedIndex);
     const char* label = actionLabel(action);
 
+    if (i == static_cast<int>(PetAction::DAILY_QUESTS)) {
+      renderer.drawLine(x + 4, rowY - 6, x + w - 4, rowY - 6, true);
+    }
+
     if (selected) {
       // Highlight selected row with an inverted rect
       renderer.fillRect(x, rowY, w, rowH);
       renderer.drawText(SMALL_FONT_ID, x + 4, rowY + 3, label, /*invert=*/false);
-    } else if (!available) {
-      // Grayed out: show label with brackets to indicate unavailable
-      char buf[32];
-      snprintf(buf, sizeof(buf), "(%s)", label);
-      renderer.drawText(SMALL_FONT_ID, x + 4, rowY + 3, buf);
     } else {
+      // No brackets for unavailable items, draw directly as requested
       renderer.drawText(SMALL_FONT_ID, x + 4, rowY + 3, label);
     }
   }

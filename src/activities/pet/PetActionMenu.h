@@ -19,6 +19,7 @@ enum class PetAction : uint8_t {
   RENAME,
   CHANGE_TYPE,
   SHOP,
+  RESET_DATA,
   ACTION_COUNT
 };
 

@@ -638,17 +638,32 @@ void SleepActivity::renderPetSleepScreen() const {
   char line3[64];
   char line4[64];
   char line5[64];
+  char line6[64];
 
   snprintf(line1, sizeof(line1), "Dear Diary, today is Day %lu.", (unsigned long)(PET_MANAGER.getDaysAlive() + 1));
   snprintf(line2, sizeof(line2), "My reader read %d pages today.", state.missionPagesRead);
   snprintf(line3, sizeof(line3), "I was tended %d times.", state.missionPetCount);
 
-  if (state.isSick) {
-    snprintf(line4, sizeof(line4), "I felt sick... took medicine.");
-  } else if (state.hunger < 30) {
-    snprintf(line4, sizeof(line4), "I was very hungry today! Nom nom.");
+  std::string lastBookTitle = "";
+  const auto& books = RECENT_BOOKS.getBooks();
+  if (!books.empty()) {
+    lastBookTitle = books.front().title;
+  }
+  if (!lastBookTitle.empty()) {
+    if (lastBookTitle.length() > 32) {
+      lastBookTitle = lastBookTitle.substr(0, 29) + "...";
+    }
+    snprintf(line4, sizeof(line4), "Last read: %s", lastBookTitle.c_str());
   } else {
-    snprintf(line4, sizeof(line4), "I felt happy and healthy!");
+    snprintf(line4, sizeof(line4), "No books read recently.");
+  }
+
+  if (state.isSick) {
+    snprintf(line5, sizeof(line5), "I had some pests today... Ouch.");
+  } else if (state.hunger < 30) {
+    snprintf(line5, sizeof(line5), "I was very dry! Watered.");
+  } else {
+    snprintf(line5, sizeof(line5), "I felt happy and healthy!");
   }
 
   uint16_t year;
@@ -658,16 +673,16 @@ void SleepActivity::renderPetSleepScreen() const {
     const char* ampm = (h >= 12) ? "PM" : "AM";
     if (h > 12) h -= 12;
     if (h == 0) h = 12;
-    snprintf(line5, sizeof(line5), "Slept at %d:%02d %s.", h, (int)minute, ampm);
+    snprintf(line6, sizeof(line6), "Slept at %d:%02d %s.", h, (int)minute, ampm);
   } else {
-    snprintf(line5, sizeof(line5), "Slept soundly tonight.");
+    snprintf(line6, sizeof(line6), "Slept soundly tonight.");
   }
 
   // Draw bullet list entries with spacing
   auto drawDiaryEntry = [&](int index, const char* text) {
-    const int textYPos = rectY + 65 + index * (isX3 ? 48 : 56);
+    const int textYPos = rectY + 52 + index * (isX3 ? 42 : 50);
     const int bulletX = rectX + 32;
-    const int bulletY = textYPos + 6;
+    const int bulletY = textYPos + 5;
     
     // Draw a neat solid square bullet point
     renderer.fillRect(bulletX, bulletY + 1, 4, 4, true);
@@ -681,6 +696,7 @@ void SleepActivity::renderPetSleepScreen() const {
   drawDiaryEntry(2, line3);
   drawDiaryEntry(3, line4);
   drawDiaryEntry(4, line5);
+  drawDiaryEntry(5, line6);
 
   renderer.drawCenteredText(SMALL_FONT_ID, pageHeight - 20, tr(STR_SLEEPING));
 
