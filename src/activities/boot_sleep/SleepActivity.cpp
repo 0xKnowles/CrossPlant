@@ -658,12 +658,23 @@ void SleepActivity::renderPetSleepScreen() const {
     snprintf(line4, sizeof(line4), "No books read recently.");
   }
 
-  if (state.isSick) {
-    snprintf(line5, sizeof(line5), "I had some pests today... Ouch.");
-  } else if (state.hunger < 30) {
-    snprintf(line5, sizeof(line5), "I was very dry! Watered.");
+  const char* wLabel = "Offline";
+  const char* wBonus = "None";
+  if (state.weatherCondition == 1) { wLabel = "Sunny"; wBonus = "Light"; }
+  else if (state.weatherCondition == 2) { wLabel = "Rainy"; wBonus = "Humidity"; }
+  else if (state.weatherCondition == 3) { wLabel = "Cloudy"; wBonus = "Nutrient"; }
+  else if (state.weatherCondition == 4) { wLabel = "Snowy"; wBonus = "Greenhouse"; }
+
+  if (state.weatherCondition > 0) {
+    snprintf(line5, sizeof(line5), "Weather: %s (%s bonus!)", wLabel, wBonus);
   } else {
-    snprintf(line5, sizeof(line5), "I felt happy and healthy!");
+    if (state.isSick) {
+      snprintf(line5, sizeof(line5), "I had some pests today... Ouch.");
+    } else if (state.hunger < 30) {
+      snprintf(line5, sizeof(line5), "I was very dry! Watered.");
+    } else {
+      snprintf(line5, sizeof(line5), "I felt happy and healthy!");
+    }
   }
 
   uint16_t year;

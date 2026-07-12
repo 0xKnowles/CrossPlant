@@ -50,6 +50,12 @@ class PetManager {
   bool renamePet(const char* name);
   bool changeType(uint8_t type);
   void resetData();
+  void applyPremiumFertilizer();
+  void updateWeather(uint8_t condition, int temp);
+  void forceWeatherSync();
+  void setFeedback(const char* msg) { lastFeedback = msg; }
+  void refillWater();
+  void refillFertilizer();
 
   // Shop & customization helper methods
   bool deductPoints(uint32_t points) {
@@ -59,15 +65,15 @@ class PetManager {
     }
     return false;
   }
-  void setHasToy(bool val) { state.hasToy = val; save(); }
-  void setHasGlasses(bool val) { state.hasGlasses = val; save(); }
-  void setEquipGlasses(bool val) { state.equipGlasses = val; save(); }
-  void setHasHat(bool val) { state.hasHat = val; save(); }
-  void setEquipHat(bool val) { state.equipHat = val; save(); }
-  void setHasCrown(bool val) { state.hasCrown = val; save(); }
-  void setEquipCrown(bool val) { state.equipCrown = val; save(); }
-  void setHasScarf(bool val) { state.hasScarf = val; save(); }
-  void setEquipScarf(bool val) { state.equipScarf = val; save(); }
+  void setHasPremiumSprayer(bool val) { state.hasPremiumSprayer = val; save(); }
+  void setHasMossPole(bool val) { state.hasMossPole = val; save(); }
+  void setEquipMossPole(bool val) { state.equipMossPole = val; save(); }
+  void setHasSelfWateringPot(bool val) { state.hasSelfWateringPot = val; save(); }
+  void setEquipSelfWateringPot(bool val) { state.equipSelfWateringPot = val; save(); }
+  void setHasSlowReleaseFertilizer(bool val) { state.hasSlowReleaseFertilizer = val; save(); }
+  void setEquipSlowReleaseFertilizer(bool val) { state.equipSlowReleaseFertilizer = val; save(); }
+  void setHasGreenhouseCover(bool val) { state.hasGreenhouseCover = val; save(); }
+  void setEquipGreenhouseCover(bool val) { state.equipGreenhouseCover = val; save(); }
 
   // --- User actions (PetActions.cpp) ---
   bool feedMeal();       // fill hunger + add weight + waste tracking
@@ -89,6 +95,7 @@ class PetManager {
 
   // Daily missions — returns 6 missions for today
   void getMissions(PetMission out[6]) const;
+  void startReadingSession();
 
  private:
   PetManager() = default;
@@ -98,6 +105,7 @@ class PetManager {
   unsigned long lastExerciseMs = 0;     // millis() of last exercise (cooldown)
   bool loaded = false;
   const char* lastFeedback = nullptr;   // feedback string for UI display
+  uint8_t sessionPagesRead = 0;        // pages read in current reading session
 
   // Internal helpers
   void updateStreak();

@@ -1844,6 +1844,7 @@ void EpubReaderActivity::onExit() {
 
     if (PET_MANAGER.load()) {
       PET_MANAGER.syncFromReadingStats(globalStats);
+      PET_MANAGER.startReadingSession();
       PET_MANAGER.save();
     }
   }

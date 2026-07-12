@@ -104,7 +104,9 @@ void TxtReaderActivity::onEnter() {
     return;
   }
 
-  PET_MANAGER.load();
+  if (PET_MANAGER.load()) {
+    PET_MANAGER.startReadingSession();
+  }
 
   ReaderUtils::applyOrientation(renderer, SETTINGS.orientation);
 

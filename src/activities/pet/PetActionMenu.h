@@ -18,6 +18,10 @@ enum class PetAction : uint8_t {
   DAILY_QUESTS,
   RENAME,
   CHANGE_TYPE,
+  ALBUM,
+  CONNECT_WEATHER,
+  REFILL_WATER,
+  BUY_FERTILIZER,
   SHOP,
   RESET_DATA,
   ACTION_COUNT
@@ -39,7 +43,7 @@ class PetActionMenu {
   void render(GfxRenderer& renderer, const PetState& state, int x, int y, int w, int h) const;
 
   // Label string for a given action
-  static const char* actionLabel(PetAction action);
+  static void actionLabel(PetAction action, const PetState& state, char* outBuf, size_t bufSize);
 
  private:
   int selectedIndex = 0;

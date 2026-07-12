@@ -72,7 +72,9 @@ void XtcReaderActivity::onEnter() {
 
   stats = BookReadingStats::load(xtc->getCachePath());
   globalStats = GlobalReadingStats::load();
-  PET_MANAGER.load();
+  if (PET_MANAGER.load()) {
+    PET_MANAGER.startReadingSession();
+  }
   sessionReadingSeconds = 0;
   hasSessionStartLocalDateTime = getCurrentLocalReadingStatsDateTime(sessionStartLocalDateTime);
 

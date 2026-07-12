@@ -68,16 +68,19 @@ struct PetState {
   uint8_t  missionPagesRead = 0; // pages read today
   uint8_t  missionPetCount = 0;  // times tended today
   uint8_t  missionWaterCount = 0;
-  uint8_t  missionPruneCount = 0;
-  uint8_t  missionWeedCount = 0;
-  uint8_t  missionFertilizerCount = 0;
+  uint8_t  maxSessionPagesToday = 0;
+  uint8_t  pagesReadAfter9PM = 0;
 
   bool     questReadClaimed = false;
   bool     questPetClaimed = false;
   bool     questWaterClaimed = false;
-  bool     questPruneClaimed = false;
-  bool     questWeedClaimed = false;
-  bool     questFertilizerClaimed = false;
+  bool     questSpeedyClaimed = false;
+  bool     questNightOwlClaimed = false;
+  bool     questStreakSaverClaimed = false;
+
+  // Stock system
+  uint8_t  waterStock = 3;
+  uint8_t  fertilizerStock = 3;
 
   // Weight system (0-100, normal=50, overweight>80, underweight<20)
   uint8_t weight = 50;
@@ -114,24 +117,32 @@ struct PetState {
 
   // Shop & customization items
   uint32_t inkPoints = 0;
-  bool hasGlasses = false;
-  bool equipGlasses = false;
-  bool hasHat = false;
-  bool equipHat = false;
-  bool hasCrown = false;
-  bool equipCrown = false;
-  bool hasScarf = false;
-  bool equipScarf = false;
-  bool hasToy = false;
+  bool hasMossPole = false;
+  bool equipMossPole = false;
+  bool hasSelfWateringPot = false;
+  bool equipSelfWateringPot = false;
+  bool hasSlowReleaseFertilizer = false;
+  bool equipSlowReleaseFertilizer = false;
+  bool hasGreenhouseCover = false;
+  bool equipGreenhouseCover = false;
+  bool hasPremiumSprayer = false;
 
   // Extra Reading Stats Cache
   uint16_t longestReadingStreak = 0;
   uint32_t lastKnownSessions = 0;
 
+  // Herbarium discovery log (bitmask of unlocked species stages: 3 species * 4 stages = 12 bits)
+  uint16_t unlockedStages = 0;
+
   // Lazy-eval fields: track what GlobalReadingStats values the pet last consumed
   uint32_t lastKnownReadSeconds = 0;   // GlobalReadingStats.totalReadingSeconds at last sync
   uint32_t lastKnownPagesTurned = 0;   // GlobalReadingStats.totalPagesTurned at last sync
   uint32_t lastUpdateTimestamp = 0;    // epoch when pet state was last calculated
+
+  // Weather Sync
+  uint8_t weatherCondition = 0; // 0=Unknown/Offline, 1=Sunny, 2=Rainy, 3=Cloudy, 4=Snowy
+  int8_t  weatherTemp = 0;
+  uint32_t lastWeatherSync = 0;
 
   bool isAlive() const { return stage != PetStage::DEAD; }
   bool exists() const { return initialized; }

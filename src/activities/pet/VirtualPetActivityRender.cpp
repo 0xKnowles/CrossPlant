@@ -26,6 +26,8 @@ void VirtualPetActivity::render(RenderLock&&) {
     renderShop();
   } else if (screenMode == ScreenMode::QUESTS) {
     renderQuests();
+  } else if (screenMode == ScreenMode::ALBUM) {
+    renderAlbum();
   } else if (!PET_MANAGER.exists()) {
     renderNoPet();
   } else if (!PET_MANAGER.isAlive()) {
@@ -129,6 +131,17 @@ void VirtualPetActivity::renderAlive() const {
     snprintf(ipLine, sizeof(ipLine), "Points: %lu DD", (unsigned long)state.inkPoints);
     int ipLineW = renderer.getTextWidth(UI_10_FONT_ID, ipLine, EpdFontFamily::BOLD);
     renderer.drawText(UI_10_FONT_ID, col1X + (col1W - ipLineW) / 2, statusY + 42 + rowSpacing * 5 + 10, ipLine, true, EpdFontFamily::BOLD);
+
+    // Weather bonus display
+    char weatherLine[120];
+    const char* wCond = "Weather: Offline";
+    if (state.weatherCondition == 1) wCond = "Weather: Sunny (Light Boost)";
+    else if (state.weatherCondition == 2) wCond = "Weather: Rainy (Humidity Boost)";
+    else if (state.weatherCondition == 3) wCond = "Weather: Cloudy (Nutrient Boost)";
+    else if (state.weatherCondition == 4) wCond = "Weather: Snowy (Greenhouse Boost)";
+    snprintf(weatherLine, sizeof(weatherLine), "%s", wCond);
+    int weatherLineW = renderer.getTextWidth(SMALL_FONT_ID, weatherLine);
+    renderer.drawText(SMALL_FONT_ID, col1X + (col1W - weatherLineW) / 2, statusY + 42 + rowSpacing * 5 + 32, weatherLine);
   } else {
     // X4: 2 columns of progress bars
     int halfW = col1W / 2;
@@ -165,6 +178,17 @@ void VirtualPetActivity::renderAlive() const {
              state.weight, (unsigned long)PET_MANAGER.getDaysAlive(), (unsigned long)state.inkPoints);
     int statsLineW = renderer.getTextWidth(SMALL_FONT_ID, statsLine);
     renderer.drawText(SMALL_FONT_ID, col1X + (col1W - statsLineW) / 2, statusY + 98, statsLine);
+
+    // Weather bonus display
+    char weatherLine[120];
+    const char* wCond = "Weather: Offline";
+    if (state.weatherCondition == 1) wCond = "Weather: Sunny (Light Boost)";
+    else if (state.weatherCondition == 2) wCond = "Weather: Rainy (Humidity Boost)";
+    else if (state.weatherCondition == 3) wCond = "Weather: Cloudy (Nutrient Boost)";
+    else if (state.weatherCondition == 4) wCond = "Weather: Snowy (Greenhouse Boost)";
+    snprintf(weatherLine, sizeof(weatherLine), "%s", wCond);
+    int weatherLineW = renderer.getTextWidth(SMALL_FONT_ID, weatherLine);
+    renderer.drawText(SMALL_FONT_ID, col1X + (col1W - weatherLineW) / 2, statusY + 116, weatherLine);
   }
 
   // 2. Pet Image Card (Left Column, Bottom)
@@ -321,28 +345,25 @@ void VirtualPetActivity::renderShop() const {
     bool equipped;
   };
 
-  ShopItem items[6] = {
-    {"Premium Fertilizer (Fills Vitals & Hp)", 20, false, false},
-    {"Self-Watering Pot (Passive: Halves Decay)", 50, state.hasToy, false},
-    {"Cute Ladybugs (Cosmetic)", 100, state.hasGlasses, state.equipGlasses},
-    {"Mini Umbrella (Cosmetic)", 150, state.hasHat, state.equipHat},
-    {"Fairy Lights (Cosmetic)", 200, state.hasCrown, state.equipCrown},
-    {"Plant Ribbon (Cosmetic)", 250, state.hasScarf, state.equipScarf}
+  ShopItem items[5] = {
+    {"Moss Pole (Passive Boost)", 250, state.hasMossPole, state.equipMossPole},
+    {"Self-Watering Pot (Passive Boost)", 400, state.hasSelfWateringPot, state.equipSelfWateringPot},
+    {"Slow-Release Fertilizer (Passive Boost)", 500, state.hasSlowReleaseFertilizer, state.equipSlowReleaseFertilizer},
+    {"Greenhouse Cover (Passive Boost)", 650, state.hasGreenhouseCover, state.equipGreenhouseCover},
+    {"Premium Sprayer (Passive Boost)", 300, state.hasPremiumSprayer, false}
   };
 
   const int listX = metrics.contentSidePadding + 10;
   const int listW = pageWidth - listX * 2;
 
-  for (int i = 0; i < 6; i++) {
+  for (int i = 0; i < 5; i++) {
     const int rowY = listTop + i * rowH;
     const bool selected = (i == typeSelectIndex);
     const auto& item = items[i];
 
     char itemText[128];
-    if (i == 0) {
-      snprintf(itemText, sizeof(itemText), "%s - %lu DD", item.name, (unsigned long)item.cost);
-    } else if (item.owned) {
-      if (i == 1) {
+    if (item.owned) {
+      if (i == 4) {
         snprintf(itemText, sizeof(itemText), "%s - Owned (Active)", item.name);
       } else {
         snprintf(itemText, sizeof(itemText), "%s - Owned (%s)", item.name, item.equipped ? "Equipped" : "Unequipped");
@@ -361,12 +382,11 @@ void VirtualPetActivity::renderShop() const {
 
   // Draw description at the bottom
   const char* desc = "";
-  if (typeSelectIndex == 0) desc = "A nourishing fertilizer. Restores moisture and plant health.";
-  if (typeSelectIndex == 1) desc = "A self-watering pot. Halves soil moisture and sunlight decay.";
-  if (typeSelectIndex == 2) desc = "Cute ladybugs on leaves. Buy or toggle equipping them.";
-  if (typeSelectIndex == 3) desc = "A decorative mini umbrella. Buy or toggle equipping it.";
-  if (typeSelectIndex == 4) desc = "Tiny sparkling fairy lights. Buy or toggle equipping them.";
-  if (typeSelectIndex == 5) desc = "A pretty ribbon tied around the pot. Buy or toggle equipping it.";
+  if (typeSelectIndex == 0) desc = "Moss Pole: Halves sunlight (happiness) decay rate when equipped.";
+  if (typeSelectIndex == 1) desc = "Self-Watering Pot: Halves soil moisture decay rate when equipped.";
+  if (typeSelectIndex == 2) desc = "Slow-Release Fertilizer: Regens +1 nutrient every 2h when equipped.";
+  if (typeSelectIndex == 3) desc = "Greenhouse Cover: Halves health decay rate when equipped.";
+  if (typeSelectIndex == 4) desc = "Premium Sprayer: Provides +10 Sunlight/Happiness bonus on misting.";
 
   renderer.drawCenteredText(SMALL_FONT_ID, contentBottom - 18, desc);
 
@@ -379,48 +399,114 @@ void VirtualPetActivity::renderQuests() const {
   const int pageWidth = renderer.getScreenWidth();
   const int pageHeight = renderer.getScreenHeight();
   const int contentTop = metrics.topPadding + metrics.headerHeight + metrics.verticalSpacing;
-  const int contentBottom = pageHeight - metrics.buttonHintsHeight - metrics.verticalSpacing;
 
   renderer.drawCenteredText(UI_10_FONT_ID, contentTop, "DAILY QUESTS", true, EpdFontFamily::BOLD);
 
-  const int lh = renderer.getLineHeight(UI_10_FONT_ID);
-  const int rowH = lh + 14;
-  const int listTop = contentTop + 35;
+  const int listTop = contentTop + 30;
 
   PetMission missions[6];
   PET_MANAGER.getMissions(missions);
 
-  const int listX = metrics.contentSidePadding + 20;
+  const int listX = metrics.contentSidePadding + 15;
   const int listW = pageWidth - listX * 2;
-  const int labelW = (pageWidth >= 600) ? 260 : 180;
 
   for (int i = 0; i < 6; i++) {
-    const int rowY = listTop + i * rowH;
+    const int rowY = listTop + i * 42;
     const auto& mission = missions[i];
 
-    char questText[128];
-    snprintf(questText, sizeof(questText), "%s", mission.label);
-    renderer.drawText(UI_10_FONT_ID, listX, rowY + 3, questText, true, EpdFontFamily::BOLD);
+    // Quest Title (using UI_10_FONT_ID for crisp readability)
+    renderer.drawText(UI_10_FONT_ID, listX, rowY, mission.label, true, EpdFontFamily::BOLD);
 
-    const int barX = listX + labelW;
-    const int barW = listW - labelW;
-    const int barY = rowY + 5;
+    // Progress display directly under the title
+    const int barX = listX;
+    const int barY = rowY + 18;
+    const int barW = 150;
 
     if (mission.done) {
-      renderer.drawText(UI_10_FONT_ID, barX, rowY + 3, "[COMPLETED]", true, EpdFontFamily::BOLD);
+      const char* compText = "COMPLETED (+DD Claimed)";
+      renderer.drawText(SMALL_FONT_ID, listX, barY - 1, compText, true, EpdFontFamily::BOLD);
     } else {
-      renderer.drawRect(barX, barY, barW, 10);
+      renderer.drawRect(barX, barY, barW, 8);
       if (mission.progress > 0) {
         int val = std::min<int>(mission.progress * 100 / mission.goal, 100);
         int fillW = (barW - 2) * val / 100;
-        renderer.fillRect(barX + 1, barY + 1, fillW, 8);
+        renderer.fillRect(barX + 1, barY + 1, fillW, 6);
       }
       char progressText[32];
       snprintf(progressText, sizeof(progressText), "%u/%u", mission.progress, mission.goal);
-      renderer.drawText(SMALL_FONT_ID, barX - 45, rowY + 3, progressText);
+      renderer.drawText(SMALL_FONT_ID, barX + barW + 8, barY - 2, progressText);
     }
   }
 
   const auto labels = mappedInput.mapLabels(tr(STR_BACK), "", "", "");
+  GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
+}
+
+void VirtualPetActivity::renderAlbum() const {
+  const auto& metrics = UITheme::getInstance().getMetrics();
+  const int pageWidth = renderer.getScreenWidth();
+  const int pageHeight = renderer.getScreenHeight();
+  const int contentTop = metrics.topPadding + metrics.headerHeight + metrics.verticalSpacing;
+
+  const auto& state = PET_MANAGER.getState();
+
+  // Count total unlocked
+  int totalUnlocked = 0;
+  for (int i = 0; i < 12; i++) {
+    if ((state.unlockedStages & (1 << i)) != 0) {
+      totalUnlocked++;
+    }
+  }
+
+  char titleText[64];
+  snprintf(titleText, sizeof(titleText), "HERBARIUM (%d/12 DISCOVERED)", totalUnlocked);
+  renderer.drawCenteredText(UI_10_FONT_ID, contentTop, titleText, true, EpdFontFamily::BOLD);
+
+  const int listTop = contentTop + 35;
+  const int col1W = 160;
+  const int col2W = pageWidth - col1W - metrics.contentSidePadding * 2 - 20;
+  const int col1X = metrics.contentSidePadding + 10;
+  const int col2X = col1X + col1W + 10;
+
+  // Render left side: Species list
+  renderer.drawRoundedRect(col1X, listTop, col1W, 110, 1, 8, true);
+  renderer.drawLine(col1X, listTop + 24, col1X + col1W - 1, listTop + 24, true);
+  renderer.drawText(SMALL_FONT_ID, col1X + 8, listTop + 5, "SPECIES", true, EpdFontFamily::BOLD);
+
+  const char* speciesNames[3] = {"Alocasia", "Begonia", "Monstera"};
+  for (int i = 0; i < 3; i++) {
+    const int rowY = listTop + 32 + i * 24;
+    const bool selected = (i == typeSelectIndex);
+    if (selected) {
+      renderer.fillRect(col1X + 4, rowY - 2, col1W - 8, 20, true);
+      renderer.drawText(SMALL_FONT_ID, col1X + 12, rowY + 1, speciesNames[i], /*black=*/false, EpdFontFamily::BOLD);
+    } else {
+      renderer.drawText(SMALL_FONT_ID, col1X + 12, rowY + 1, speciesNames[i], /*black=*/true, EpdFontFamily::REGULAR);
+    }
+  }
+
+  // Render right side: Selected species stage progress
+  renderer.drawRoundedRect(col2X, listTop, col2W, 110, 1, 8, true);
+  renderer.drawLine(col2X, listTop + 24, col2X + col2W - 1, listTop + 24, true);
+  
+  char progressHeader[64];
+  snprintf(progressHeader, sizeof(progressHeader), "%s DISCOVERIES", speciesNames[typeSelectIndex]);
+  renderer.drawText(SMALL_FONT_ID, col2X + 8, listTop + 5, progressHeader, true, EpdFontFamily::BOLD);
+
+  const char* stageNames[4] = {"1. Sprout", "2. Sapling", "3. Mature", "4. Prized"};
+  for (int st = 1; st <= 4; st++) {
+    const int rowY = listTop + 32 + (st - 1) * 18;
+    uint8_t bit = (typeSelectIndex * 4) + (st - 1);
+    bool unlocked = (state.unlockedStages & (1 << bit)) != 0;
+
+    renderer.drawText(SMALL_FONT_ID, col2X + 12, rowY, stageNames[st - 1]);
+    if (unlocked) {
+      renderer.drawText(SMALL_FONT_ID, col2X + col2W - 80, rowY, "DISCOVERED", true, EpdFontFamily::BOLD);
+    } else {
+      renderer.drawText(SMALL_FONT_ID, col2X + col2W - 80, rowY, "??? (Locked)", false);
+    }
+  }
+
+  const auto labels = mappedInput.mapLabels(tr(STR_BACK), "Select", tr(STR_DIR_UP), tr(STR_DIR_DOWN));
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
 }

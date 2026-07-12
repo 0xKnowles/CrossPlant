@@ -2,6 +2,11 @@
 
 ### Added
 
+- Water & Fertilizer Stock System: Introduced a stock mechanic for plant care where watering consumes charges from a Water Jug (capacity 3) and fertilizing consumes Fertilizer (capacity 3). Stock levels are dynamically displayed next to actions in the right-hand action list.
+- Supplies Actions Section: Added a dedicated third section in the right-hand action menu containing Refill Water (Free), Buy Fertilizer (30 DD), and the Dew Shop.
+- Plant Shop Passive Boosts: Replaced cosmetic shop accessories with functional plant tools: Premium Fertilizer (100 DD, refills all vitals and HP), Moss Pole (250 DD, halves Sunlight decay rate), Self-Watering Pot (400 DD, halves Moisture decay rate), Slow-Release Fertilizer (500 DD, automatically regenerates +1 Nutrient/discipline every 2 hours), Greenhouse Cover (650 DD, halves Health decay rate), and Premium Sprayer (300 DD, adds +10 Sunlight/Happiness bonus on misting).
+- Herbarium Collection Log: Added a new "Herbarium" screen that displays discovery completion statistics (e.g., 4/12 discovered) and lists which of the 4 growth stages of the 3 plant types have been unlocked by the user. Discovery is tracked automatically across all plant grow cycles.
+- Weather-Based Growth/Vitals Bonus: Periodically queries local weather conditions in the background when connected to WiFi (using Open-Meteo and ip-api geolocation) to apply weather-specific passive boosts (Sunny gives Sunlight boost, Rainy gives Moisture boost, Cloudy gives Nutrient boost, Snowy gives Greenhouse health boost), displaying current weather on the Status Card and Sleep screen.
 - Gardening Overhaul: Transformed the "My Pet" feature into a tropical plant-growing game named "My Plants".
 - Plant Types: Choose from three tropical species: Monstera, Begonia, and Alocasia.
 - Plant Vitals & Actions: Replaced pet vitals and actions with Moisture (Water Plant), Sunlight (Mist Leaves / Move to Sun), Health (organic Pest Treatment), Nutrients (Fertilize), and Height.
@@ -11,6 +16,11 @@
 
 ### Changed
 
+- Direct Supplies Refilling: Water can now be refilled for free, and fertilizer can be purchased for 30 Dew Drops directly from the right-hand action list instead of entering the Dew Shop screen.
+- Restructured Dew Shop: Restructured the Dew Shop to exclusively feature passive growth upgrades (Moss Pole, Self-Watering Pot, Slow-Release Fertilizer, Greenhouse Cover, Premium Sprayer), removing necessity supplies from the shop screen.
+- Dynamic Reading-Based Quests: Replaced the daily Weed, Prune, and Fertilize quests with dynamic reading quests: Speedy Reader (15 pages read in one session), Night Owl (10 pages read after 9 PM), and Streak Saver (maintaining a reading streak of 3+ days).
+- Improved Daily Quests UI/UX: Redesigned the Quests page to cleanly left-align mission titles and right-align progress bars / completed statuses, completely eliminating text overlapping.
+- Cozy Sleep Screen Weather Info: Integrated the active weather condition and its bonus indicator into the Cozy Resting Diary on the Sleep Screen.
 - Reverted and completely removed the experimental "Cover Pet" UI theme.
 - Redesigned the main screen into a beautiful card layout with rounded borders: Top Left card for plant vitals, Bottom Left card for the plant sprite frame, and Right card for plant actions.
 - Redesigned the sleep screen to display the sleeping/dormant plant in a cozy rounded frame on the left, and a detailed lined notebook diary page on the right.
@@ -19,6 +29,8 @@
 
 ### Fixed
 
+- Fixed Fertilize Action Behavior: Rewrote the fertilizing action so it always increases the plant's nutrients (discipline) stat instead of behaving as a pet discipline scolding mechanic, satisfying the nutrient attention call immediately.
+- Daily Quests UI Overlapping: Redesigned the Daily Quests page layout to use a stacked two-line format, completely preventing overlapping text.
 - Fixed UI alignment issues on the "My Plants" screen where section headers overlapped each other and reading progress text was shifted.
 - Fixed Dew Drops (DD) currency not updating during reading sessions by dynamically calculating the plant's sleep state from the RTC time on page turns, resolving cases where the plant remained locked in a stale sleeping state.
 - Removed duplicate DD counter from the top status bar in the reader, leaving the single counter near the task bar at the bottom.

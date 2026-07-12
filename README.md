@@ -13,12 +13,15 @@ I am a Software and Hardware Developer specializing in full-stack applications, 
 #### 🌿🐣 [CrossPlant XTEink](https://github.com/0xKnowles/CrossPlant-Xteink)
 An open-source custom firmware fork for the **XTEink X3 and X4 mini e-ink readers**. It merges the advanced typography and performance optimizations of *CrossInk* with a re-engineered virtual plant companion mechanics system (*CrossPet*).
 
-* **The Virtual Plant System:** Features a reading-driven ecosystem where plant stats (Moisture, Happiness, Health, Discipline) decay in real time while awake, evolving through branches (**Scholar 🎓**, **Balanced ⚖️**, or **Wild 🌲**) based on actual reading habits and streaks.
+* **The Virtual Plant System:** Features a reading-driven ecosystem where plant stats (Moisture, Sunlight, Health, Nutrients) decay in real time while awake, evolving through branches based on actual reading habits, streaks, and local environmental factors.
 * **Premium Features:** 
-  * A space-efficient **Two-Column UI** separating plant vitals from detailed reading partner statistics.
-  * **Dew Drops (DD) Economy:** Real-time reading reward synchronization (+1 DD per page, +100 DD per book, time-based accumulation) to spend in an interactive item & cosmetic accessory shop.
-  * **Dynamic Canvas Rendering:** Pixel-art accessories (Glasses, Wizard Hats, Crowns) scale and render directly on top of the plant's sprite.
-  * **Plant Diary Sleep Screen:** A dual-pane standby screen displaying your sleeping plant alongside an RTC-synced daily achievement summary.
+  * A space-efficient **Two-Column UI** separating plant vitals from detailed reading stats.
+  * **Water & Fertilizer Stock System:** Integrated Water Jug (3 charges) and Fertilizer (3 charges) stock mechanics. Water is refilled for free, and fertilizer can be purchased for 30 DD directly from the main action list.
+  * **Dew Shop & Passive Upgrades:** Replaced cosmetic accessories with functional tools that grant passive vitals boosts, such as the Moss Pole (halves sunlight decay), Self-Watering Pot (halves moisture decay), Greenhouse Cover (halves health decay), and Slow-Release Fertilizer (auto-regenerates nutrients).
+  * **Real-time Weather Sync:** Periodically geolocates the device using the wireless IP and queries Open-Meteo to apply passive hourly growth boosts based on local conditions (Sunny, Rainy, Cloudy, Snowy), visible on both the main UI card and the sleep screen.
+  * **Herbarium Catalog:** A built-in discovery log showing discovery percentages (e.g., 4/12) and unlocking progress for the 4 growth stages of the 3 plant types (Alocasia, Begonia, Monstera).
+  * **Dynamic Reading-Based Quests:** Replaced standard tasks with reading-focused achievements (Speedy Reader, Night Owl, Streak Saver) rendered in a clean, non-overlapping stacked UI.
+  * **Plant Diary Sleep Screen:** A dual-pane standby screen displaying your sleeping plant alongside an RTC-synced daily achievement summary and local weather bonus telemetry.
   * **Hardware Optimizations:** High-fidelity SD card `.bmp` asset probing, custom bezel key long-press shortcuts, and a research-backed typography engine featuring *Lexend Deca* and *Bitter*.
 
 #### 🎣 [Bio Tackle Box](https://github.com/0xKnowles/Bio-Tackle-Box)

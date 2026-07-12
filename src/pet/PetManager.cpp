@@ -6,6 +6,12 @@
 #include "CrossPointSettings.h"
 #include <HalStorage.h>
 
+#ifndef SIMULATOR
+#include <WiFi.h>
+#include <ArduinoJson.h>
+#include "network/HttpDownloader.h"
+#endif
+
 #include <Arduino.h>
 #include <I18n.h>
 #include <Logging.h>
@@ -16,6 +22,8 @@
 #include <algorithm>
 #include <cstring>
 #include <ctime>
+
+static bool localTimeNow(struct tm& out);
 
 PetManager& PetManager::getInstance() {
   static PetManager instance;
@@ -29,6 +37,57 @@ void PetManager::tick() {
   if (!isTimeValid()) return;
 
   uint32_t now = getCurrentTime();
+
+#ifndef SIMULATOR
+  if (WiFi.status() == WL_CONNECTED && (now - state.lastWeatherSync > 14400)) {
+    state.lastWeatherSync = now;
+    save();
+    xTaskCreate([](void* param) {
+      LOG_INF("PET", "Starting background weather sync task...");
+      bool success = false;
+      std::string ipJson;
+      if (HttpDownloader::fetchUrl("http://ip-api.com/json/", ipJson)) {
+        JsonDocument doc;
+        DeserializationError error = deserializeJson(doc, ipJson);
+        if (!error) {
+          double lat = doc["lat"] | 0.0;
+          double lon = doc["lon"] | 0.0;
+          if (lat != 0.0 || lon != 0.0) {
+            char url[128];
+            snprintf(url, sizeof(url), "http://api.open-meteo.com/v1/forecast?latitude=%.4f&longitude=%.4f&current_weather=true", lat, lon);
+            std::string weatherJson;
+            if (HttpDownloader::fetchUrl(url, weatherJson)) {
+              JsonDocument wdoc;
+              error = deserializeJson(wdoc, weatherJson);
+              if (!error) {
+                int weathercode = wdoc["current_weather"]["weathercode"] | -1;
+                float temp = wdoc["current_weather"]["temperature"] | 0.0f;
+                
+                uint8_t cond = 3; // default Cloudy
+                if (weathercode >= 0 && weathercode <= 3) {
+                  cond = 1; // Sunny / Clear
+                } else if ((weathercode >= 51 && weathercode <= 67) || (weathercode >= 80 && weathercode <= 82)) {
+                  cond = 2; // Rainy
+                } else if ((weathercode >= 71 && weathercode <= 77) || weathercode == 85 || weathercode == 86) {
+                  cond = 4; // Snowy
+                }
+                
+                PET_MANAGER.updateWeather(cond, (int)temp);
+                PET_MANAGER.setFeedback(tr(STR_PET_WEATHER_SYNCED));
+                LOG_INF("PET", "Weather synced: condition=%d temp=%d", cond, (int)temp);
+                success = true;
+              }
+            }
+          }
+        }
+      }
+      if (!success) {
+        PET_MANAGER.setFeedback(tr(STR_PET_WEATHER_FAILED));
+      }
+      vTaskDelete(nullptr);
+    }, "weather_task", 4096, nullptr, 1, nullptr);
+  }
+#endif
   if (state.lastTickTime == 0) {
     state.lastTickTime = now;
     save();
@@ -94,15 +153,14 @@ void PetManager::resetMissionsIfNewDay() {
     state.missionPagesRead = 0;
     state.missionPetCount = 0;
     state.missionWaterCount = 0;
-    state.missionPruneCount = 0;
-    state.missionWeedCount = 0;
-    state.missionFertilizerCount = 0;
+    state.maxSessionPagesToday = 0;
+    state.pagesReadAfter9PM = 0;
     state.questReadClaimed = false;
     state.questPetClaimed = false;
     state.questWaterClaimed = false;
-    state.questPruneClaimed = false;
-    state.questWeedClaimed = false;
-    state.questFertilizerClaimed = false;
+    state.questSpeedyClaimed = false;
+    state.questNightOwlClaimed = false;
+    state.questStreakSaverClaimed = false;
   }
 }
 
@@ -207,6 +265,8 @@ void PetManager::onPageTurned() {
   if (state.isSleeping || state.isSick) return;
 
   resetMissionsIfNewDay();
+  
+  // 1. Daily Reading Goal (30 pages)
   if (state.missionPagesRead < 30) {
     state.missionPagesRead++;
     if (state.missionPagesRead >= 30 && !state.questReadClaimed) {
@@ -214,6 +274,37 @@ void PetManager::onPageTurned() {
       state.questReadClaimed = true;
     }
   }
+
+  // 2. Speedy Reader (15 pages in one session)
+  sessionPagesRead++;
+  if (sessionPagesRead > state.maxSessionPagesToday) {
+    state.maxSessionPagesToday = sessionPagesRead;
+    if (state.maxSessionPagesToday >= 15 && !state.questSpeedyClaimed) {
+      state.inkPoints += 30;
+      state.questSpeedyClaimed = true;
+    }
+  }
+
+  // 3. Night Owl (10 pages after 9 PM)
+  struct tm timeinfo;
+  if (localTimeNow(timeinfo)) {
+    if (timeinfo.tm_hour >= 21) {
+      if (state.pagesReadAfter9PM < 10) {
+        state.pagesReadAfter9PM++;
+        if (state.pagesReadAfter9PM >= 10 && !state.questNightOwlClaimed) {
+          state.inkPoints += 30;
+          state.questNightOwlClaimed = true;
+        }
+      }
+    }
+  }
+
+  // 4. Streak Saver (3 day reading streak)
+  if (state.currentStreak >= 3 && !state.questStreakSaverClaimed) {
+    state.inkPoints += 40;
+    state.questStreakSaverClaimed = true;
+  }
+
   state.totalPagesRead++;
   state.lastKnownPagesTurned++;
   state.inkPoints++;
@@ -259,6 +350,37 @@ void PetManager::resetData() {
   state = PetState();
   Storage.remove(PetConfig::STATE_PATH);
   loaded = true;
+  save();
+}
+
+void PetManager::applyPremiumFertilizer() {
+  state.hunger = 100;
+  state.happiness = 100;
+  state.health = 100;
+  state.discipline = 100;
+  state.isSick = false;
+  save();
+}
+
+void PetManager::updateWeather(uint8_t condition, int temp) {
+  state.weatherCondition = condition;
+  state.weatherTemp = temp;
+  state.lastWeatherSync = getCurrentTime();
+  save();
+}
+
+void PetManager::forceWeatherSync() {
+  state.lastWeatherSync = 0;
+  save();
+}
+
+void PetManager::refillWater() {
+  state.waterStock = 3;
+  save();
+}
+
+void PetManager::refillFertilizer() {
+  state.fertilizerStock = 3;
   save();
 }
 
@@ -320,13 +442,17 @@ uint32_t PetManager::getDaysAlive() const {
   return (now - state.birthTime) / 86400;
 }
 
+void PetManager::startReadingSession() {
+  sessionPagesRead = 0;
+}
+
 void PetManager::getMissions(PetMission out[6]) const {
   out[0] = {tr(STR_PET_MISSION_READ), state.missionPagesRead, 30, state.missionPagesRead >= 30, 50};
   out[1] = {tr(STR_PET_MISSION_PET),  state.missionPetCount,   5, state.missionPetCount  >=  5, 30};
   out[2] = {tr(STR_PET_MISSION_WATER), state.missionWaterCount,  3, state.missionWaterCount >=  3, 20};
-  out[3] = {tr(STR_PET_MISSION_PRUNE), state.missionPruneCount,  1, state.missionPruneCount >=  1, 30};
-  out[4] = {tr(STR_PET_MISSION_WEED),  state.missionWeedCount,   1, state.missionWeedCount  >=  1, 20};
-  out[5] = {tr(STR_PET_MISSION_FERTILIZE), state.missionFertilizerCount, 1, state.missionFertilizerCount >= 1, 20};
+  out[3] = {tr(STR_PET_MISSION_SPEEDY), state.maxSessionPagesToday, 15, state.maxSessionPagesToday >= 15, 30};
+  out[4] = {tr(STR_PET_MISSION_NIGHTOWL), state.pagesReadAfter9PM, 10, state.pagesReadAfter9PM >= 10, 30};
+  out[5] = {tr(STR_PET_MISSION_STREAK), (uint8_t)state.currentStreak, 3, state.currentStreak >= 3, 40};
 }
 
 // --- Helpers ---
