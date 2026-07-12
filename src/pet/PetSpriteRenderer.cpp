@@ -9,33 +9,31 @@
 #include "PetManager.h"
 
 namespace {
-static bool drawBmpSprite(GfxRenderer& renderer, int x, int y, int size,
-                          const char* stage, int variant, const char* mood) {
-  char path[128];
+static const char* getSpeciesPrefix(uint8_t petType) {
+  switch (petType) {
+    case 0:  return "mon";
+    case 1:  return "begonia";
+    case 2:  return "alo";
+    default: return "mon";
+  }
+}
+
+static int getStageNum(PetStage stage) {
+  switch (stage) {
+    case PetStage::EGG:       return 0;
+    case PetStage::HATCHLING: return 1;
+    case PetStage::YOUNGSTER: return 2;
+    case PetStage::COMPANION: return 3;
+    case PetStage::ELDER:     return 4;
+    case PetStage::DEAD:      return 5;
+    default:                  return 0;
+  }
+}
+
+static bool tryLoadBmp(GfxRenderer& renderer, const char* path, int x, int y, int size) {
   FsFile file;
-
-  // Try paths in order of specificity:
-  // 1. {stage}_v{variant}_{mood}.bmp
-  // 2. {stage}_{mood}.bmp
-  // 3. {stage}_v{variant}.bmp
-  // 4. {stage}.bmp
-
-  if (variant > 0) {
-    snprintf(path, sizeof(path), "/.crosspoint/pet/sprites/%s_v%d_%s.bmp", stage, variant, mood);
-    if (Storage.openFileForRead("HOME", path, file)) {
-      Bitmap bitmap(file);
-      if (bitmap.parseHeaders() == BmpReaderError::Ok) {
-        renderer.drawBitmap(bitmap, x, y, size, size);
-        file.close();
-        return true;
-      }
-      file.close();
-    }
-  }
-
-  snprintf(path, sizeof(path), "/.crosspoint/pet/sprites/%s_%s.bmp", stage, mood);
   if (Storage.openFileForRead("HOME", path, file)) {
-    Bitmap bitmap(file);
+    Bitmap bitmap(file, true);
     if (bitmap.parseHeaders() == BmpReaderError::Ok) {
       renderer.drawBitmap(bitmap, x, y, size, size);
       file.close();
@@ -43,92 +41,113 @@ static bool drawBmpSprite(GfxRenderer& renderer, int x, int y, int size,
     }
     file.close();
   }
+  return false;
+}
+
+static bool drawBmpSprite(GfxRenderer& renderer, int x, int y, int size,
+                          const char* stageStr, int variant, const char* mood,
+                          uint8_t petType, PetStage stage) {
+  char path[128];
+  const char* prefix = getSpeciesPrefix(petType);
+  int stageNum = getStageNum(stage);
+
+  if (stage == PetStage::EGG) {
+    if (tryLoadBmp(renderer, "/.crosspoint/pet/sprites/Seed.bmp", x, y, size)) return true;
+    if (tryLoadBmp(renderer, "/.crosspoint/pet/sprites/egg.bmp", x, y, size)) return true;
+    snprintf(path, sizeof(path), "/.crosspoint/pet/sprites/%s-0.bmp", prefix);
+    if (tryLoadBmp(renderer, path, x, y, size)) return true;
+  }
+
+  if (stage == PetStage::DEAD) {
+    if (tryLoadBmp(renderer, "/.crosspoint/pet/sprites/dead.bmp", x, y, size)) return true;
+    snprintf(path, sizeof(path), "/.crosspoint/pet/sprites/%s-dead.bmp", prefix);
+    if (tryLoadBmp(renderer, path, x, y, size)) return true;
+    snprintf(path, sizeof(path), "/.crosspoint/pet/sprites/%s-5.bmp", prefix);
+    if (tryLoadBmp(renderer, path, x, y, size)) return true;
+  }
 
   if (variant > 0) {
-    snprintf(path, sizeof(path), "/.crosspoint/pet/sprites/%s_v%d.bmp", stage, variant);
-    if (Storage.openFileForRead("HOME", path, file)) {
-      Bitmap bitmap(file);
-      if (bitmap.parseHeaders() == BmpReaderError::Ok) {
-        renderer.drawBitmap(bitmap, x, y, size, size);
-        file.close();
-        return true;
-      }
-      file.close();
-    }
+    snprintf(path, sizeof(path), "/.crosspoint/pet/sprites/%s-%d_v%d_%s.bmp", prefix, stageNum, variant, mood);
+    if (tryLoadBmp(renderer, path, x, y, size)) return true;
   }
 
-  snprintf(path, sizeof(path), "/.crosspoint/pet/sprites/%s.bmp", stage);
-  if (Storage.openFileForRead("HOME", path, file)) {
-    Bitmap bitmap(file);
-    if (bitmap.parseHeaders() == BmpReaderError::Ok) {
-      renderer.drawBitmap(bitmap, x, y, size, size);
-      file.close();
-      return true;
-    }
-    file.close();
+  snprintf(path, sizeof(path), "/.crosspoint/pet/sprites/%s-%d_%s.bmp", prefix, stageNum, mood);
+  if (tryLoadBmp(renderer, path, x, y, size)) return true;
+
+  if (variant > 0) {
+    snprintf(path, sizeof(path), "/.crosspoint/pet/sprites/%s-%d_v%d.bmp", prefix, stageNum, variant);
+    if (tryLoadBmp(renderer, path, x, y, size)) return true;
   }
+
+  snprintf(path, sizeof(path), "/.crosspoint/pet/sprites/%s-%d.bmp", prefix, stageNum);
+  if (tryLoadBmp(renderer, path, x, y, size)) return true;
+
+  if (variant > 0) {
+    snprintf(path, sizeof(path), "/.crosspoint/pet/sprites/%s_v%d_%s.bmp", stageStr, variant, mood);
+    if (tryLoadBmp(renderer, path, x, y, size)) return true;
+  }
+  snprintf(path, sizeof(path), "/.crosspoint/pet/sprites/%s_%s.bmp", stageStr, mood);
+  if (tryLoadBmp(renderer, path, x, y, size)) return true;
+  if (variant > 0) {
+    snprintf(path, sizeof(path), "/.crosspoint/pet/sprites/%s_v%d.bmp", stageStr, variant);
+    if (tryLoadBmp(renderer, path, x, y, size)) return true;
+  }
+  snprintf(path, sizeof(path), "/.crosspoint/pet/sprites/%s.bmp", stageStr);
+  if (tryLoadBmp(renderer, path, x, y, size)) return true;
 
   return false;
 }
 
 static bool drawBmpMini(GfxRenderer& renderer, int x, int y, int size,
-                        const char* stage, int variant, const char* mood) {
+                        const char* stageStr, int variant, const char* mood,
+                        uint8_t petType, PetStage stage) {
   char path[128];
-  FsFile file;
+  const char* prefix = getSpeciesPrefix(petType);
+  int stageNum = getStageNum(stage);
 
-  // Try paths:
-  // 1. mini/{stage}_v{variant}_{mood}.bmp
-  // 2. mini/{stage}_{mood}.bmp
-  // 3. mini/{stage}_v{variant}.bmp
-  // 4. mini/{stage}.bmp
-
-  if (variant > 0) {
-    snprintf(path, sizeof(path), "/.crosspoint/pet/sprites/mini/%s_v%d_%s.bmp", stage, variant, mood);
-    if (Storage.openFileForRead("HOME", path, file)) {
-      Bitmap bitmap(file);
-      if (bitmap.parseHeaders() == BmpReaderError::Ok) {
-        renderer.drawBitmap(bitmap, x, y, size, size);
-        file.close();
-        return true;
-      }
-      file.close();
-    }
+  if (stage == PetStage::EGG) {
+    if (tryLoadBmp(renderer, "/.crosspoint/pet/sprites/mini/Seed.bmp", x, y, size)) return true;
+    if (tryLoadBmp(renderer, "/.crosspoint/pet/sprites/mini/egg.bmp", x, y, size)) return true;
+    snprintf(path, sizeof(path), "/.crosspoint/pet/sprites/mini/%s-0.bmp", prefix);
+    if (tryLoadBmp(renderer, path, x, y, size)) return true;
   }
 
-  snprintf(path, sizeof(path), "/.crosspoint/pet/sprites/mini/%s_%s.bmp", stage, mood);
-  if (Storage.openFileForRead("HOME", path, file)) {
-    Bitmap bitmap(file);
-    if (bitmap.parseHeaders() == BmpReaderError::Ok) {
-      renderer.drawBitmap(bitmap, x, y, size, size);
-      file.close();
-      return true;
-    }
-    file.close();
+  if (stage == PetStage::DEAD) {
+    if (tryLoadBmp(renderer, "/.crosspoint/pet/sprites/mini/dead.bmp", x, y, size)) return true;
+    snprintf(path, sizeof(path), "/.crosspoint/pet/sprites/mini/%s-dead.bmp", prefix);
+    if (tryLoadBmp(renderer, path, x, y, size)) return true;
+    snprintf(path, sizeof(path), "/.crosspoint/pet/sprites/mini/%s-5.bmp", prefix);
+    if (tryLoadBmp(renderer, path, x, y, size)) return true;
   }
 
   if (variant > 0) {
-    snprintf(path, sizeof(path), "/.crosspoint/pet/sprites/mini/%s_v%d.bmp", stage, variant);
-    if (Storage.openFileForRead("HOME", path, file)) {
-      Bitmap bitmap(file);
-      if (bitmap.parseHeaders() == BmpReaderError::Ok) {
-        renderer.drawBitmap(bitmap, x, y, size, size);
-        file.close();
-        return true;
-      }
-      file.close();
-    }
+    snprintf(path, sizeof(path), "/.crosspoint/pet/sprites/mini/%s-%d_v%d_%s.bmp", prefix, stageNum, variant, mood);
+    if (tryLoadBmp(renderer, path, x, y, size)) return true;
   }
 
-  snprintf(path, sizeof(path), "/.crosspoint/pet/sprites/mini/%s.bmp", stage);
-  if (Storage.openFileForRead("HOME", path, file)) {
-    Bitmap bitmap(file);
-    if (bitmap.parseHeaders() == BmpReaderError::Ok) {
-      renderer.drawBitmap(bitmap, x, y, size, size);
-      file.close();
-      return true;
-    }
-    file.close();
+  snprintf(path, sizeof(path), "/.crosspoint/pet/sprites/mini/%s-%d_%s.bmp", prefix, stageNum, mood);
+  if (tryLoadBmp(renderer, path, x, y, size)) return true;
+
+  if (variant > 0) {
+    snprintf(path, sizeof(path), "/.crosspoint/pet/sprites/mini/%s-%d_v%d.bmp", prefix, stageNum, variant);
+    if (tryLoadBmp(renderer, path, x, y, size)) return true;
   }
+
+  snprintf(path, sizeof(path), "/.crosspoint/pet/sprites/mini/%s-%d.bmp", prefix, stageNum);
+  if (tryLoadBmp(renderer, path, x, y, size)) return true;
+
+  if (variant > 0) {
+    snprintf(path, sizeof(path), "/.crosspoint/pet/sprites/mini/%s_v%d_%s.bmp", stageStr, variant, mood);
+    if (tryLoadBmp(renderer, path, x, y, size)) return true;
+  }
+  snprintf(path, sizeof(path), "/.crosspoint/pet/sprites/mini/%s_%s.bmp", stageStr, mood);
+  if (tryLoadBmp(renderer, path, x, y, size)) return true;
+  if (variant > 0) {
+    snprintf(path, sizeof(path), "/.crosspoint/pet/sprites/mini/%s_v%d.bmp", stageStr, variant);
+    if (tryLoadBmp(renderer, path, x, y, size)) return true;
+  }
+  snprintf(path, sizeof(path), "/.crosspoint/pet/sprites/mini/%s.bmp", stageStr);
+  if (tryLoadBmp(renderer, path, x, y, size)) return true;
 
   return false;
 }
@@ -214,7 +233,7 @@ void PetSpriteRenderer::drawPet(GfxRenderer& renderer, int x, int y, PetStage st
 
   // 1. Try BMP files first at display size!
   int size = displaySize(scale);
-  if (drawBmpSprite(renderer, x, y, size, stageName(stage), (int)variant, moodName(mood))) {
+  if (drawBmpSprite(renderer, x, y, size, stageName(stage), (int)variant, moodName(mood), petType, stage)) {
     drawn = true;
   }
 
@@ -318,7 +337,7 @@ void PetSpriteRenderer::drawPet(GfxRenderer& renderer, int x, int y, PetStage st
 void PetSpriteRenderer::drawMini(GfxRenderer& renderer, int x, int y, PetStage stage,
                                   PetMood mood, uint8_t variant, uint8_t petType) {
   // 1. Try BMP mini files first!
-  if (drawBmpMini(renderer, x, y, MINI_W, stageName(stage), (int)variant, moodName(mood))) {
+  if (drawBmpMini(renderer, x, y, MINI_W, stageName(stage), (int)variant, moodName(mood), petType, stage)) {
     return;
   }
 
