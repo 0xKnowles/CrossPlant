@@ -334,14 +334,18 @@ void PetSpriteRenderer::drawPet(GfxRenderer& renderer, int x, int y, PetStage st
 
 void PetSpriteRenderer::drawBakedPortrait(GfxRenderer& renderer, uint8_t petType, uint8_t stage,
                                           int x, int y, int size) {
-  const uint8_t* baked = getBakedPlantSprite(petType, stage);
-  if (baked == nullptr || size <= 0) {
+  drawBaked144Image(renderer, getBakedPlantSprite(petType, stage), x, y, size);
+}
+
+void PetSpriteRenderer::drawBaked144Image(GfxRenderer& renderer, const uint8_t* img, int x, int y,
+                                          int size) {
+  if (img == nullptr || size <= 0) {
     return;
   }
   if (size == 144) {
-    drawBakedImage(renderer, baked, x, y, 144, 144);
+    drawBakedImage(renderer, img, x, y, 144, 144);
   } else {
-    drawBakedImageScaled(renderer, baked, x, y, 144, 144, size, size);
+    drawBakedImageScaled(renderer, img, x, y, 144, 144, size, size);
   }
 }
 

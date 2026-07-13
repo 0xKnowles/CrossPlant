@@ -7,6 +7,7 @@
 
 #include "AppVersion.h"
 #include "fontIds.h"
+#include "images/Seed144.h"
 #include "pet/PetSpriteRenderer.h"
 
 void BootActivity::onEnter() {
@@ -50,8 +51,15 @@ void BootActivity::onEnter() {
     for (int c = 0; c < COLS; c++) {
       const int x = gridX + c * (portraitSize + GAP);
       const int y = gridY + r * (portraitSize + GAP);
-      PetSpriteRenderer::drawBakedPortrait(renderer, SPECIES_ORDER[c], BAKED_STAGE_GRID[r][c], x, y,
-                                           portraitSize);
+      if (r == 0 && c == 0) {
+        // Monstera has no unique baked stage-1 art (BakedPlantSprites.h aliases mon_1 to
+        // begonia_1 as a placeholder), which would otherwise render identically to the
+        // Begonia-1 cell right next to it. Show the actual seed art here instead.
+        PetSpriteRenderer::drawBaked144Image(renderer, Seed, x, y, portraitSize);
+      } else {
+        PetSpriteRenderer::drawBakedPortrait(renderer, SPECIES_ORDER[c], BAKED_STAGE_GRID[r][c], x, y,
+                                             portraitSize);
+      }
     }
   }
 
