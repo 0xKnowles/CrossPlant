@@ -727,7 +727,7 @@ void SleepActivity::renderPetSleepScreen() const {
   const auto& farm = PET_MANAGER.getFarmState();
 
   // 1. Draw Title Header
-  renderer.drawCenteredText(UI_10_FONT_ID, 24, "CROSSPLANT DORMANT", true, EpdFontFamily::BOLD);
+  renderer.drawCenteredText(UI_10_FONT_ID, 24, "CROSSPLANT SLEEPING", true, EpdFontFamily::BOLD);
   renderer.drawLine(20, 48, pageWidth - 20, 48, true);
 
   // 2. Dashboard Layout Calculations
@@ -756,7 +756,7 @@ void SleepActivity::renderPetSleepScreen() const {
   // 4. Draw Pet Sprite & Information inside Left Card
   // Scale the plant up to fill more of the card (was a fixed 144px); bounded by both card
   // dimensions so there's still room below it for the name/stage/species lines and card margins.
-  constexpr int kMaxPetSize = 220;
+  constexpr int kMaxPetSize = 260;
   const int petSize = std::min({kMaxPetSize, coverRect.width - 24, coverRect.height - 110});
   const int spriteX = coverRect.x + (coverRect.width - petSize) / 2;
   const int spriteY = coverRect.y + (coverRect.height - petSize) / 2 - 20;
@@ -878,7 +878,7 @@ void SleepActivity::renderPetSleepScreen() const {
   
   // Footer Line 2: Left weather line, Right sleep status
   renderer.drawText(SMALL_FONT_ID, inset, footerY + lineH + 6, weatherLine);
-  drawRightAlignedText(renderer, SMALL_FONT_ID, rightX, footerY + lineH + 6, "CrossPlant Dormant", false, true);
+  drawRightAlignedText(renderer, SMALL_FONT_ID, rightX, footerY + lineH + 6, "CrossPlant Sleeping", false, true);
 
   // 7. Reading stats + last-book cover, filling any leftover space below the boosts/weather
   // footer (mainly present on the taller X3 panel).
