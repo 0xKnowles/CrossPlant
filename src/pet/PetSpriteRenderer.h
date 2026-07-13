@@ -49,6 +49,13 @@ class PetSpriteRenderer {
   static void drawBakedPortrait(GfxRenderer& renderer, uint8_t petType, uint8_t stage, int x,
                                 int y, int size);
 
+  // Draw an arbitrary externally-supplied 144x144 baked 1-bit image (e.g. the Seed art in
+  // Seed144.h) scaled to size x size at (x,y). Used when a caller wants a specific baked asset
+  // directly rather than one selected via getBakedPlantSprite(petType, stage) — e.g. the boot
+  // screen's seed/egg grid cell, which has no live PetState to derive a species+stage from.
+  // No-op if img is null.
+  static void drawBaked144Image(GfxRenderer& renderer, const uint8_t* img, int x, int y, int size);
+
  private:
   // Shared 288-byte buffer — large enough for a full sprite frame.
   static uint8_t spriteBuffer[SPRITE_BYTES];

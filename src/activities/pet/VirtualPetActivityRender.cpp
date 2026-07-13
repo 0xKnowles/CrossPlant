@@ -197,7 +197,7 @@ void VirtualPetActivity::renderAlive() const {
   renderer.drawLine(col1X, petY + 30, col1X + col1W - 1, petY + 30, true);
 
   const char* petName = state.petName[0] ? state.petName : PetTypeNames::get(state.petType);
-  const char* stageName = PetEvolution::variantStageName(state.stage, state.evolutionVariant);
+  const char* stageName = PetEvolution::variantStageName(state.stage, state.evolutionVariant, state.petType);
   char nameStage[64];
   snprintf(nameStage, sizeof(nameStage), "%s (%s)", petName, stageName);
   int nameStageW = renderer.getTextWidth(UI_10_FONT_ID, nameStage, EpdFontFamily::BOLD);
@@ -494,6 +494,9 @@ void VirtualPetActivity::renderAlbum() const {
   renderer.drawText(SMALL_FONT_ID, col1X + 8, listTop + 5, "SPECIES", true, EpdFontFamily::BOLD);
 
   const char* speciesNames[3] = {"Alocasia", "Begonia", "Monstera"};
+  // This list is alphabetical (unlike the global petType order Monstera=0/Begonia=1/Alocasia=2),
+  // so map each alphabetical row back to its petType for species-specific stage vocabulary below.
+  const uint8_t speciesPetTypes[3] = {2, 1, 0};
   for (int i = 0; i < 3; i++) {
     const int rowY = listTop + 32 + i * 24;
     const bool selected = (i == typeSelectIndex);
@@ -513,7 +516,16 @@ void VirtualPetActivity::renderAlbum() const {
   snprintf(progressHeader, sizeof(progressHeader), "%s DISCOVERIES", speciesNames[typeSelectIndex]);
   renderer.drawText(SMALL_FONT_ID, col2X + 8, listTop + 5, progressHeader, true, EpdFontFamily::BOLD);
 
-  const char* stageNames[4] = {"1. Sprout", "2. Sapling", "3. Mature", "4. Prized"};
+  const uint8_t selectedPetType = speciesPetTypes[typeSelectIndex];
+  const PetStage discoveryStages[4] = {PetStage::HATCHLING, PetStage::YOUNGSTER, PetStage::COMPANION,
+                                       PetStage::ELDER};
+  char stageNameBufs[4][24];
+  const char* stageNames[4];
+  for (int i = 0; i < 4; i++) {
+    snprintf(stageNameBufs[i], sizeof(stageNameBufs[i]), "%d. %s", i + 1,
+             PetEvolution::stageName(discoveryStages[i], selectedPetType));
+    stageNames[i] = stageNameBufs[i];
+  }
   for (int st = 1; st <= 4; st++) {
     const int rowY = listTop + 32 + (st - 1) * 18;
     uint8_t bit = (typeSelectIndex * 4) + (st - 1);

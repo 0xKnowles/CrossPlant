@@ -477,7 +477,7 @@ void LyraCarouselTheme::drawRecentBookCover(GfxRenderer& renderer, Rect rect,
       const auto& state = PET_MANAGER.getState();
       const PetMood mood = PET_MANAGER.getMood();
       const char* petName = state.petName[0] ? state.petName : PetTypeNames::get(state.petType);
-      const char* stageName = PetEvolution::variantStageName(state.stage, state.evolutionVariant);
+      const char* stageName = PetEvolution::variantStageName(state.stage, state.evolutionVariant, state.petType);
 
       char petStatus[64];
       snprintf(petStatus, sizeof(petStatus), "%s (%s) | Mo:%u%% Su:%u%% %lu DD",

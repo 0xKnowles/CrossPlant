@@ -29,6 +29,34 @@ static uint8_t determineVariant(const PetState& state, uint16_t currentStreak, u
   return 1;  // Balanced (default)
 }
 
+// Base (non-variant) stage name in species-specific vocabulary. Companion/Elder are the same
+// "Mature"/"Prized" wording across all species (see PetEvolution.h).
+const char* baseStageName(PetStage stage, uint8_t petType) {
+  switch (stage) {
+    case PetStage::EGG:
+      switch (petType) {
+        case 1:  return tr(STR_PET_STAGE_EGG_BEGONIA);
+        case 2:  return tr(STR_PET_STAGE_EGG_ALOCASIA);
+        default: return tr(STR_PET_STAGE_EGG_MONSTERA);
+      }
+    case PetStage::HATCHLING:
+      switch (petType) {
+        case 1:  return tr(STR_PET_STAGE_HATCHLING_BEGONIA);
+        case 2:  return tr(STR_PET_STAGE_HATCHLING_ALOCASIA);
+        default: return tr(STR_PET_STAGE_HATCHLING_MONSTERA);
+      }
+    case PetStage::YOUNGSTER:
+      switch (petType) {
+        case 1:  return tr(STR_PET_STAGE_YOUNGSTER_BEGONIA);
+        case 2:  return tr(STR_PET_STAGE_YOUNGSTER_ALOCASIA);
+        default: return tr(STR_PET_STAGE_YOUNGSTER_MONSTERA);
+      }
+    case PetStage::COMPANION: return tr(STR_PET_STAGE_COMPANION);
+    case PetStage::ELDER:     return tr(STR_PET_STAGE_ELDER);
+    default:                  return "???";
+  }
+}
+
 }  // namespace
 
 namespace PetEvolution {
@@ -59,20 +87,22 @@ void checkEvolution(PetState& state, uint16_t currentStreak, uint8_t booksFinish
   LOG_DBG("PET", "Evolved to stage %d variant %d", (int)state.stage, state.evolutionVariant);
 }
 
-const char* variantStageName(PetStage stage, uint8_t variant) {
+const char* stageName(PetStage stage, uint8_t petType) {
+  return baseStageName(stage, petType);
+}
+
+const char* variantStageName(PetStage stage, uint8_t variant, uint8_t petType) {
   switch (stage) {
     case PetStage::YOUNGSTER:
       if (variant == 0) return tr(STR_PET_STAGE_SCHOLARLY_YOUNG);
       if (variant == 2) return tr(STR_PET_STAGE_WILD_YOUNGSTER);
-      return tr(STR_PET_STAGE_YOUNGSTER);
+      return baseStageName(stage, petType);
     case PetStage::COMPANION:
       if (variant == 0) return tr(STR_PET_STAGE_SCHOLAR);
       if (variant == 2) return tr(STR_PET_STAGE_WILD_COMPANION);
-      return tr(STR_PET_STAGE_COMPANION);
-    case PetStage::EGG:       return tr(STR_PET_STAGE_EGG);
-    case PetStage::HATCHLING: return tr(STR_PET_STAGE_HATCHLING);
-    case PetStage::ELDER:     return tr(STR_PET_STAGE_ELDER);
-    default:                  return "???";
+      return baseStageName(stage, petType);
+    default:
+      return baseStageName(stage, petType);
   }
 }
 

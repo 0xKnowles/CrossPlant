@@ -511,7 +511,7 @@ void drawFooterStats(const GfxRenderer& renderer, const Rect& coverRect, const G
     const int textX = iconX + kFooterPlantIconSize + 10;
 
     const char* petName = state.petName[0] ? state.petName : PetTypeNames::get(state.petType);
-    const char* stageName = PetEvolution::variantStageName(state.stage, state.evolutionVariant);
+    const char* stageName = PetEvolution::variantStageName(state.stage, state.evolutionVariant, state.petType);
 
     // Draw pet stats right-aligned
     char statsLine1[64];
