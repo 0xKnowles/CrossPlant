@@ -3,7 +3,7 @@
 ### Added
 
 - Multiple Growing Plots: Grow up to 3 plants at once, one of each species. Plot 2 (800 DD) and Plot 3 (1200 DD) unlock in the Dew Shop as high-value purchases. The front bezel buttons (previously "Previous"/"Next") switch the active growing plot, while the side volume-rocker buttons now drive the plant action menu. The active plot ("Plot X/Y") is shown under the plant sprite once more than one plot is owned. Currency, water/fertilizer stock, shop upgrades, reading streak, and quests remain shared across all plots, while each plot grows and evolves independently based on its own care and reading history.
-- Boot Screen Trio: The boot screen now shows three mature plant portraits side by side (Monstera, Begonia, Alocasia) instead of a single plant logo.
+- Boot Screen Showcase Grid: The boot screen now shows a 3x3 grid of plant portraits (one column per species: Monstera, Begonia, Alocasia) at a curated mix of growth stages, instead of a single plant logo.
 - Water & Fertilizer Stock System: Introduced a stock mechanic for plant care where watering consumes charges from a Water Jug (capacity 3) and fertilizing consumes Fertilizer (capacity 3). Stock levels are dynamically displayed next to actions in the right-hand action list.
 - Supplies Actions Section: Added a dedicated third section in the right-hand action menu containing Refill Water (Free), Buy Fertilizer (30 DD), and the Dew Shop.
 - Plant Shop Passive Boosts: Replaced cosmetic shop accessories with functional plant tools: Premium Fertilizer (100 DD, refills all vitals and HP), Moss Pole (250 DD, halves Sunlight decay rate), Self-Watering Pot (400 DD, halves Moisture decay rate), Slow-Release Fertilizer (500 DD, automatically regenerates +1 Nutrient/discipline every 2 hours), Greenhouse Cover (650 DD, halves Health decay rate), and Premium Sprayer (300 DD, adds +10 Sunlight/Happiness bonus on misting).
@@ -30,6 +30,7 @@
 - Updated daily quests from "pets" to "tends".
 - Enlarged the plant mini-sprite icon in the Dashboard theme's footer (from a fixed 20px up to 40px, sized to fill the same vertical space as the 3-line stats block beside it) so it reads more clearly, without growing the footer row or overlapping the pet name/stage/stats text (which still truncates dynamically to fit).
 - Redesigned the Reading Stats card on the plant sleep screen: each stat now shows a bold caps label (e.g. "TIME READ") above a larger value instead of a single plain "Label: value" line, and rows are spread evenly across the card's full height instead of clustering at the top, removing the empty space that used to sit below them.
+- Species-Specific Growth Stage Names: Growth stage names now match each species' real propagation method instead of one generic set of terms. Monstera: Seed - Sprout - Juvenile - Mature - Prized. Begonia: Cutting - Rooted - Leafing - Mature - Prized. Alocasia: Corm - Pup - Sprouting - Mature - Prized. Applies everywhere a stage name is shown, including the Herbarium's per-species discovery list.
 
 ### Fixed
 

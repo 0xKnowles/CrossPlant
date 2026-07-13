@@ -193,7 +193,7 @@ void drawStatsOverlay(const GfxRenderer& renderer, const GlobalReadingStats& glo
     const auto& state = PET_MANAGER.getState();
     const PetMood mood = PET_MANAGER.getMood();
     const char* petName = state.petName[0] ? state.petName : PetTypeNames::get(state.petType);
-    const char* stageName = PetEvolution::variantStageName(state.stage, state.evolutionVariant);
+    const char* stageName = PetEvolution::variantStageName(state.stage, state.evolutionVariant, state.petType);
 
     // Draw pet header on the top row
     char petHeader[64];

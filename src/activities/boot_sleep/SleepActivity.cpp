@@ -766,7 +766,7 @@ void SleepActivity::renderPetSleepScreen() const {
                              /*forceGlasses=*/false, /*targetSize=*/petSize);
 
   const char* petName = state.petName[0] ? state.petName : PetTypeNames::get(state.petType);
-  const char* stageName = PetEvolution::variantStageName(state.stage, state.evolutionVariant);
+  const char* stageName = PetEvolution::variantStageName(state.stage, state.evolutionVariant, state.petType);
   const char* speciesName = PetTypeNames::get(state.petType);
 
   const int nameY = spriteY + petSize + 12;
