@@ -15,6 +15,7 @@
 - Dew Drops Currency: Changed Ink Points (IP) currency to Dew Drops (DD).
 - Garden Shop: Replaced shop items with gardening-themed items: Premium Fertilizer (20 DD), Self-Watering Pot (50 DD), Cute Ladybugs (100 DD), Mini Umbrella (150 DD), Fairy Lights (200 DD), and Plant Ribbon (250 DD).
 - Custom 1-Bit Plant Sprites: Hand-crafted 1-bit plant pixel art for all stages (Seed, Sprout, Sapling, Mature/Prized Monstera/Begonia/Alocasia, and withered twigs).
+- Global Back/Confirm Long-Press: The long-press quick actions for Back and Confirm/Menu (Settings > Controls) now also work outside the book reader for actions that don't need an open book — Sleep, Screenshot, Reading Stats, File Transfer, Calibre Wireless, Join Network, Create Hotspot, Virtual Pet, and Browse Files. Previously these only fired while reading; on every other screen (Home, My Plants, Settings, etc.) holding Back or Confirm did nothing except the globally-wired Power button.
 
 ### Changed
 
