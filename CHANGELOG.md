@@ -28,6 +28,8 @@
 - Redesigned the sleep screen to display the sleeping/dormant plant in a cozy rounded frame on the left, and a detailed lined notebook diary page on the right.
 - Updated all UI and reader themes (Base, Dashboard, Minimal, Lyra Carousel) to print DD currency, height, and moisture/sunlight vitals.
 - Updated daily quests from "pets" to "tends".
+- Enlarged the plant mini-sprite icon in the Dashboard theme's footer (from a fixed 20px up to 40px, sized to fill the same vertical space as the 3-line stats block beside it) so it reads more clearly, without growing the footer row or overlapping the pet name/stage/stats text (which still truncates dynamically to fit).
+- Redesigned the Reading Stats card on the plant sleep screen: each stat now shows a bold caps label (e.g. "TIME READ") above a larger value instead of a single plain "Label: value" line, and rows are spread evenly across the card's full height instead of clustering at the top, removing the empty space that used to sit below them.
 
 ### Fixed
 
@@ -40,6 +42,7 @@
 - Fixed UI overlapping issues on the Dashboard Theme footer where the plant name/stage and 'Moisture'/'Health' text would collide on narrower screens by shifting the name/stage text closer to the mini-sprite icon and applying dynamic truncation.
 - Added a "Daily Quests" menu option to the "My Plants" action menu to view detailed progress bars for all active daily missions.
 - Fixed Cozy Frame box height on the sleep screen to prevent the bottom border from overlapping the plant stage text on X3 stacked layouts.
+- Fixed the last-book cover on the plant sleep screen's reading-stats card rendering mostly black: it was generating a Dashboard-sized (296x444) thumbnail and then shrinking it down to the small card box, which re-samples already-dithered pixels. It now generates the thumbnail directly at the card's actual size, so dithering happens once at (close to) final resolution.
 - Replaced remaining hardcoded "Pet" references on the sleep screen and plant details cards with "Plant" (e.g. "PET DIARY" -> "PLANT DIARY", "PET STATUS" -> "PLANT STATUS", and "PET ACTIONS" -> "PLANT ACTIONS").
 - Added support for loading custom species-specific `.bmp` plant images from the SD card (e.g. `alo-1.bmp`, `begonia-2.bmp`, `mon-3.bmp` under `/.crosspoint/pet/sprites/`) with automatic ordered Bayer dithering, and baked them directly into the firmware as dithered 1bpp fallbacks that center automatically inside their display bounding box without distortion or SD card requirements.
 - Fixed a pre-existing simulator compilation error in `WifiSelectionActivity.cpp` by wrapping `WiFi.disconnect` parameters in a simulator check.

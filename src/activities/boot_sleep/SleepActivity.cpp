@@ -314,25 +314,28 @@ bool tryDrawCoverBmp(const GfxRenderer& renderer, const std::string& bmpPath, co
   return drawn;
 }
 
-// Draws the most-recently-read book's cover into r. For EPUBs, generates (or reuses) the exact
-// same fixed-size adaptive-fit thumbnail the Dashboard theme's own cover UI uses —
-// generateAdaptiveThumbBmp short-circuits instantly when a matching-size file is already cached,
-// so calling it on every render is cheap. tryDrawCoverBmp then scale-fits that bitmap into r
-// regardless of r's own size, so this cover box can be any size. Non-EPUB formats fall back to
-// whatever cover thumb the recent-books store already has cached. Falls back to an empty framed
-// box only if no source cover exists at all (e.g. the book file was removed).
+// Draws the most-recently-read book's cover into r. For EPUBs, generates (or reuses) an
+// adaptive-fit thumbnail sized to r itself (not a fixed Dashboard-sized one) — the JPEG/PNG
+// converter prescales to its target dimensions before dithering specifically to avoid dithering
+// artifacts from a later, separate downscale (see JpegToBmpConverter's USE_PRESCALE comment).
+// Generating at a fixed 296x444 and then letting tryDrawCoverBmp's nearest-neighbour scale-fit
+// shrink that down to a small card box re-samples already-dithered pixels, which is what made the
+// small sleep-screen cover render mostly black. Requesting the real target size here instead lets
+// the converter dither once at (close to) final resolution, and generateAdaptiveThumbBmp
+// short-circuits instantly when a matching-size file is already cached, so calling it on every
+// render is still cheap. Non-EPUB formats fall back to whatever cover thumb the recent-books store
+// already has cached. Falls back to an empty framed box only if no source cover exists at all
+// (e.g. the book file was removed).
 void drawLastBookCover(const GfxRenderer& renderer, const RecentBook& book, const Rect& r) {
   std::string bmpPath;
   if (FsHelpers::hasEpubExtension(book.path)) {
     Epub epub(book.path, "/.crosspoint");
-    bmpPath = epub.getAdaptiveThumbBmpPath(DashboardMetrics::homeCoverImageWidth, DashboardMetrics::homeCoverImageHeight);
+    bmpPath = epub.getAdaptiveThumbBmpPath(r.width, r.height);
     if (!Storage.exists(bmpPath.c_str()) && epub.load(/*buildIfMissing=*/true, /*skipLoadingCss=*/true)) {
-      epub.generateAdaptiveThumbBmp(DashboardMetrics::homeCoverImageWidth, DashboardMetrics::homeCoverImageHeight,
-                                    &renderer, SETTINGS.getReaderFontId());
+      epub.generateAdaptiveThumbBmp(r.width, r.height, &renderer, SETTINGS.getReaderFontId());
     }
   } else {
-    bmpPath = UITheme::getCoverThumbPath(book.coverBmpPath, DashboardMetrics::homeCoverImageWidth,
-                                         DashboardMetrics::homeCoverImageHeight);
+    bmpPath = UITheme::getCoverThumbPath(book.coverBmpPath, r.width, r.height);
   }
 
   if (tryDrawCoverBmp(renderer, bmpPath, r)) {
@@ -366,31 +369,54 @@ void drawSleepReadingStatsCard(const GfxRenderer& renderer, const Rect& card, co
   const int rightEdge = card.x + card.width - pad;
   const bool twoCols = (rightEdge - textX) >= 300;
   const int col2X = twoCols ? textX + (rightEdge - textX) / 2 : textX;
-  const int rowH = renderer.getLineHeight(SMALL_FONT_ID) + 10;
-  const int firstRowY = coverTop + 2;
 
   char timeBuf[40];
   BookReadingStats::formatDuration(stats.totalReadingSeconds, timeBuf, sizeof(timeBuf));
 
-  char l0[64];
-  char l1[64];
-  char l2[64];
-  char l3[64];
-  snprintf(l0, sizeof(l0), "Time Read: %s", timeBuf);
-  snprintf(l1, sizeof(l1), "Books Read: %lu", static_cast<unsigned long>(stats.completedBooks));
-  snprintf(l2, sizeof(l2), "Pages Read: %lu", static_cast<unsigned long>(stats.totalPagesTurned));
-  snprintf(l3, sizeof(l3), "Streak: %u days", static_cast<unsigned>(farm.currentStreak));
+  char v0[40];
+  char v1[16];
+  char v2[16];
+  char v3[24];
+  snprintf(v0, sizeof(v0), "%s", timeBuf);
+  snprintf(v1, sizeof(v1), "%lu", static_cast<unsigned long>(stats.completedBooks));
+  snprintf(v2, sizeof(v2), "%lu", static_cast<unsigned long>(stats.totalPagesTurned));
+  snprintf(v3, sizeof(v3), "%u days", static_cast<unsigned>(farm.currentStreak));
 
-  if (twoCols) {
-    renderer.drawText(SMALL_FONT_ID, textX, firstRowY, l0);
-    renderer.drawText(SMALL_FONT_ID, col2X, firstRowY, l1);
-    renderer.drawText(SMALL_FONT_ID, textX, firstRowY + rowH, l2);
-    renderer.drawText(SMALL_FONT_ID, col2X, firstRowY + rowH, l3);
-  } else {
-    renderer.drawText(SMALL_FONT_ID, textX, firstRowY, l0);
-    renderer.drawText(SMALL_FONT_ID, textX, firstRowY + rowH, l1);
-    renderer.drawText(SMALL_FONT_ID, textX, firstRowY + rowH * 2, l2);
-    renderer.drawText(SMALL_FONT_ID, textX, firstRowY + rowH * 3, l3);
+  struct StatItem {
+    const char* label;
+    const char* value;
+  };
+  const StatItem items[4] = {
+    {"TIME READ", v0},
+    {"BOOKS READ", v1},
+    {"PAGES READ", v2},
+    {"STREAK", v3},
+  };
+
+  // Bold caps label above a larger regular-weight value, matching the bold-label/plain-value
+  // stat-tile language used elsewhere on this screen. Rows are spread evenly across the full
+  // cover height (via the same statsBlockTop helper the plant vitals column uses) instead of a
+  // fixed tight rowH, so the block fills the card instead of leaving empty space below it.
+  const int labelLineH = renderer.getLineHeight(SMALL_FONT_ID);
+  const int valueLineH = renderer.getLineHeight(UI_10_FONT_ID);
+  constexpr int kLabelValueGap = 4;
+  const int blockH = labelLineH + kLabelValueGap + valueLineH;
+  const int rowCount = twoCols ? 2 : 4;
+  const Rect statsSpan{textX, coverTop, rightEdge - textX, coverH};
+
+  auto drawStatItem = [&](const int x, const int y, const StatItem& item) {
+    renderer.drawText(SMALL_FONT_ID, x, y, item.label, true, EpdFontFamily::BOLD);
+    renderer.drawText(UI_10_FONT_ID, x, y + labelLineH + kLabelValueGap, item.value);
+  };
+
+  for (int row = 0; row < rowCount; row++) {
+    const int rowY = statsBlockTop(statsSpan, row, blockH, rowCount);
+    if (twoCols) {
+      drawStatItem(textX, rowY, items[row * 2]);
+      drawStatItem(col2X, rowY, items[row * 2 + 1]);
+    } else {
+      drawStatItem(textX, rowY, items[row]);
+    }
   }
 }
 
