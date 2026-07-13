@@ -28,6 +28,7 @@
 - Redesigned the sleep screen to display the sleeping/dormant plant in a cozy rounded frame on the left, and a detailed lined notebook diary page on the right.
 - Updated all UI and reader themes (Base, Dashboard, Minimal, Lyra Carousel) to print DD currency, height, and moisture/sunlight vitals.
 - Updated daily quests from "pets" to "tends".
+- Enlarged the plant mini-sprite icon in the Dashboard theme's footer (from a fixed 20px up to 40px, sized to fill the same vertical space as the 3-line stats block beside it) so it reads more clearly, without growing the footer row or overlapping the pet name/stage/stats text (which still truncates dynamically to fit).
 
 ### Fixed
 

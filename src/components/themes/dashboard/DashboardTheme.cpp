@@ -489,9 +489,16 @@ void drawFooterStats(const GfxRenderer& renderer, const Rect& coverRect, const G
     const auto& state = PET_MANAGER.getState();
     const auto& farm = PET_MANAGER.getFarmState();
     const PetMood mood = PET_MANAGER.getMood();
-    // Slightly smaller than the other footer icons (kFooterIconSize) so it no longer crowds the
-    // pet name/stage text drawn right next to it.
-    constexpr int kFooterPlantIconSize = 20;
+    // Pet name/stage occupies 2 lines, the stats block on the right occupies 3 — size the icon
+    // to fill that same 3-line vertical envelope (instead of a fixed, small 20px) so it reads
+    // clearly without growing the footer row itself. Capped at 40px so it doesn't dominate the
+    // row on larger font configs (e.g. the xlarge firmware variant); name/stage text still
+    // truncates dynamically against whatever width the icon leaves behind, so a bigger icon
+    // can't cause it to overlap the right-hand stats text.
+    const int lineH10 = renderer.getLineHeight(UI_10_FONT_ID);
+    const int lineH8 = renderer.getLineHeight(SMALL_FONT_ID);
+    const int totalTextH = lineH10 + 4 + lineH8 + 4 + lineH8;
+    const int kFooterPlantIconSize = std::min(40, totalTextH);
     const int iconX = coverRect.x;
     const int iconY = centerY - kFooterPlantIconSize / 2;
 
@@ -500,9 +507,6 @@ void drawFooterStats(const GfxRenderer& renderer, const Rect& coverRect, const G
                                 state.evolutionVariant, state.petType, kFooterPlantIconSize);
 
     // Draw pet name & stage
-    const int lineH10 = renderer.getLineHeight(UI_10_FONT_ID);
-    const int lineH8 = renderer.getLineHeight(SMALL_FONT_ID);
-    const int totalTextH = lineH10 + 4 + lineH8 + 4 + lineH8;
     const int textY = centerY - totalTextH / 2;
     const int textX = iconX + kFooterPlantIconSize + 10;
 
