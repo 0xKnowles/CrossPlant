@@ -1,7 +1,6 @@
 # CrossInk — Shared Agent Guide
 
-This is the canonical repo instruction file.
-`CLAUDE.md` should point here so Codex and Claude read the same guidance.
+This is the canonical repo instruction file for AI coding agents working in this repo.
 
 Project: Open-source e-reader firmware for Xteink X4 (ESP32-C3).
 
@@ -15,25 +14,6 @@ Project: Open-source e-reader firmware for Xteink X4 (ESP32-C3).
 - Justify new heap allocations or explain why stack/static storage is not suitable.
 - Explain fixes in plain language where possible, ideally in terms a Node / React developer would follow.
 - After proposing or making a fix, say how to verify it on hardware.
-
-## Persistent Context
-
-- Read `.claude/CONTEXT.md` at session start for durable repo-specific gotchas.
-- Keep `.claude/CONTEXT.md` short. Add only reusable findings, not turn-by-turn history.
-- If asked to summarize a session, create `.claude/CONTEXT-YYYY-MM-DD.md` with the relevant findings for that session.
-
-## Repo Skills
-
-- Do not read every `.claude/skills/*/SKILL.md` at session start.
-- Use this section as an index. Read a local skill only when the task clearly matches its folder name or purpose.
-- Current local skills:
-  - `control-flow-clarity`: simplify confusing logic without behavior changes.
-  - `refactor-for-review`: small refactors intended to reduce review risk.
-  - `hal-and-abstractions`: HAL boundaries and platform abstraction work.
-  - `heap-discipline`: memory allocation, lifetime, and fragmentation-sensitive work.
-  - `scope-discipline`: keep changes narrow and avoid unrelated cleanup.
-  - `custom-fonts`: font generation, conversion, and SD/built-in font work.
-- Treat these as task-specific playbooks layered on top of this guide. If a skill conflicts with this file, prefer `AGENTS.md` and note the conflict.
 
 ## Hardware Constraints
 
