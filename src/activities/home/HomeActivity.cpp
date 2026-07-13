@@ -633,6 +633,15 @@ int HomeActivity::getMenuItemCount() const {
   if (hasBookmarks || hasClippings) {
     count++;
   }
+  // Must match appendHomeMenuItems()'s condition exactly: when a plant is alive, that function
+  // pushes an extra "My Plants" row before File Transfer/Settings. Missing this here previously
+  // undercounted the menu by one, capping ButtonNavigator's index range one short of the true
+  // list size — silently making Settings (always the last row) unreachable via Up/Down on every
+  // theme that navigates this list directly (non-minimal-interaction themes).
+  PET_MANAGER.load();
+  if (PET_MANAGER.exists() && PET_MANAGER.isAlive()) {
+    count++;
+  }
   return count;
 }
 
