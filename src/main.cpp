@@ -74,6 +74,7 @@ inline esp_sleep_wakeup_cause_t esp_sleep_get_wakeup_cause() { return ESP_SLEEP_
 #include "SdCardFontSystem.h"
 #include "activities/Activity.h"
 #include "activities/ActivityManager.h"
+#include "activities/reader/BookStatsActivity.h"
 #include "activities/reader/EpubReaderUtils.h"
 #include "activities/reader/KOReaderSyncActivity.h"
 #include "activities/reader/ReadingStatsUtils.h"
@@ -521,6 +522,111 @@ bool handleGlobalPowerButtonAction(const CrossPointSettings::SHORT_PWRBTN action
         return false;
       }
       activityManager.goToVirtualPet();
+      return true;
+    default:
+      return false;
+  }
+}
+
+// Mirrors getPowerButtonAction() above, but for the Back/Confirm long-press quick actions
+// (SETTINGS.longPressBackAction / longPressMenuAction). Only called outside the reader — the
+// reader handles its own larger, book-aware action set internally via
+// EpubReaderActivity::executeReaderQuickAction(). Returns LONG_MENU_OFF when neither button is
+// currently completing a long-press this frame.
+CrossPointSettings::LONG_PRESS_MENU_ACTION getBackConfirmLongPressAction() {
+  // Same held-press durations the reader uses for these two buttons (ReaderUtils::GO_HOME_MS and
+  // EpubReaderActivity's longPressMenuMs), so long-press feels consistent everywhere.
+  constexpr unsigned long BACK_LONG_PRESS_MS = 1000;
+  constexpr unsigned long CONFIRM_LONG_PRESS_MS = 600;
+  static bool longBackHandled = false;
+  static bool longConfirmHandled = false;
+
+  if (!mappedInputManager.isPressed(MappedInputManager::Button::Back)) {
+    longBackHandled = false;
+  }
+  if (!mappedInputManager.isPressed(MappedInputManager::Button::Confirm)) {
+    longConfirmHandled = false;
+  }
+
+  const auto backAction = static_cast<CrossPointSettings::LONG_PRESS_MENU_ACTION>(SETTINGS.longPressBackAction);
+  if (!longBackHandled && isBackConfirmLongPressActionAvailableOutsideReader(backAction) &&
+      mappedInputManager.isPressed(MappedInputManager::Button::Back) &&
+      mappedInputManager.getHeldTime() >= BACK_LONG_PRESS_MS) {
+    longBackHandled = true;
+    mappedInputManager.suppressNextBackRelease();
+    return backAction;
+  }
+
+  const auto confirmAction = static_cast<CrossPointSettings::LONG_PRESS_MENU_ACTION>(SETTINGS.longPressMenuAction);
+  if (!longConfirmHandled && isBackConfirmLongPressActionAvailableOutsideReader(confirmAction) &&
+      mappedInputManager.isPressed(MappedInputManager::Button::Confirm) &&
+      mappedInputManager.getHeldTime() >= CONFIRM_LONG_PRESS_MS) {
+    longConfirmHandled = true;
+    mappedInputManager.suppressNextConfirmRelease();
+    return confirmAction;
+  }
+
+  return CrossPointSettings::LONG_MENU_OFF;
+}
+
+bool handleGlobalBackConfirmQuickAction(const CrossPointSettings::LONG_PRESS_MENU_ACTION action) {
+  switch (action) {
+    case CrossPointSettings::LONG_MENU_SLEEP:
+      enterDeepSleep();
+      return true;
+    case CrossPointSettings::LONG_MENU_SCREENSHOT: {
+      if (activityManager.canSnapshotForSleepOverlay()) {
+        return false;
+      }
+      RenderLock lock;
+      ScreenshotUtil::takeScreenshot(renderer);
+      return true;
+    }
+    case CrossPointSettings::LONG_MENU_READING_STATS:
+      if (activityManager.canSnapshotForSleepOverlay()) {
+        return false;
+      }
+      // No specific book in this context (matches HomeActivity's "no highlighted book" case) —
+      // shows aggregate reading stats instead of per-book stats.
+      activityManager.pushActivity(std::make_unique<BookStatsActivity>(
+          renderer, mappedInputManager, std::string(tr(STR_READING_STATS)), std::string{}, BookReadingStats{}, -1.0f,
+          false, 0, GlobalReadingStats::load()));
+      return true;
+    case CrossPointSettings::LONG_MENU_FILE_TRANSFER:
+      if (activityManager.canSnapshotForSleepOverlay()) {
+        return false;
+      }
+      activityManager.goToFileTransfer();
+      return true;
+    case CrossPointSettings::LONG_MENU_CALIBRE_WIRELESS:
+      if (activityManager.canSnapshotForSleepOverlay()) {
+        return false;
+      }
+      activityManager.goToCalibreWireless();
+      return true;
+    case CrossPointSettings::LONG_MENU_JOIN_NETWORK:
+      if (activityManager.canSnapshotForSleepOverlay()) {
+        return false;
+      }
+      activityManager.goToJoinNetworkFileTransfer();
+      return true;
+    case CrossPointSettings::LONG_MENU_CREATE_HOTSPOT:
+      if (activityManager.canSnapshotForSleepOverlay()) {
+        return false;
+      }
+      activityManager.goToHotspotFileTransfer();
+      return true;
+    case CrossPointSettings::LONG_MENU_VIRTUAL_PET:
+      if (activityManager.canSnapshotForSleepOverlay()) {
+        return false;
+      }
+      activityManager.goToVirtualPet();
+      return true;
+    case CrossPointSettings::LONG_MENU_FILE_BROWSER:
+      if (activityManager.canSnapshotForSleepOverlay()) {
+        return false;
+      }
+      activityManager.goToFileBrowser();
       return true;
     default:
       return false;
@@ -978,7 +1084,14 @@ void loop() {
     return;
   }
 
-
+  // Back/Confirm long-press quick actions outside the reader (the reader handles its own,
+  // larger action set internally). isReaderActivity() short-circuits getBackConfirmLongPressAction()
+  // so its held-time/suppress-release side effects never run while a book is open.
+  if (millis() >= allowSleepAt && !activityManager.isReaderActivity() &&
+      handleGlobalBackConfirmQuickAction(getBackConfirmLongPressAction())) {
+    lastActivityTime = millis();
+    return;
+  }
 
   // Refresh the battery icon when USB is plugged or unplugged.
   // Placed after sleep guards so we never queue a render that won't be processed.

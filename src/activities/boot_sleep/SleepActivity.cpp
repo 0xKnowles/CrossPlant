@@ -727,7 +727,7 @@ void SleepActivity::renderPetSleepScreen() const {
   const auto& farm = PET_MANAGER.getFarmState();
 
   // 1. Draw Title Header
-  renderer.drawCenteredText(UI_10_FONT_ID, 24, "CROSSPLANT DORMANT", true, EpdFontFamily::BOLD);
+  renderer.drawCenteredText(UI_10_FONT_ID, 24, "CROSSPLANT SLEEPING", true, EpdFontFamily::BOLD);
   renderer.drawLine(20, 48, pageWidth - 20, 48, true);
 
   // 2. Dashboard Layout Calculations
@@ -756,7 +756,7 @@ void SleepActivity::renderPetSleepScreen() const {
   // 4. Draw Pet Sprite & Information inside Left Card
   // Scale the plant up to fill more of the card (was a fixed 144px); bounded by both card
   // dimensions so there's still room below it for the name/stage/species lines and card margins.
-  constexpr int kMaxPetSize = 220;
+  constexpr int kMaxPetSize = 260;
   const int petSize = std::min({kMaxPetSize, coverRect.width - 24, coverRect.height - 110});
   const int spriteX = coverRect.x + (coverRect.width - petSize) / 2;
   const int spriteY = coverRect.y + (coverRect.height - petSize) / 2 - 20;
@@ -824,11 +824,18 @@ void SleepActivity::renderPetSleepScreen() const {
   uint16_t year;
   uint8_t month, day, hour, minute;
   if (halClock.isAvailable() && halClock.getDateTime(year, month, day, hour, minute)) {
-    int h = hour;
+    // getDateTime() returns the raw UTC RTC time (see HalClock.h); apply the user's configured
+    // offset the same way ReadingStatsUtils/ClippingsManager do, or this always shows UTC instead
+    // of the wall-clock time the "REST TIME" label promises.
+    const int offsetMinutes = (static_cast<int>(std::min<uint8_t>(SETTINGS.clockUtcOffsetQ, 104)) - 48) * 15;
+    int totalMinutes = static_cast<int>(hour) * 60 + static_cast<int>(minute) + offsetMinutes;
+    totalMinutes = ((totalMinutes % (24 * 60)) + 24 * 60) % (24 * 60);
+    int h = totalMinutes / 60;
+    const int m = totalMinutes % 60;
     const char* ampm = (h >= 12) ? "PM" : "AM";
     if (h > 12) h -= 12;
     if (h == 0) h = 12;
-    snprintf(sleepVal, sizeof(sleepVal), "%d:%02d %s", h, (int)minute, ampm);
+    snprintf(sleepVal, sizeof(sleepVal), "%d:%02d %s", h, m, ampm);
   }
   drawStatsRow(renderer, rightX, rowY, sleepVal, "REST TIME", true);
 
@@ -871,7 +878,7 @@ void SleepActivity::renderPetSleepScreen() const {
   
   // Footer Line 2: Left weather line, Right sleep status
   renderer.drawText(SMALL_FONT_ID, inset, footerY + lineH + 6, weatherLine);
-  drawRightAlignedText(renderer, SMALL_FONT_ID, rightX, footerY + lineH + 6, "CrossPlant Dormant", false, true);
+  drawRightAlignedText(renderer, SMALL_FONT_ID, rightX, footerY + lineH + 6, "CrossPlant Sleeping", false, true);
 
   // 7. Reading stats + last-book cover, filling any leftover space below the boosts/weather
   // footer (mainly present on the taller X3 panel).

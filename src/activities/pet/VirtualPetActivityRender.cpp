@@ -204,7 +204,7 @@ void VirtualPetActivity::renderAlive() const {
   renderer.drawText(UI_10_FONT_ID, col1X + (col1W - nameStageW) / 2, petY + 6, nameStage, true, EpdFontFamily::BOLD);
 
   // Wobble / Bobbing animation
-  constexpr int PET_SCALE = 3;
+  constexpr int PET_SCALE = 4;
   const int petSize = PetSpriteRenderer::displaySize(PET_SCALE);
   int spriteX = col1X + (col1W - petSize) / 2;
   int spriteY = petY + (isX3 ? 55 : 35);

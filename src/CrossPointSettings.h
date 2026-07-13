@@ -435,9 +435,12 @@ class CrossPointSettings {
   uint8_t readingIdleTimeThresholdUnits = 30;
   // Image rendering mode in EPUB reader
   uint8_t imageRendering = IMAGES_DISPLAY;
-  // Long-press Confirm (menu button) quick action in reader (0 = off)
+  // Long-press Confirm (menu button) quick action (0 = off). Full action set inside the reader
+  // (EpubReaderActivity::executeReaderQuickAction()); a book-independent subset elsewhere in the
+  // app (see isBackConfirmLongPressActionAvailableOutsideReader() in GlobalActions.h).
   uint8_t longPressMenuAction = LONG_MENU_OFF;
-  // Long-press Back quick action in reader (defaults to the historical file browser shortcut)
+  // Long-press Back quick action (defaults to the historical file browser shortcut). Same
+  // reader-vs-elsewhere action set split as longPressMenuAction above.
   uint8_t longPressBackAction = LONG_MENU_FILE_BROWSER;
   // Tilt-based page turning (X3 only — requires QMI8658 IMU)
   uint8_t tiltPageTurn = TILT_OFF;

@@ -15,6 +15,7 @@
 - Dew Drops Currency: Changed Ink Points (IP) currency to Dew Drops (DD).
 - Garden Shop: Replaced shop items with gardening-themed items: Premium Fertilizer (20 DD), Self-Watering Pot (50 DD), Cute Ladybugs (100 DD), Mini Umbrella (150 DD), Fairy Lights (200 DD), and Plant Ribbon (250 DD).
 - Custom 1-Bit Plant Sprites: Hand-crafted 1-bit plant pixel art for all stages (Seed, Sprout, Sapling, Mature/Prized Monstera/Begonia/Alocasia, and withered twigs).
+- Global Back/Confirm Long-Press: The long-press quick actions for Back and Confirm/Menu (Settings > Controls) now also work outside the book reader for actions that don't need an open book — Sleep, Screenshot, Reading Stats, File Transfer, Calibre Wireless, Join Network, Create Hotspot, Virtual Pet, and Browse Files. Previously these only fired while reading; on every other screen (Home, My Plants, Settings, etc.) holding Back or Confirm did nothing except the globally-wired Power button.
 
 ### Changed
 
@@ -30,6 +31,8 @@
 - Updated daily quests from "pets" to "tends".
 - Enlarged the plant mini-sprite icon in the Dashboard theme's footer (from a fixed 20px up to 40px, sized to fill the same vertical space as the 3-line stats block beside it) so it reads more clearly, without growing the footer row or overlapping the pet name/stage/stats text (which still truncates dynamically to fit).
 - Redesigned the Reading Stats card on the plant sleep screen: each stat now shows a bold caps label (e.g. "TIME READ") above a larger value instead of a single plain "Label: value" line, and rows are spread evenly across the card's full height instead of clustering at the top, removing the empty space that used to sit below them.
+- Enlarged the plant sprite on both the plant sleep screen (220px -> 260px) and the "My Plants" screen (144px -> 192px).
+- Renamed the plant sleep screen's title from "CrossPlant Dormant" to "CrossPlant Sleeping" (header and footer status label).
 - Species-Specific Growth Stage Names: Growth stage names now match each species' real propagation method instead of one generic set of terms. Monstera: Seed - Sprout - Juvenile - Mature - Prized. Begonia: Cutting - Rooted - Leafing - Mature - Prized. Alocasia: Corm - Pup - Sprouting - Mature - Prized. Applies everywhere a stage name is shown, including the Herbarium's per-species discovery list.
 
 ### Fixed
@@ -46,6 +49,7 @@
 - Fixed the last-book cover on the plant sleep screen's reading-stats card rendering mostly black: it was generating a Dashboard-sized (296x444) thumbnail and then shrinking it down to the small card box, which re-samples already-dithered pixels. It now generates the thumbnail directly at the card's actual size, so dithering happens once at (close to) final resolution.
 - Replaced remaining hardcoded "Pet" references on the sleep screen and plant details cards with "Plant" (e.g. "PET DIARY" -> "PLANT DIARY", "PET STATUS" -> "PLANT STATUS", and "PET ACTIONS" -> "PLANT ACTIONS").
 - Fixed Settings being unreachable from the Home screen menu on the Classic, Lyra, Lyra 3 Covers, and Rounded Raff themes whenever a plant was alive: the Home menu's item counter used for Up/Down navigation didn't account for the "My Plants" row those themes add above File Transfer/Settings, capping navigation one item short of the list and silently making Settings (always the last row) impossible to select.
+- Fixed the "REST TIME" shown on the plant sleep screen displaying raw UTC time instead of the wall-clock local time set in Settings > Clock UTC Offset. Every other on-screen clock (header, clock sync/offset settings, reading stats, clippings) already converted the RTC's UTC reading to local time; this one row was reading the RTC directly and skipping that conversion.
 - Added support for loading custom species-specific `.bmp` plant images from the SD card (e.g. `alo-1.bmp`, `begonia-2.bmp`, `mon-3.bmp` under `/.crosspoint/pet/sprites/`) with automatic ordered Bayer dithering, and baked them directly into the firmware as dithered 1bpp fallbacks that center automatically inside their display bounding box without distortion or SD card requirements.
 - Fixed a pre-existing simulator compilation error in `WifiSelectionActivity.cpp` by wrapping `WiFi.disconnect` parameters in a simulator check.
 - Renamed the OS name from "CrossInk" / "CrossMerge" to "CrossPlant" across all boot screens, sleep screens, version footers, and system settings tabs.
