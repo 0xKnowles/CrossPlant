@@ -1,16 +1,20 @@
 # CrossPlant 🌱
 
-**CrossPlant** is an open-source custom firmware for the **Xteink X3 and X4** e-ink readers. It merges the stable, high-performance reading base of **[CrossInk](https://github.com/uxjulia/CrossInk)** with a fully re-engineered virtual-plant companion system descended from **[CrossPet](https://github.com/trilwu/crosspet)** — so the healthier your reading habits, the healthier (and more evolved) your plant becomes.
+**CrossPlant** is an open-source custom firmware for the **Xteink X3 and X4** e-ink readers. It merges the stable, high-performance reading base of **[CrossInk](https://github.com/uxjulia/CrossInk)** with a fully re-engineered virtual-plant companion system descended from **[CrossPet](https://github.com/trilwu/crosspet)** — so the healthier your reading habits, the healthier (and more evolved) your plants become.
 
 <table>
   <tr>
-    <td align="center">
-      <img src="./docs/images/bitter-small-15-margin.jpg" width="350" alt="Typography Preview" /><br/>
-      <em>CrossInk's typography and reader base</em>
+    <td align="center" width="33%">
+      <img src="./bmp/mon-4.bmp" width="140" alt="Prized Monstera sprite" /><br/>
+      <sub><b>Monstera</b> — Prized</sub>
     </td>
-    <td align="center">
-      <img src="./docs/images/reading-stats.jpg" width="350" alt="Reading stats preview" /><br/>
-      <em>Reading stats, carried through into every plant screen</em>
+    <td align="center" width="33%">
+      <img src="./bmp/begonia-4.bmp" width="140" alt="Prized Begonia sprite" /><br/>
+      <sub><b>Begonia</b> — Prized</sub>
+    </td>
+    <td align="center" width="33%">
+      <img src="./bmp/alo-4.bmp" width="140" alt="Prized Alocasia sprite" /><br/>
+      <sub><b>Alocasia</b> — Prized</sub>
     </td>
   </tr>
 </table>
@@ -28,25 +32,58 @@ CrossPlant is a fork-of-forks. Each layer kept what worked from the one below it
 | [CrossPet](https://github.com/trilwu/crosspet) | A community fork that bolted a Tamagotchi-style pet onto crosspoint-reader. | The original concept: a companion that hatches, has decaying vitals, and evolves based on how much you read. |
 | **CrossPlant** (this repo) | Ports CrossPet's pet mechanics onto the current CrossInk base, then rebuilds them from the ground up as a *plant*-growing game with deep reading integrations. | Everything below. |
 
-If you're looking for general reader features (fonts, EPUB rendering, sync, themes), see the **Reader Base** section — that's inherited from CrossInk almost unchanged. Everything under **My Plants** is CrossPlant's own layer on top.
+If you're looking for general reader features (fonts, EPUB rendering, sync, themes), see [Reader base](#-reader-base-from-crossink) — that's inherited from CrossInk almost unchanged. Everything under **My Plants** is CrossPlant's own layer on top.
+
+> **Status:** actively developed, expect rough edges. Bug reports and feature ideas are welcome — see [Contributing](#contributing).
 
 ---
 
 ## 🌿 My Plants — the virtual plant system
 
-Your plant is not idle decoration — its stats decay while you're awake and are replenished almost entirely by reading. Put the device to sleep and the plant "rests" until you wake it again.
+Your plants aren't idle decoration — their stats decay while you're awake and are replenished almost entirely by reading. Put the device to sleep and they rest until you wake it again.
+
+### Grow up to 3 plants at once
+
+Start with a single growing plot, then unlock up to **3 simultaneous plots** — one of each species — through the Dew Shop. Plot 2 and Plot 3 are priced as genuine high-value purchases (800 and 1,200 $Dew) above every other shop item, so they're a real long-term goal, not an impulse buy.
+
+- **Front bezel buttons** switch which plot is active.
+- **Side volume-rocker buttons** drive the plant action menu.
+- Currency, water/fertilizer stock, shop upgrades, and your reading streak are **shared** across all plots.
+- Each plot's vitals, growth stage, and evolution progress independently, based on its own care and reading history.
 
 ### Species & growth
 
-Choose one of three species when you hatch a new plant — **Monstera**, **Begonia**, or **Alocasia** — each with hand-crafted 1-bit pixel art (with high-fidelity ordered-Bayer dithering) at every growth stage. A plant grows through five stages as it reads with you:
+Choose a species when you hatch a new plant — **Monstera**, **Begonia**, or **Alocasia** — each with hand-crafted, hand-dithered 1-bit pixel art at every growth stage, and its own growth vocabulary matched to how that plant is actually propagated:
 
-**Seed → Sprout → Sapling → Mature → Prized**
+<table>
+  <tr>
+    <td align="center"><b>Monstera</b></td>
+    <td align="center">Seed → Sprout → Juvenile → Mature → Prized</td>
+  </tr>
+  <tr>
+    <td align="center"><b>Begonia</b></td>
+    <td align="center">Cutting → Rooted → Leafing → Mature → Prized</td>
+  </tr>
+  <tr>
+    <td align="center"><b>Alocasia</b></td>
+    <td align="center">Corm → Pup → Sprouting → Mature → Prized</td>
+  </tr>
+</table>
 
-At the two branching stages (Sapling and Mature), your reading *quality* — not just quantity — determines which variant you get:
+<p align="center">
+  <img src="./bmp/begonia-1.bmp" width="100" alt="Begonia cutting" />
+  <img src="./bmp/begonia-2.bmp" width="100" alt="Begonia rooted" />
+  <img src="./bmp/begonia-3.bmp" width="100" alt="Begonia mature" />
+  <img src="./bmp/begonia-4.bmp" width="100" alt="Begonia prized" />
+  <br/>
+  <sub>Begonia's full growth progression: Rooted → Leafing → Mature → Prized</sub>
+</p>
 
-- **Lush Sapling / Giant Bloom** — active reader: a 7+ day streak, at least one finished book, and well above the page threshold for that stage.
-- **Wild Sapling / Wild Growth** — infrequent, inconsistent reading.
-- **Sapling / Mature** (default) — everything in between.
+At the two branching stages, your reading *quality* — not just quantity — determines which variant you get:
+
+- **Scholar branch** — active reader: a 7+ day streak, at least one finished book, and well above the page threshold for that stage.
+- **Wild branch** — infrequent, inconsistent reading.
+- **Default branch** — everything in between.
 
 ### Vitals & care
 
@@ -63,7 +100,7 @@ A fifth action, **Tend Plant**, is general upkeep that also counts toward the da
 
 ### Dew Drops & the Dew Shop
 
-Reading earns **Dew Drops** ($Dew) — the in-game currency — automatically as you turn pages, finish chapters, and finish books. Spend them in the **Dew Shop** on *passive* upgrades that change decay math rather than just cosmetics:
+Reading earns **Dew Drops** ($Dew) — the in-game currency — automatically as you turn pages, finish chapters, and finish books. Spend them in the **Dew Shop** on upgrades that change decay math rather than just cosmetics:
 
 | Item | Cost | Effect |
 | --- | --- | --- |
@@ -72,6 +109,8 @@ Reading earns **Dew Drops** ($Dew) — the in-game currency — automatically as
 | Self-Watering Pot | 400 $Dew | Halves Moisture decay. |
 | Slow-Release Fertilizer | 500 $Dew | Auto-regenerates +1 Nutrient every 2 hours. |
 | Greenhouse Cover | 650 $Dew | Halves Health decay. |
+| **Growing Plot 2** | **800 $Dew** | Unlocks a second simultaneous plot. |
+| **Growing Plot 3** | **1,200 $Dew** | Unlocks a third simultaneous plot. |
 
 ### Real-time weather sync
 
@@ -83,7 +122,7 @@ Six quests reset every day and pay out in Dew Drops on completion: Read 30 Pages
 
 ### Herbarium
 
-A discovery log tracks every stage of every species you've ever grown — 3 species × 4 visible stages = 12 total entries — so you can see your collection progress and which stages you still need to reach.
+A discovery log tracks every stage of every species you've ever grown — 3 species × 4 visible stages = 12 total entries — labeled with each species' own growth vocabulary, so you can see your collection progress at a glance.
 
 ---
 
@@ -91,17 +130,28 @@ A discovery log tracks every stage of every species you've ever grown — 3 spec
 
 ### Dashboard integration
 
-The Dashboard home theme's footer shows a live mini-sprite of your plant alongside its vitals, right next to your current book and reading stats — no need to leave the home screen to check in on it.
+The Dashboard home theme's footer shows a live mini-sprite of your active plant alongside its vitals, sized to fill the space next to your current book and reading stats — no need to leave the home screen to check in on it.
 
 ### Plant sleep screen
 
-Putting the device to sleep with an active plant switches to a dedicated card-based standby screen: a large plant portrait with its name, growth stage, and species; a stats column (age, moisture, sunlight, nutrients, health, and when you fell asleep); a footer showing active passive boosts and current weather; and — space permitting — a reading-stats card with a small cover of the last book you read, total time/books/pages read, and your current streak.
+Putting the device to sleep with an active plant switches to **"CrossPlant Sleeping"** — a dedicated card-based standby screen: a large plant portrait with its name, growth stage, and species; a stats column (age, moisture, sunlight, nutrients, health, and the actual local time you fell asleep); a footer showing active passive boosts and current weather; and — space permitting — a Reading Stats card with bold section headers, a cover of the last book you read, and your total time/books/pages read plus current streak.
 
 ### Boot screen
 
-A larger plant portrait greets you on every boot, alongside the CrossPlant name and version.
+Boot now greets you with a 3×3 showcase grid — one column per species — at a curated mix of growth stages, instead of a single logo.
 
-### Reader base (from CrossInk)
+<p align="center">
+  <img src="./Seed.bmp" width="90" alt="Seed" />
+  <img src="./bmp/mon-4.bmp" width="90" alt="Monstera prized" />
+  <img src="./bmp/begonia-2.bmp" width="90" alt="Begonia leafing" />
+  <img src="./bmp/alo-3.bmp" width="90" alt="Alocasia mature" />
+</p>
+
+### Global quick actions
+
+Long-press shortcuts for the Back and Confirm/Menu buttons (Settings → Controls) — screenshot, reading stats, sleep, file transfer, virtual pet, and more — now work from **anywhere in the app**, not just while a book is open.
+
+### 📚 Reader base (from CrossInk)
 
 Everything CrossInk brought to crosspoint-reader carries through unchanged:
 
@@ -140,7 +190,7 @@ pio run -e tiny --target upload
 pio run -e tiny
 ```
 
-Prebuilt `firmware-*.bin` artifacts are produced automatically by CI on every push — see the [Actions tab](https://github.com/0xKnowles/CrossPlant/actions) for the latest build of any branch. To flash a downloaded `.bin`, use the web installer or `esptool` — see [Installation](./docs/installation.md) for both paths.
+Prebuilt `firmware-*.bin` artifacts are produced automatically by CI on every push — see the [Actions tab](https://github.com/0xKnowles/CrossPlant/actions) for the latest build of any branch. Packaged GitHub Releases with ready-to-flash `.bin` files are coming soon. To flash a downloaded `.bin`, use the web installer or `esptool` — see [Installation](./docs/installation.md) for both paths.
 
 ### Simulator
 
