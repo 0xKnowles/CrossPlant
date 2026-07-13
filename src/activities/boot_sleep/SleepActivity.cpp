@@ -824,11 +824,18 @@ void SleepActivity::renderPetSleepScreen() const {
   uint16_t year;
   uint8_t month, day, hour, minute;
   if (halClock.isAvailable() && halClock.getDateTime(year, month, day, hour, minute)) {
-    int h = hour;
+    // getDateTime() returns the raw UTC RTC time (see HalClock.h); apply the user's configured
+    // offset the same way ReadingStatsUtils/ClippingsManager do, or this always shows UTC instead
+    // of the wall-clock time the "REST TIME" label promises.
+    const int offsetMinutes = (static_cast<int>(std::min<uint8_t>(SETTINGS.clockUtcOffsetQ, 104)) - 48) * 15;
+    int totalMinutes = static_cast<int>(hour) * 60 + static_cast<int>(minute) + offsetMinutes;
+    totalMinutes = ((totalMinutes % (24 * 60)) + 24 * 60) % (24 * 60);
+    int h = totalMinutes / 60;
+    const int m = totalMinutes % 60;
     const char* ampm = (h >= 12) ? "PM" : "AM";
     if (h > 12) h -= 12;
     if (h == 0) h = 12;
-    snprintf(sleepVal, sizeof(sleepVal), "%d:%02d %s", h, (int)minute, ampm);
+    snprintf(sleepVal, sizeof(sleepVal), "%d:%02d %s", h, m, ampm);
   }
   drawStatsRow(renderer, rightX, rowY, sleepVal, "REST TIME", true);
 
