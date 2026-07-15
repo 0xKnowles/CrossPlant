@@ -719,6 +719,9 @@ void SleepActivity::renderPetSleepScreen() const {
   if (!hasPet) {
     renderer.drawImage(Seed, (pageWidth - 144) / 2, (pageHeight - 144) / 2, 144, 144);
     renderer.drawCenteredText(SMALL_FONT_ID, pageHeight / 2 + 82, tr(STR_SLEEPING));
+    if (SETTINGS.plantDarkMode) {
+      renderer.invertScreen();
+    }
     renderer.displayBuffer(HalDisplay::FULL_REFRESH, TURN_OFF_SCREEN_AFTER_SLEEP_REFRESH);
     return;
   }
@@ -897,6 +900,9 @@ void SleepActivity::renderPetSleepScreen() const {
     drawSleepReadingStatsCard(renderer, statsCard, lastBook, globalStats, farm);
   }
 
+  if (SETTINGS.plantDarkMode) {
+    renderer.invertScreen();
+  }
   renderer.displayBuffer(HalDisplay::FULL_REFRESH, TURN_OFF_SCREEN_AFTER_SLEEP_REFRESH);
 }
 
