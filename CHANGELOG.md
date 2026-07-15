@@ -4,6 +4,10 @@
 
 - My Plants Dark Mode: Added a new "My Plants Dark Mode" toggle under Settings > Display that inverts the My Plants screen and the plant sleep screen, independent of the existing reader-only Dark Mode setting.
 
+### Fixed
+
+- Reader Dark Mode Now Global: The Settings > Reader > Dark Mode toggle now applies to every book. Dark Mode was previously stored per-book, so opening any book with saved reader settings silently reverted it to that book's stored value and the global toggle appeared to do nothing. Dark Mode is no longer bundled into per-book reader-setting snapshots; the in-reader "Toggle Dark Mode" quick action now updates the global setting too. Per-book font, margins, and other reader settings are unchanged.
+
 ## [v0.1.2] - 2026-07-13
 
 ### Added

@@ -854,7 +854,9 @@ void captureReaderSettings(EpubReaderActivity::ReaderSettingsSnapshot& out) {
   out.embeddedStyle = SETTINGS.embeddedStyle;
   out.hyphenationEnabled = SETTINGS.hyphenationEnabled;
   out.textAntiAliasing = SETTINGS.textAntiAliasing;
-  out.readerDarkMode = SETTINGS.readerDarkMode;
+  // Dark Mode is a global reader preference, not a per-book override: never capture the
+  // live value into a book snapshot. The struct field is left at its default so the byte
+  // still occupies its slot in the on-disk format (see write/readReaderSettingsSnapshot).
   out.imageRendering = SETTINGS.imageRendering;
   out.extraParagraphSpacing = SETTINGS.extraParagraphSpacing;
   out.forceParagraphIndents = SETTINGS.forceParagraphIndents;
@@ -888,7 +890,8 @@ void applyReaderSettings(const EpubReaderActivity::ReaderSettingsSnapshot& in) {
   SETTINGS.embeddedStyle = in.embeddedStyle ? 1 : 0;
   SETTINGS.hyphenationEnabled = in.hyphenationEnabled ? 1 : 0;
   SETTINGS.textAntiAliasing = in.textAntiAliasing ? 1 : 0;
-  SETTINGS.readerDarkMode = in.readerDarkMode ? 1 : 0;
+  // Dark Mode is global: do not let a per-book snapshot overwrite SETTINGS.readerDarkMode.
+  // Opening a book keeps whatever the global Settings > Reader > Dark Mode toggle is set to.
   SETTINGS.imageRendering =
       in.imageRendering < CrossPointSettings::IMAGE_RENDERING_COUNT ? in.imageRendering : SETTINGS.imageRendering;
   SETTINGS.extraParagraphSpacing = in.extraParagraphSpacing ? 1 : 0;
@@ -3234,7 +3237,8 @@ void EpubReaderActivity::executeReaderQuickAction(CrossPointSettings::LONG_PRESS
       break;
     case CrossPointSettings::LONG_MENU_TOGGLE_DARK_MODE:
       SETTINGS.readerDarkMode = !SETTINGS.readerDarkMode;
-      saveCurrentBookReaderSettings();
+      // Dark Mode is global, so persist it to global settings rather than the book snapshot.
+      saveGlobalSettingsPreservingBookOverrides();
       requestUpdate();
       break;
     case CrossPointSettings::LONG_MENU_FOOTNOTES:
