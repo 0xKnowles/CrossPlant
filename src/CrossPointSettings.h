@@ -341,6 +341,9 @@ class CrossPointSettings {
   uint8_t forceParagraphIndents = 0;
   uint8_t textAntiAliasing = 1;
   uint8_t readerDarkMode = 0;
+  // Inverts the "My Plants" screen and the plant sleep screen (independent of readerDarkMode,
+  // which only affects the book reader).
+  uint8_t plantDarkMode = 0;
   // Short power button action behaviour
   uint8_t shortPwrBtn = IGNORE;
   // Long power button action behaviour

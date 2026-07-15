@@ -1,5 +1,9 @@
 ## [Unreleased]
 
+### Added
+
+- My Plants Dark Mode: Added a new "My Plants Dark Mode" toggle under Settings > Display that inverts the My Plants screen and the plant sleep screen, independent of the existing reader-only Dark Mode setting.
+
 ## [v0.1.2] - 2026-07-13
 
 ### Added

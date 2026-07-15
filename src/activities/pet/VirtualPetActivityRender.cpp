@@ -3,6 +3,7 @@
 #include <GfxRenderer.h>
 #include <I18n.h>
 
+#include "CrossPointSettings.h"
 #include "components/UITheme.h"
 #include "fontIds.h"
 #include "pet/PetEvolution.h"
@@ -36,6 +37,9 @@ void VirtualPetActivity::render(RenderLock&&) {
     renderAlive();
   }
 
+  if (SETTINGS.plantDarkMode) {
+    renderer.invertScreen();
+  }
   renderer.displayBuffer();
 }
 
