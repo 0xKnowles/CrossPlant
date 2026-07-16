@@ -37,6 +37,7 @@
 #include "components/themes/dashboard/DashboardTheme.h"
 #include "components/themes/lyra/LyraCarouselTheme.h"
 #include "components/themes/minimal/MinimalTheme.h"
+#include "components/themes/plantdash/PlantDashTheme.h"
 #include "fontIds.h"
 #include "pet/PetManager.h"
 
@@ -345,8 +346,17 @@ bool isMinimalTheme() {
   return static_cast<CrossPointSettings::UI_THEME>(SETTINGS.uiTheme) == CrossPointSettings::UI_THEME::MINIMAL;
 }
 
+bool isPlantDashTheme() {
+  return static_cast<CrossPointSettings::UI_THEME>(SETTINGS.uiTheme) == CrossPointSettings::UI_THEME::PLANT_DASH;
+}
+
 bool isDashboardTheme() {
-  return static_cast<CrossPointSettings::UI_THEME>(SETTINGS.uiTheme) == CrossPointSettings::UI_THEME::DASHBOARD;
+  // Plant Dash is a Dashboard variant: same home interaction model (minimal
+  // nav, chapter-title loading, Sleep Pet hint, Virtual Pet menu shortcut).
+  // Cover-thumbnail sizing is handled separately (see isPlantDashTheme call
+  // sites below) since Plant Dash draws a smaller portrait than Dashboard.
+  const auto theme = static_cast<CrossPointSettings::UI_THEME>(SETTINGS.uiTheme);
+  return theme == CrossPointSettings::UI_THEME::DASHBOARD || theme == CrossPointSettings::UI_THEME::PLANT_DASH;
 }
 
 bool isCoverPetTheme() {
@@ -405,6 +415,28 @@ std::string dashboardHomeCoverPath(const RecentBook& book, int coverHeight) {
   }
   return UITheme::getCoverThumbPath(book.coverBmpPath, dashboardHomeCoverWidth(coverHeight),
                                     dashboardHomeCoverHeight(coverHeight));
+}
+
+int plantDashHomeCoverWidth(int coverHeight) {
+  (void)coverHeight;
+  return PlantDashTheme::kCoverImageWidth;
+}
+
+int plantDashHomeCoverHeight(int coverHeight) {
+  (void)coverHeight;
+  return PlantDashTheme::kCoverImageHeight;
+}
+
+std::string plantDashHomeCoverPath(const RecentBook& book, int coverHeight) {
+  if (book.coverBmpPath.empty()) {
+    return {};
+  }
+  if (FsHelpers::hasEpubExtension(book.path)) {
+    return Epub(book.path, "/.crosspoint")
+        .getAdaptiveThumbBmpPath(plantDashHomeCoverWidth(coverHeight), plantDashHomeCoverHeight(coverHeight));
+  }
+  return UITheme::getCoverThumbPath(book.coverBmpPath, plantDashHomeCoverWidth(coverHeight),
+                                    plantDashHomeCoverHeight(coverHeight));
 }
 
 int coverPetHomeCoverWidth(int coverHeight) {
@@ -697,7 +729,8 @@ void HomeActivity::loadRecentCovers(int coverHeight) {
   const bool isCarouselTheme =
       static_cast<CrossPointSettings::UI_THEME>(SETTINGS.uiTheme) == CrossPointSettings::UI_THEME::LYRA_CAROUSEL;
   const bool isMinimal = isMinimalTheme();
-  const bool isDashboard = isDashboardTheme();
+  const bool isPlantDash = isPlantDashTheme();
+  const bool isDashboard = isDashboardTheme() && !isPlantDash;
   const bool isCoverPet = isCoverPetTheme();
   const size_t recentBookCount = recentBooks.size();
   // Home only loads kMaxCachedBooks recents; fixed storage avoids an aborting std::vector allocation on low heap.
@@ -788,14 +821,19 @@ void HomeActivity::loadRecentCovers(int coverHeight) {
         const bool supportsExactHomeThumb =
             FsHelpers::hasEpubExtension(book.path) || FsHelpers::hasXtcExtension(book.path);
         const bool useDashboardThumb = isDashboard && supportsExactHomeThumb;
+        const bool usePlantDashThumb = isPlantDash && supportsExactHomeThumb;
         const bool useMinimalThumb = isMinimal && supportsExactHomeThumb;
         const bool useCoverPetThumb = isCoverPet && supportsExactHomeThumb;
-        const bool useExactHomeThumb = useDashboardThumb || useMinimalThumb || useCoverPetThumb;
+        const bool useExactHomeThumb = useDashboardThumb || usePlantDashThumb || useMinimalThumb || useCoverPetThumb;
         const std::string coverPath =
-            useDashboardThumb ? dashboardHomeCoverPath(book, coverHeight)
-                              : (useMinimalThumb ? minimalHomeCoverPath(book, coverHeight)
-                                                 : (useCoverPetThumb ? coverPetHomeCoverPath(book, coverHeight)
-                                                                     : UITheme::getCoverThumbPath(book.coverBmpPath, coverHeight)));
+            useDashboardThumb
+                ? dashboardHomeCoverPath(book, coverHeight)
+                : (usePlantDashThumb
+                       ? plantDashHomeCoverPath(book, coverHeight)
+                       : (useMinimalThumb
+                              ? minimalHomeCoverPath(book, coverHeight)
+                              : (useCoverPetThumb ? coverPetHomeCoverPath(book, coverHeight)
+                                                  : UITheme::getCoverThumbPath(book.coverBmpPath, coverHeight))));
         if (coverPath.empty() || !Storage.exists(coverPath.c_str())) {
           if (FsHelpers::hasEpubExtension(book.path)) {
             Epub epub(book.path, "/.crosspoint");
@@ -818,15 +856,19 @@ void HomeActivity::loadRecentCovers(int coverHeight) {
                     ? epub.generateAdaptiveThumbBmp(dashboardHomeCoverWidth(coverHeight),
                                                     dashboardHomeCoverHeight(coverHeight), &renderer,
                                                     SETTINGS.getReaderFontId())
-                    : (useCoverPetThumb
-                           ? epub.generateAdaptiveThumbBmp(coverPetHomeCoverWidth(coverHeight),
-                                                           coverPetHomeCoverHeight(coverHeight), &renderer,
+                    : (usePlantDashThumb
+                           ? epub.generateAdaptiveThumbBmp(plantDashHomeCoverWidth(coverHeight),
+                                                           plantDashHomeCoverHeight(coverHeight), &renderer,
                                                            SETTINGS.getReaderFontId())
-                           : (useExactHomeThumb
-                                  ? epub.generateAdaptiveThumbBmp(minimalHomeCoverWidth(coverHeight),
-                                                                  minimalHomeCoverHeight(coverHeight), &renderer,
+                           : (useCoverPetThumb
+                                  ? epub.generateAdaptiveThumbBmp(coverPetHomeCoverWidth(coverHeight),
+                                                                  coverPetHomeCoverHeight(coverHeight), &renderer,
                                                                   SETTINGS.getReaderFontId())
-                                  : epub.generateThumbBmp(0, coverHeight, &renderer, SETTINGS.getReaderFontId())));
+                                  : (useExactHomeThumb
+                                         ? epub.generateAdaptiveThumbBmp(minimalHomeCoverWidth(coverHeight),
+                                                                        minimalHomeCoverHeight(coverHeight), &renderer,
+                                                                        SETTINGS.getReaderFontId())
+                                         : epub.generateThumbBmp(0, coverHeight, &renderer, SETTINGS.getReaderFontId()))));
             if (!success) {
               updateRecentBookCoverPath(book, "");
               book.coverBmpPath = "";
@@ -847,13 +889,17 @@ void HomeActivity::loadRecentCovers(int coverHeight) {
                   useDashboardThumb
                       ? xtc.generateThumbBmp(static_cast<uint16_t>(dashboardHomeCoverWidth(coverHeight)),
                                              static_cast<uint16_t>(dashboardHomeCoverHeight(coverHeight)))
-                      : (useCoverPetThumb
-                             ? xtc.generateThumbBmp(static_cast<uint16_t>(coverPetHomeCoverWidth(coverHeight)),
-                                                    static_cast<uint16_t>(coverPetHomeCoverHeight(coverHeight)))
-                             : (useExactHomeThumb
-                                    ? xtc.generateThumbBmp(static_cast<uint16_t>(minimalHomeCoverWidth(coverHeight)),
-                                                           static_cast<uint16_t>(minimalHomeCoverHeight(coverHeight)))
-                                    : xtc.generateThumbBmp(coverHeight)));
+                      : (usePlantDashThumb
+                             ? xtc.generateThumbBmp(static_cast<uint16_t>(plantDashHomeCoverWidth(coverHeight)),
+                                                    static_cast<uint16_t>(plantDashHomeCoverHeight(coverHeight)))
+                             : (useCoverPetThumb
+                                    ? xtc.generateThumbBmp(static_cast<uint16_t>(coverPetHomeCoverWidth(coverHeight)),
+                                                           static_cast<uint16_t>(coverPetHomeCoverHeight(coverHeight)))
+                                    : (useExactHomeThumb
+                                           ? xtc.generateThumbBmp(
+                                                 static_cast<uint16_t>(minimalHomeCoverWidth(coverHeight)),
+                                                 static_cast<uint16_t>(minimalHomeCoverHeight(coverHeight)))
+                                           : xtc.generateThumbBmp(coverHeight))));
               if (!success) {
                 updateRecentBookCoverPath(book, "");
                 book.coverBmpPath = "";
