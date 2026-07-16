@@ -4,6 +4,7 @@
 
 - My Plants Dark Mode: Added a new "My Plants Dark Mode" toggle under Settings > Display that inverts the My Plants screen and the plant sleep screen, independent of the existing reader-only Dark Mode setting.
 - Hide Dew Drops in Status Bar: Added a "Dew Drops" toggle to Settings > Reader > Customise Status Bar to hide the $DD currency counter that appears in the reader's status bar while a plant is alive.
+- Plant Dash UI Theme: Added a new home-screen theme, "Plant Dash" (Settings > Display > UI Theme), built around two stacked rounded cards — a "Now Reading" card (cover, title, progress bar, and a 2x2 reading-stat grid) and a "My Plants" garden card (large plant sprite, name/stage, four vital bars, and today's quest) — finished with a one-line lifetime reading-streak footer.
 
 ### Fixed
 
