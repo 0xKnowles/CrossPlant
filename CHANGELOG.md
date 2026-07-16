@@ -6,7 +6,7 @@
 - Hide Dew Drops in Status Bar: Added a "Dew Drops" toggle to Settings > Reader > Customise Status Bar to hide the $DD currency counter that appears in the reader's status bar while a plant is alive.
 - Plant Dash UI Theme: Added a new home-screen theme, "Plant Dash" (Settings > Display > UI Theme), built around two stacked rounded cards — a "Now Reading" card (cover, title, progress bar, and a 2x2 reading-stat grid) and a "My Plants" garden card (large plant sprite, name/stage, four vital bars, and today's quest) — finished with a one-line lifetime reading-streak footer.
 - Plant Dash Recent-Book Scrolling: On the X3, the side buttons now scroll the Plant Dash "Now Reading" card through the last 3 opened books instead of cycling the bottom-menu highlight (which is what other minimal-interaction themes still use them for).
-- Rotating Sleep Screen: Added a new "Rotating" option to Settings > Display > Sleep Screen that cycles through 5 of the built-in sleep screens (Light, Dark, My Plants, Dashboard, Reading Stats) one per sleep, instead of always showing the same wallpaper. The sequence advances every time the device sleeps and survives deep sleep/reboots.
+- Rotating Sleep Screen: Added a new "Rotating" option to Settings > Display > Sleep Screen that cycles through 5 baked full-screen botanical illustration wallpapers, one per sleep, instead of always showing the same screen. The sequence advances every time the device sleeps and survives deep sleep/reboots. Each illustration is baked in separately for the X3 and X4's native aspect ratios so nothing gets stretched.
 
 ### Fixed
 

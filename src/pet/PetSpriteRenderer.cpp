@@ -349,6 +349,14 @@ void PetSpriteRenderer::drawBaked144Image(GfxRenderer& renderer, const uint8_t* 
   }
 }
 
+void PetSpriteRenderer::drawBakedImageAt(GfxRenderer& renderer, const uint8_t* img, int x, int y, int width,
+                                         int height) {
+  if (img == nullptr || width <= 0 || height <= 0) {
+    return;
+  }
+  drawBakedImage(renderer, img, x, y, width, height);
+}
+
 void PetSpriteRenderer::drawMini(GfxRenderer& renderer, int x, int y, PetStage stage,
                                   PetMood mood, uint8_t variant, uint8_t petType, int size) {
   // 1. Try BMP mini files first! drawBitmap already scales to whatever size we ask for.

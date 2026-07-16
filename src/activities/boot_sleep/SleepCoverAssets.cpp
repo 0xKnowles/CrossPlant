@@ -31,11 +31,7 @@ bool shouldPrepareMinimalCover() {
 }
 
 bool shouldPrepareDashboardCover() {
-  // Rotating mode can land on the Dashboard-styled screen (see
-  // SleepActivity::renderRotatingSleepScreen), so it needs the same
-  // proactive cover prep as selecting Dashboard directly.
-  return SETTINGS.sleepScreen == CrossPointSettings::SLEEP_SCREEN_MODE::DASHBOARD_SLEEP ||
-         SETTINGS.sleepScreen == CrossPointSettings::SLEEP_SCREEN_MODE::ROTATING;
+  return SETTINGS.sleepScreen == CrossPointSettings::SLEEP_SCREEN_MODE::DASHBOARD_SLEEP;
 }
 
 bool fileExists(const std::string& path) { return !path.empty() && Storage.exists(path.c_str()); }

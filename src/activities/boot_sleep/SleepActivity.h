@@ -18,7 +18,6 @@ class SleepActivity final : public Activity {
 
  private:
   void renderDefaultSleepScreen() const;
-  void renderDefaultSleepScreenStyled(bool light) const;
   void renderCustomSleepScreen() const;
   void renderCoverSleepScreen() const;
   void renderReadingStatsSleepScreen() const;
