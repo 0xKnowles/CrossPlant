@@ -66,6 +66,6 @@ void BootActivity::onEnter() {
   const int textTop = gridY + gridH + 24;
   renderer.drawCenteredText(UI_12_FONT_ID, textTop, "CrossPlant", true, EpdFontFamily::BOLD);
   renderer.drawCenteredText(UI_10_FONT_ID, textTop + 30, tr(STR_BOOTING));
-  renderer.drawCenteredText(UI_10_FONT_ID, pageHeight - 50, "Build v0.1.3");
+  renderer.drawCenteredText(UI_10_FONT_ID, pageHeight - 50, "Build v0.1.4");
   renderer.displayBuffer();
 }
