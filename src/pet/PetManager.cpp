@@ -41,18 +41,6 @@ bool anyPlotExists(const PetState plots[], const PetFarmState& farm) {
   }
   return false;
 }
-
-// True if at least one owned plot is alive, awake, and not sick — i.e. able to
-// receive reading rewards right now. With independent plots it would be
-// unfair to withhold account-wide currency/quest progress just because the
-// single previously-"the" pet happened to be asleep.
-bool anyPlotActive(const PetState plots[], const PetFarmState& farm) {
-  for (int i = 0; i < farm.ownedPlotCount; i++) {
-    const PetState& p = plots[i];
-    if (p.exists() && p.isAlive() && !p.isSleeping && !p.isSick) return true;
-  }
-  return false;
-}
 }  // namespace
 
 // --- Game Logic ---
@@ -296,12 +284,21 @@ void PetManager::syncFromReadingStats(const GlobalReadingStats& stats) {
 void PetManager::onPageTurned() {
   load();
   updateSleepState();
-  if (!anyPlotActive(plots, farm)) return;
+  // Dew currency and daily-quest progress are account-level rewards for the act
+  // of *reading*, so they accrue whenever the account has a plant at all — they
+  // must NOT be gated on whether plots are awake or healthy. Plots sleep nightly
+  // (10PM-7AM) and can fall sick, and previously this early-returned unless a
+  // plot was alive AND awake AND not sick, so anyone reading at night (exactly
+  // what the Night Owl quest rewards) or with a sick plant silently earned zero
+  // Dew and made no quest progress. The per-plot growth loop below still skips
+  // asleep/sick plots individually, so the plants themselves still rest — only
+  // the shared currency/quests keep counting.
+  if (!anyPlotExists(plots, farm)) return;
 
   resetMissionsIfNewDay();
 
-  // Quest progress and currency are farm-level: one increment regardless of
-  // how many plots are owned, driven by "is any plot able to benefit right now".
+  // Quest progress and currency are farm-level: one increment per read page
+  // regardless of how many plots are owned.
   // 1. Daily Reading Goal (30 pages)
   if (farm.missionPagesRead < 30) {
     farm.missionPagesRead++;
@@ -360,8 +357,9 @@ void PetManager::onPageTurned() {
 
 void PetManager::onChapterFinished() {
   load();
-  updateSleepState();
-  if (!anyPlotActive(plots, farm)) return;
+  // Account-level reward: the chapter bonus accrues whenever a plant exists,
+  // regardless of the nightly sleep window or sickness (see onPageTurned).
+  if (!anyPlotExists(plots, farm)) return;
 
   farm.inkPoints += 10;
 }

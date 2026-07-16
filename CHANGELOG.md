@@ -8,6 +8,7 @@
 
 ### Fixed
 
+- Dew Drops Earned While Reading at Night or With a Sick Plant: Reading now reliably earns Dew Drops and makes daily-quest progress regardless of the time of day or the plant's condition. Previously the per-page currency (+1/page), the chapter bonus (+10), and all daily-quest progress were skipped entirely whenever every plant was asleep (the nightly 10 PM–7 AM window) or sick — so reading at night (which the Night Owl quest is meant to reward) or while a plant recovered silently earned nothing. Dew and quests are now decoupled from plot sleep/sickness; individual plants still pause their own growth while asleep or sick.
 - Reader Dark Mode Now Global: The Settings > Reader > Dark Mode toggle now applies to every book. Dark Mode was previously stored per-book, so opening any book with saved reader settings silently reverted it to that book's stored value and the global toggle appeared to do nothing. Dark Mode is no longer bundled into per-book reader-setting snapshots; the in-reader "Toggle Dark Mode" quick action now updates the global setting too. Per-book font, margins, and other reader settings are unchanged.
 
 ## [v0.1.2] - 2026-07-13
