@@ -883,7 +883,7 @@ void BaseTheme::drawStatusBar(GfxRenderer& renderer, const float bookProgress, c
 
   // Draw IP counter
   PET_MANAGER.load();
-  if (PET_MANAGER.exists() && PET_MANAGER.isAlive()) {
+  if (SETTINGS.statusBarDewDrops && PET_MANAGER.exists() && PET_MANAGER.isAlive()) {
     char ipBuf[32];
     snprintf(ipBuf, sizeof(ipBuf), "%lu DD", (unsigned long)PET_MANAGER.getFarmState().inkPoints);
     const bool hasLeftItem = leftClusterWidth > 0;

@@ -3,6 +3,7 @@
 ### Added
 
 - My Plants Dark Mode: Added a new "My Plants Dark Mode" toggle under Settings > Display that inverts the My Plants screen and the plant sleep screen, independent of the existing reader-only Dark Mode setting.
+- Hide Dew Drops in Status Bar: Added a "Dew Drops" toggle to Settings > Reader > Customise Status Bar to hide the $DD currency counter that appears in the reader's status bar while a plant is alive.
 
 ### Fixed
 
