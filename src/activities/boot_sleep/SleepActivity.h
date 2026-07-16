@@ -29,6 +29,7 @@ class SleepActivity final : public Activity {
   void renderBlankSleepScreen() const;
   void renderOverlaySleepScreen() const;
   void renderPetSleepScreen() const;
+  void renderRotatingSleepScreen() const;
   bool canSnapshotOverlayBackground = false;
   bool overlayBackgroundBufferStored = false;
   std::string currentBookPath;

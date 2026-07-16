@@ -33,6 +33,7 @@
 #include "images/Logo120.h"
 #include "images/Seed144.h"
 #include "images/MoonIcon.h"
+#include "images/RotatingSleepArt.h"
 #include "pet/PetEvolution.h"
 #include "pet/PetManager.h"
 #include "pet/PetSpriteRenderer.h"
@@ -642,6 +643,8 @@ void SleepActivity::onEnter() {
       return renderDashboardSleepScreen();
     case (CrossPointSettings::SLEEP_SCREEN_MODE::PET_SLEEP):
       return renderPetSleepScreen();
+    case (CrossPointSettings::SLEEP_SCREEN_MODE::ROTATING):
+      return renderRotatingSleepScreen();
     default:
       return renderDefaultSleepScreen();
   }
@@ -686,7 +689,11 @@ void SleepActivity::renderDefaultSleepScreen() const {
   const auto pageHeight = renderer.getScreenHeight();
 
   renderer.clearScreen();
-  renderer.drawImage(Seed, (pageWidth - 144) / 2, (pageHeight - 144) / 2, 144, 144);
+  // Seed is a raw packed bitmap; GfxRenderer::drawImage() only rotates the blit's *position* for
+  // the current orientation, not the pixel content, so it renders sideways whenever orientation
+  // isn't the panel's native layout. drawBaked144Image blits per-pixel via drawPixel, which is
+  // fully orientation-aware (same helper used everywhere else this art is drawn).
+  PetSpriteRenderer::drawBaked144Image(renderer, Seed, (pageWidth - 144) / 2, (pageHeight - 144) / 2, 144);
   renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2 + 82, tr(STR_CROSSINK), true, EpdFontFamily::BOLD);
   renderer.drawCenteredText(SMALL_FONT_ID, pageHeight / 2 + 107, tr(STR_SLEEPING));
 
@@ -717,7 +724,8 @@ void SleepActivity::renderPetSleepScreen() const {
   renderer.clearScreen();
 
   if (!hasPet) {
-    renderer.drawImage(Seed, (pageWidth - 144) / 2, (pageHeight - 144) / 2, 144, 144);
+    // See renderDefaultSleepScreen() for why this uses drawBaked144Image instead of drawImage.
+    PetSpriteRenderer::drawBaked144Image(renderer, Seed, (pageWidth - 144) / 2, (pageHeight - 144) / 2, 144);
     renderer.drawCenteredText(SMALL_FONT_ID, pageHeight / 2 + 82, tr(STR_SLEEPING));
     if (SETTINGS.plantDarkMode) {
       renderer.invertScreen();
@@ -1115,6 +1123,41 @@ void SleepActivity::renderDashboardSleepScreen() const {
   DashboardTheme theme;
   theme.drawSleepScreen(renderer, book, &bookStats, &globalStats, progressPercent, chapterTitle.c_str(),
                         sleepCoverFilterInvertsGeneratedScreen());
+  renderer.displayBuffer(HalDisplay::FULL_REFRESH, TURN_OFF_SCREEN_AFTER_SLEEP_REFRESH);
+}
+
+// Cycles through 5 baked full-screen wallpaper illustrations (src/images/RotatingSleepArt.h), one
+// per sleep, so the device doesn't show the exact same sleep screen every time. Sequential rather
+// than random so consecutive sleeps (common with e-ink, which sleeps often) always show something
+// different, instead of risking a repeat.
+void SleepActivity::renderRotatingSleepScreen() const {
+  const auto pageWidth = renderer.getScreenWidth();
+  const auto pageHeight = renderer.getScreenHeight();
+  const bool isX3 = (pageWidth == 528);
+
+  const uint8_t index = APP_STATE.rotatingSleepScreenIndex % kRotatingSleepArtCount;
+  APP_STATE.rotatingSleepScreenIndex = (index + 1) % kRotatingSleepArtCount;
+  // The initial APP_STATE.saveToFile() in enterDeepSleep() ran before this index advanced, so
+  // persist the new value now -- otherwise the rotation would never move past slot 0 across a
+  // deep sleep cycle.
+  APP_STATE.saveToFile();
+
+  renderer.clearScreen();
+  const uint8_t* art = getRotatingSleepArt(index, isX3);
+  const int artWidth = isX3 ? kRotatingSleepArtX3Width : kRotatingSleepArtX4Width;
+  const int artHeight = isX3 ? kRotatingSleepArtX3Height : kRotatingSleepArtX4Height;
+  if (art != nullptr) {
+    PetSpriteRenderer::drawBakedImageAt(renderer, art, (pageWidth - artWidth) / 2, (pageHeight - artHeight) / 2,
+                                        artWidth, artHeight);
+    if (sleepCoverFilterInvertsGeneratedScreen()) {
+      renderer.invertScreen();
+    }
+  } else {
+    // Should never happen (art is baked in and index is always in range) -- fall back rather
+    // than sleep on a blank screen.
+    return renderDefaultSleepScreen();
+  }
+
   renderer.displayBuffer(HalDisplay::FULL_REFRESH, TURN_OFF_SCREEN_AFTER_SLEEP_REFRESH);
 }
 

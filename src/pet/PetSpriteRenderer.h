@@ -56,6 +56,13 @@ class PetSpriteRenderer {
   // No-op if img is null.
   static void drawBaked144Image(GfxRenderer& renderer, const uint8_t* img, int x, int y, int size);
 
+  // Draw an arbitrary externally-supplied baked 1-bit image (MSB-first, 1=white/0=black, no row
+  // padding) at (x,y) at its native width x height, no scaling. Used for baked assets that aren't
+  // 144x144 (e.g. full-screen wallpapers), where the caller already sized the source art to match
+  // the target exactly. No-op if img is null.
+  static void drawBakedImageAt(GfxRenderer& renderer, const uint8_t* img, int x, int y, int width,
+                               int height);
+
  private:
   // Shared 288-byte buffer — large enough for a full sprite frame.
   static uint8_t spriteBuffer[SPRITE_BYTES];

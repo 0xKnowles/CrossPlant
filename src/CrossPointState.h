@@ -25,6 +25,10 @@ class CrossPointState {
   uint8_t readerActivityLoadCount = 0;
   bool lastSleepFromReader = false;
   bool showBootScreen = true;
+  // Position in the Rotating sleep screen's fixed sequence (see SleepActivity::
+  // renderRotatingSleepScreen). Persisted so the rotation keeps advancing across deep sleep
+  // cycles instead of restarting at the same screen every time.
+  uint8_t rotatingSleepScreenIndex = 0;
 
   // Returns true if idx was shown within the last checkCount picks.
   // Walks backwards from the most recently written slot.

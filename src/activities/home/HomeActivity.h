@@ -99,6 +99,7 @@ class HomeActivity final : public Activity {
   int getVisibleRecentBookCount() const;
   bool canSwapHomeBook() const;
   void showNextRecentBookOnHome();
+  void showPreviousRecentBookOnHome();
   void updateHighlightedBookContext();
   void loadRecentBooks(int maxBooks);
   void loadAllBookStats();
