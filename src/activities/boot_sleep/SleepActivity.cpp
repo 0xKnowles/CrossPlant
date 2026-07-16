@@ -642,6 +642,8 @@ void SleepActivity::onEnter() {
       return renderDashboardSleepScreen();
     case (CrossPointSettings::SLEEP_SCREEN_MODE::PET_SLEEP):
       return renderPetSleepScreen();
+    case (CrossPointSettings::SLEEP_SCREEN_MODE::ROTATING):
+      return renderRotatingSleepScreen();
     default:
       return renderDefaultSleepScreen();
   }
@@ -682,17 +684,27 @@ void SleepActivity::renderCustomSleepScreen() const {
 }
 
 void SleepActivity::renderDefaultSleepScreen() const {
+  // Make sleep screen dark unless light is selected in settings
+  renderDefaultSleepScreenStyled(SETTINGS.sleepScreen == CrossPointSettings::SLEEP_SCREEN_MODE::LIGHT);
+}
+
+// Draws the plain Seed + "CrossPlant Sleeping" screen with an explicit light/dark choice, instead
+// of reading it from SETTINGS.sleepScreen. Split out of renderDefaultSleepScreen() so the rotating
+// sleep screen can show both a light and a dark variant as distinct entries in its rotation.
+void SleepActivity::renderDefaultSleepScreenStyled(bool light) const {
   const auto pageWidth = renderer.getScreenWidth();
   const auto pageHeight = renderer.getScreenHeight();
 
   renderer.clearScreen();
-  renderer.drawImage(Seed, (pageWidth - 144) / 2, (pageHeight - 144) / 2, 144, 144);
+  // Seed is a raw packed bitmap; GfxRenderer::drawImage() only rotates the blit's *position* for
+  // the current orientation, not the pixel content, so it renders sideways whenever orientation
+  // isn't the panel's native layout. drawBaked144Image blits per-pixel via drawPixel, which is
+  // fully orientation-aware (same helper used everywhere else this art is drawn).
+  PetSpriteRenderer::drawBaked144Image(renderer, Seed, (pageWidth - 144) / 2, (pageHeight - 144) / 2, 144);
   renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2 + 82, tr(STR_CROSSINK), true, EpdFontFamily::BOLD);
   renderer.drawCenteredText(SMALL_FONT_ID, pageHeight / 2 + 107, tr(STR_SLEEPING));
 
-  // Make sleep screen dark unless light is selected in settings
-  const bool lightSleepScreen = SETTINGS.sleepScreen == CrossPointSettings::SLEEP_SCREEN_MODE::LIGHT;
-  if (!lightSleepScreen) {
+  if (!light) {
     renderer.invertScreen();
   }
 
@@ -700,7 +712,7 @@ void SleepActivity::renderDefaultSleepScreen() const {
   const std::string buildInfo = std::string(CROSSINK_BUILD_ENV) + " " + CROSSINK_VERSION;
   const std::string visibleBuildInfo =
       renderer.truncatedText(SMALL_FONT_ID, buildInfo.c_str(), pageWidth - sleepBuildInfoSideMargin * 2);
-  renderer.drawCenteredText(SMALL_FONT_ID, pageHeight / 2 + 130, visibleBuildInfo.c_str(), lightSleepScreen);
+  renderer.drawCenteredText(SMALL_FONT_ID, pageHeight / 2 + 130, visibleBuildInfo.c_str(), light);
 #endif
 
   renderer.displayBuffer(HalDisplay::FULL_REFRESH, TURN_OFF_SCREEN_AFTER_SLEEP_REFRESH);
@@ -717,7 +729,8 @@ void SleepActivity::renderPetSleepScreen() const {
   renderer.clearScreen();
 
   if (!hasPet) {
-    renderer.drawImage(Seed, (pageWidth - 144) / 2, (pageHeight - 144) / 2, 144, 144);
+    // See renderDefaultSleepScreen() for why this uses drawBaked144Image instead of drawImage.
+    PetSpriteRenderer::drawBaked144Image(renderer, Seed, (pageWidth - 144) / 2, (pageHeight - 144) / 2, 144);
     renderer.drawCenteredText(SMALL_FONT_ID, pageHeight / 2 + 82, tr(STR_SLEEPING));
     if (SETTINGS.plantDarkMode) {
       renderer.invertScreen();
@@ -1116,6 +1129,34 @@ void SleepActivity::renderDashboardSleepScreen() const {
   theme.drawSleepScreen(renderer, book, &bookStats, &globalStats, progressPercent, chapterTitle.c_str(),
                         sleepCoverFilterInvertsGeneratedScreen());
   renderer.displayBuffer(HalDisplay::FULL_REFRESH, TURN_OFF_SCREEN_AFTER_SLEEP_REFRESH);
+}
+
+// Cycles through 5 visually distinct built-in sleep screens, one per sleep, so the device doesn't
+// show the exact same wallpaper every time. Sequential rather than random so consecutive sleeps
+// (common with e-ink, which sleeps often) always show something different, instead of risking a
+// repeat. Each candidate already falls back safely to renderDefaultSleepScreen() on its own when
+// no book is open, so this dispatch never needs to check that itself.
+void SleepActivity::renderRotatingSleepScreen() const {
+  constexpr uint8_t kRotatingScreenCount = 5;
+  const uint8_t index = APP_STATE.rotatingSleepScreenIndex % kRotatingScreenCount;
+  APP_STATE.rotatingSleepScreenIndex = (index + 1) % kRotatingScreenCount;
+  // The initial APP_STATE.saveToFile() in enterDeepSleep() ran before this index advanced, so
+  // persist the new value now -- otherwise the rotation would never move past slot 0 across a
+  // deep sleep cycle.
+  APP_STATE.saveToFile();
+
+  switch (index) {
+    case 0:
+      return renderDefaultSleepScreenStyled(/*light=*/true);
+    case 1:
+      return renderDefaultSleepScreenStyled(/*light=*/false);
+    case 2:
+      return renderPetSleepScreen();
+    case 3:
+      return renderDashboardSleepScreen();
+    default:
+      return renderReadingStatsSleepScreen();
+  }
 }
 
 void SleepActivity::renderLastScreenSleepScreen() const {

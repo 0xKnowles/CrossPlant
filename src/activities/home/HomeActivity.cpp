@@ -1059,6 +1059,22 @@ void HomeActivity::showNextRecentBookOnHome() {
   requestUpdate();
 }
 
+void HomeActivity::showPreviousRecentBookOnHome() {
+  if (!canSwapHomeBook()) {
+    return;
+  }
+
+  // Opposite rotation direction from showNextRecentBookOnHome(): moves the
+  // last cached book to the front instead of the second one.
+  std::rotate(recentBooks.begin(), recentBooks.end() - 1, recentBooks.end());
+  selectorIndex = 0;
+  lastCarouselBookIndex = 0;
+  bookStatsCached = false;
+  updateHighlightedBookContext();
+  invalidateCoverCache();
+  requestUpdate();
+}
+
 std::string HomeActivity::getCurrentBookPath() const {
   const int idx = getHighlightedBookIndex();
   return idx >= 0 ? recentBooks[idx].path : std::string{};
@@ -1589,6 +1605,22 @@ void HomeActivity::loop() {
       homeBookSwapLongPressHandled = true;
       showNextRecentBookOnHome();
       return;
+    }
+
+    // Plant Dash: side buttons (volume rocker on X3) scroll the "Now Reading"
+    // card through the last kMaxCachedBooks (3) opened books instead of
+    // cycling the bottom-menu highlight, since that card is the theme's
+    // primary reading surface. Other minimal-interaction themes (Dashboard,
+    // Minimal) keep the existing highlight-cycling behaviour below.
+    if (isPlantDashTheme() && canSwapHomeBook()) {
+      if (mappedInput.wasPressed(MappedInputManager::Button::Up)) {
+        showPreviousRecentBookOnHome();
+        return;
+      }
+      if (mappedInput.wasPressed(MappedInputManager::Button::Down)) {
+        showNextRecentBookOnHome();
+        return;
+      }
     }
 
     const int homeNavCount = minimalHomeNavCount(!recentBooks.empty());
