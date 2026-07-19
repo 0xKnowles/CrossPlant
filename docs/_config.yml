@@ -1,5 +1,10 @@
 remote_theme: just-the-docs/just-the-docs
-title: CrossInk
-description: Personal fork of CrossPoint Reader
+title: CrossPlant
+description: >-
+  CrossPlant is open-source custom firmware for the Xteink X3/X4 e-ink readers that merges
+  CrossInk's reading engine with a fully re-engineered virtual-plant companion system.
+url: https://0xknowles.github.io
+baseurl: /CrossPlant
+enable_copy_code_button: true
 mermaid:
   version: "10.9.0"

@@ -1,5 +1,10 @@
 # CrossPlant 🌱
 
+> **A full project website (same content as this README, browsable and searchable) lives in
+> [`docs/`](docs/) — open [`docs/index.md`](docs/index.md) locally, or enable GitHub Pages on this
+> repo (Settings → Pages → Deploy from branch → `/docs`) to serve it at
+> `https://0xknowles.github.io/CrossPlant/`.**
+
 **CrossPlant** is an open-source custom firmware for the **Xteink X3 and X4** e-ink readers. It merges the stable, high-performance reading base of **[CrossInk](https://github.com/uxjulia/CrossInk)** with a fully re-engineered virtual-plant companion system descended from **[CrossPet](https://github.com/trilwu/crosspet)** — so the healthier your reading habits, the healthier (and more evolved) your plants become.
 
 <table>

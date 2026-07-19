@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CrossPlant — A Reading-Driven Plant Companion</title>
+<meta name="description" content="CrossPlant is open-source custom firmware for the Xteink X3/X4 e-ink readers that merges CrossInk's reading engine with a fully re-engineered virtual-plant companion system.">
+<link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bitter:ital,wght@0,400;0,600;0,700;1,400&family=Lexend+Deca:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="site-header" id="top">
+  <div class="wrap header-inner">
+    <a class="brand" href="#top">
+      <img src="assets/img/favicon.svg" alt="" width="22" height="22">
+      <span>CrossPlant</span>
+    </a>
+    <button class="nav-toggle" id="navToggle" aria-expanded="false" aria-controls="primaryNav" aria-label="Toggle navigation">
+      <span></span><span></span><span></span>
+    </button>
+    <nav class="primary-nav" id="primaryNav">
+      <a href="#lineage">Overview</a>
+      <a href="#my-plants">My Plants</a>
+      <a href="#reading">Reading</a>
+      <a href="#hardware">Hardware</a>
+      <a href="#install">Install</a>
+      <a href="#documentation">Docs</a>
+      <a class="nav-cta" href="https://github.com/0xKnowles/CrossPlant" target="_blank" rel="noopener">GitHub ↗</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="wrap hero-inner">
+      <div class="hero-copy">
+        <p class="eyebrow">Open-source e-ink firmware</p>
+        <h1>The healthier you read,<br>the <span class="accent">healthier they grow.</span></h1>
+        <p class="lede">
+          Custom firmware for the <strong>Xteink X3 and X4</strong> e-ink readers. It merges the
+          stable, high-performance reading base of CrossInk with a fully re-engineered
+          virtual-plant companion system — care for a Monstera, Begonia, or Alocasia that thrives
+          on your actual reading habits.
+        </p>
+        <div class="hero-badges">
+          <a href="https://github.com/0xKnowles/CrossPlant/actions/workflows/ci.yml" target="_blank" rel="noopener">
+            <img src="https://github.com/0xKnowles/CrossPlant/actions/workflows/ci.yml/badge.svg" alt="CI (build) status">
+          </a>
+          <a href="https://github.com/0xKnowles/CrossPlant/blob/main/LICENSE" target="_blank" rel="noopener">
+            <img src="https://img.shields.io/badge/license-MIT-1f4d3a.svg" alt="MIT License">
+          </a>
+        </div>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#install">Get Started</a>
+          <a class="btn btn-ghost" href="https://github.com/0xKnowles/CrossPlant" target="_blank" rel="noopener">View Source</a>
+        </div>
+      </div>
+      <div class="hero-art">
+        <div class="plate">
+          <picture>
+            <source srcset="images/plants/sleep1.webp" type="image/webp">
+            <img src="images/plants/sleep1.png" alt="CrossPlant's sleep screen: a mature Monstera in an ornate botanical-plate frame, labeled &quot;Sleeping&quot;" width="528" height="787" loading="eager">
+          </picture>
+          <p class="plate-caption">Xteink X3 / X4 · Plant Sleep Screen</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATUS -->
+  <section class="status-band">
+    <div class="wrap status-inner">
+      <span class="status-dot" aria-hidden="true"></span>
+      <span><b>Status:</b> actively developed, expect rough edges. Bug reports and feature ideas
+      are welcome — see <a href="#contributing">Contributing</a>.</span>
+    </div>
+  </section>
+
+  <!-- LINEAGE -->
+  <section class="section" id="lineage">
+    <div class="wrap">
+      <h2 class="section-title"><span class="leaf">🌱</span>Where CrossPlant comes from</h2>
+      <p class="section-intro">
+        CrossPlant is a fork-of-forks. Each layer kept what worked from the one below it. Reader
+        features (fonts, EPUB rendering, sync, themes) are inherited from CrossInk almost
+        unchanged — everything under <a href="#my-plants">My Plants</a> is CrossPlant's own layer
+        on top.
+      </p>
+      <ol class="lineage">
+        <li>
+          <div class="layer-name"><a href="https://github.com/crosspoint-reader/crosspoint-reader" target="_blank" rel="noopener">crosspoint-reader</a></div>
+          <div class="layer-body">
+            <p class="what">The original open-source Xteink reader firmware.</p>
+            <p>Core reading engine, EPUB/TXT/XTC rendering, file browser, WiFi sync, the ESP32-C3 platform layer.</p>
+          </div>
+        </li>
+        <li>
+          <div class="layer-name"><a href="https://github.com/uxjulia/CrossInk" target="_blank" rel="noopener">CrossInk</a></div>
+          <div class="layer-body">
+            <p class="what">A personal fork of crosspoint-reader focused on typography and lightweight stats.</p>
+            <p>Lexend Deca / Bitter reader fonts, Dashboard &amp; Minimal themes, all-time and nearby reading-stats sync, bookmarks, clippings, KOReader sync, and dozens of stability fixes on the ESP32-C3's ~380 KB RAM budget.</p>
+          </div>
+        </li>
+        <li>
+          <div class="layer-name"><a href="https://github.com/trilwu/crosspet" target="_blank" rel="noopener">CrossPet</a></div>
+          <div class="layer-body">
+            <p class="what">A community fork that bolted a Tamagotchi-style pet onto crosspoint-reader.</p>
+            <p>The original concept: a companion that hatches, has decaying vitals, and evolves based on how much you read.</p>
+          </div>
+        </li>
+        <li class="current">
+          <div class="layer-name">CrossPlant <span style="color:var(--gold); font-weight:400;">(this repo)</span></div>
+          <div class="layer-body">
+            <p class="what">Ports CrossPet's pet mechanics onto the current CrossInk base, then rebuilds them from the ground up as a <em>plant</em>-growing game with deep reading integrations.</p>
+            <p>Everything below.</p>
+          </div>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- MY PLANTS -->
+  <section class="section alt" id="my-plants">
+    <div class="wrap">
+      <h2 class="section-title"><span class="leaf">🌿</span>My Plants — the virtual plant system</h2>
+      <p class="section-intro">
+        Your plants aren't idle decoration — their stats decay while you're awake and are
+        replenished almost entirely by reading. Put the device to sleep and they rest until you
+        wake it again.
+      </p>
+
+      <div class="grid grid-3" style="margin-bottom:3rem">
+        <div class="card">
+          <h3>Grow up to 3 at once</h3>
+          <p>Start with a single growing plot, then unlock up to <strong>3 simultaneous plots</strong>
+          — one of each species — through the Dew Shop. Plot 2 and Plot 3 are priced as genuine
+          high-value purchases (800 and 1,200 $Dew) above every other shop item.</p>
+        </div>
+        <div class="card">
+          <h3>Independent, but connected</h3>
+          <p><strong>Front bezel buttons</strong> switch which plot is active; <strong>side
+          volume-rocker buttons</strong> drive the plant action menu. Currency, water/fertilizer
+          stock, shop upgrades, and your reading streak are shared across all plots — but each
+          plot's vitals and growth progress independently.</p>
+        </div>
+        <div class="card">
+          <h3>Herbarium</h3>
+          <p>A discovery log tracks every stage of every species you've ever grown — 3 species ×
+          4 visible stages = 12 total entries — so you can see your collection progress at a
+          glance.</p>
+        </div>
+      </div>
+
+      <h3 style="font-family:var(--sans); color:var(--forest-dark); margin-bottom:0.5rem;">Species &amp; growth</h3>
+      <p class="section-intro" style="margin-bottom:2rem;">
+        Choose a species when you hatch a new plant — each with hand-crafted, hand-dithered 1-bit
+        pixel art at every growth stage, and its own growth vocabulary matched to how that plant
+        is actually propagated.
+      </p>
+
+      <div class="species-block">
+        <div class="species-head">
+          <h3>Monstera</h3>
+          <span class="vocab">Seed → Sprout → Juvenile → Mature → Prized</span>
+        </div>
+        <div class="stage-row">
+          <figure class="stage-card">
+            <div class="stage-img"><picture><source srcset="images/plants/seed.webp" type="image/webp"><img src="images/plants/seed.png" width="90" height="90" alt="Monstera, Seed stage" loading="lazy"></picture></div>
+            <figcaption><span class="stage-num">1</span>Seed</figcaption>
+          </figure>
+          <figure class="stage-card">
+            <div class="stage-img"><picture><source srcset="images/plants/mon-2.webp" type="image/webp"><img src="images/plants/mon-2.png" width="90" height="90" alt="Monstera, Juvenile stage" loading="lazy"></picture></div>
+            <figcaption><span class="stage-num">2</span>Juvenile</figcaption>
+          </figure>
+          <figure class="stage-card">
+            <div class="stage-img"><picture><source srcset="images/plants/mon-3.webp" type="image/webp"><img src="images/plants/mon-3.png" width="90" height="90" alt="Monstera, Mature stage" loading="lazy"></picture></div>
+            <figcaption><span class="stage-num">3</span>Mature</figcaption>
+          </figure>
+          <figure class="stage-card">
+            <div class="stage-img"><picture><source srcset="images/plants/mon-4.webp" type="image/webp"><img src="images/plants/mon-4.png" width="90" height="90" alt="Monstera, Prized stage" loading="lazy"></picture></div>
+            <figcaption><span class="stage-num">4</span>Prized</figcaption>
+          </figure>
+        </div>
+      </div>
+
+      <div class="species-block">
+        <div class="species-head">
+          <h3>Begonia</h3>
+          <span class="vocab">Cutting → Rooted → Leafing → Mature → Prized</span>
+        </div>
+        <div class="stage-row">
+          <figure class="stage-card">
+            <div class="stage-img"><picture><source srcset="images/plants/seed.webp" type="image/webp"><img src="images/plants/seed.png" width="90" height="90" alt="Begonia, Cutting stage" loading="lazy"></picture></div>
+            <figcaption><span class="stage-num">1</span>Cutting</figcaption>
+          </figure>
+          <figure class="stage-card">
+            <div class="stage-img"><picture><source srcset="images/plants/begonia-1.webp" type="image/webp"><img src="images/plants/begonia-1.png" width="90" height="90" alt="Begonia, Rooted stage" loading="lazy"></picture></div>
+            <figcaption><span class="stage-num">2</span>Rooted</figcaption>
+          </figure>
+          <figure class="stage-card">
+            <div class="stage-img"><picture><source srcset="images/plants/begonia-2.webp" type="image/webp"><img src="images/plants/begonia-2.png" width="90" height="90" alt="Begonia, Leafing stage" loading="lazy"></picture></div>
+            <figcaption><span class="stage-num">3</span>Leafing</figcaption>
+          </figure>
+          <figure class="stage-card">
+            <div class="stage-img"><picture><source srcset="images/plants/begonia-3.webp" type="image/webp"><img src="images/plants/begonia-3.png" width="90" height="90" alt="Begonia, Mature stage" loading="lazy"></picture></div>
+            <figcaption><span class="stage-num">4</span>Mature</figcaption>
+          </figure>
+        </div>
+      </div>
+
+      <div class="species-block">
+        <div class="species-head">
+          <h3>Alocasia</h3>
+          <span class="vocab">Corm → Pup → Sprouting → Mature → Prized</span>
+        </div>
+        <div class="stage-row">
+          <figure class="stage-card">
+            <div class="stage-img"><picture><source srcset="images/plants/seed.webp" type="image/webp"><img src="images/plants/seed.png" width="90" height="90" alt="Alocasia, Corm stage" loading="lazy"></picture></div>
+            <figcaption><span class="stage-num">1</span>Corm</figcaption>
+          </figure>
+          <figure class="stage-card">
+            <div class="stage-img"><picture><source srcset="images/plants/alo-1.webp" type="image/webp"><img src="images/plants/alo-1.png" width="90" height="90" alt="Alocasia, Pup stage" loading="lazy"></picture></div>
+            <figcaption><span class="stage-num">2</span>Pup</figcaption>
+          </figure>
+          <figure class="stage-card">
+            <div class="stage-img"><picture><source srcset="images/plants/alo-2.webp" type="image/webp"><img src="images/plants/alo-2.png" width="90" height="90" alt="Alocasia, Sprouting stage" loading="lazy"></picture></div>
+            <figcaption><span class="stage-num">3</span>Sprouting</figcaption>
+          </figure>
+          <figure class="stage-card">
+            <div class="stage-img"><picture><source srcset="images/plants/alo-3.webp" type="image/webp"><img src="images/plants/alo-3.png" width="90" height="90" alt="Alocasia, Mature stage" loading="lazy"></picture></div>
+            <figcaption><span class="stage-num">4</span>Mature</figcaption>
+          </figure>
+        </div>
+      </div>
+
+      <div class="prized-row">
+        <p class="prized-label">Every species tops out one stage further</p>
+        <div class="prized-imgs">
+          <figure>
+            <picture><source srcset="images/plants/mon-4.webp" type="image/webp"><img src="images/plants/mon-4.png" width="130" height="130" alt="Monstera, Prized" loading="lazy"></picture>
+            <figcaption>Monstera</figcaption>
+          </figure>
+          <figure>
+            <picture><source srcset="images/plants/begonia-4.webp" type="image/webp"><img src="images/plants/begonia-4.png" width="130" height="130" alt="Begonia, Prized" loading="lazy"></picture>
+            <figcaption>Begonia</figcaption>
+          </figure>
+          <figure>
+            <picture><source srcset="images/plants/alo-4.webp" type="image/webp"><img src="images/plants/alo-4.png" width="130" height="130" alt="Alocasia, Prized" loading="lazy"></picture>
+            <figcaption>Alocasia</figcaption>
+          </figure>
+        </div>
+      </div>
+
+      <p class="section-note" style="max-width:78ch;">
+        At the two branching stages, your reading <em>quality</em> — not just quantity — determines
+        which variant you get: <strong>Scholar</strong> (a 7+ day streak, at least one finished
+        book, well above the page threshold), <strong>Wild</strong> (infrequent, inconsistent
+        reading), or <strong>Default</strong> (everything in between).
+      </p>
+    </div>
+  </section>
+
+  <!-- VITALS -->
+  <section class="section" id="vitals">
+    <div class="wrap">
+      <h2 class="section-title"><span class="leaf">💧</span>Vitals &amp; care</h2>
+      <p class="section-intro">Four vitals decay over time and are restored by five hands-on actions.</p>
+      <div class="grid grid-4">
+        <div class="card vital-card">
+          <div class="vital-name">Moisture</div>
+          <div class="vital-action">Water Plant</div>
+          <p>Consumes a charge from your Water Jug (3/3 capacity, refills for free).</p>
+        </div>
+        <div class="card vital-card">
+          <div class="vital-name">Sunlight</div>
+          <div class="vital-action">Shade Plant</div>
+          <p>Also boosted passively by sunny/snowy weather.</p>
+        </div>
+        <div class="card vital-card">
+          <div class="vital-name">Health</div>
+          <div class="vital-action">Weed Pot</div>
+          <p>Clears pest/neglect penalties.</p>
+        </div>
+        <div class="card vital-card">
+          <div class="vital-name">Nutrients</div>
+          <div class="vital-action">Fertilize</div>
+          <p>Consumes a charge from your Fertilizer stock (3/3 capacity, restocked for 30 $Dew).</p>
+        </div>
+      </div>
+      <p class="section-note">
+        A fifth action, <strong>Tend Plant</strong>, is general upkeep that also counts toward the
+        daily "Tend 5 Times" quest. Height (cm) climbs automatically as the plant matures and is
+        shown alongside its stats everywhere.
+      </p>
+    </div>
+  </section>
+
+  <!-- DEW SHOP -->
+  <section class="section alt" id="dew-shop">
+    <div class="wrap">
+      <h2 class="section-title"><span class="leaf">💰</span>Dew Drops &amp; the Dew Shop</h2>
+      <p class="section-intro">
+        Reading earns <strong>Dew Drops</strong> ($Dew) — the in-game currency — automatically as
+        you turn pages, finish chapters, and finish books. Spend them in the <strong>Dew
+        Shop</strong> on upgrades that change decay math rather than just cosmetics.
+      </p>
+      <div class="table-wrap">
+        <table class="styled">
+          <thead><tr><th>Item</th><th>Cost</th><th>Effect</th></tr></thead>
+          <tbody>
+            <tr><td>Premium Sprayer</td><td class="price">300 $Dew</td><td>+10 Sunlight/Happiness on misting.</td></tr>
+            <tr><td>Moss Pole</td><td class="price">250 $Dew</td><td>Halves Sunlight decay.</td></tr>
+            <tr><td>Self-Watering Pot</td><td class="price">400 $Dew</td><td>Halves Moisture decay.</td></tr>
+            <tr><td>Slow-Release Fertilizer</td><td class="price">500 $Dew</td><td>Auto-regenerates +1 Nutrient every 2 hours.</td></tr>
+            <tr><td>Greenhouse Cover</td><td class="price">650 $Dew</td><td>Halves Health decay.</td></tr>
+            <tr class="highlight"><td><strong>Growing Plot 2</strong></td><td class="price">800 $Dew</td><td>Unlocks a second simultaneous plot.</td></tr>
+            <tr class="highlight"><td><strong>Growing Plot 3</strong></td><td class="price">1,200 $Dew</td><td>Unlocks a third simultaneous plot.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="grid grid-3" style="margin-top:2rem">
+        <div class="card">
+          <h3>Real-time weather sync</h3>
+          <p>When connected to WiFi, CrossPlant periodically geolocates the device (via IP) and
+          checks conditions through Open-Meteo: <strong>Sunny</strong> → Sunlight,
+          <strong>Rainy</strong> → Moisture, <strong>Cloudy</strong> → Nutrients,
+          <strong>Snowy</strong> → Health.</p>
+        </div>
+        <div class="card">
+          <h3>Daily quests</h3>
+          <p>Six quests reset every day: Read 30 Pages, Tend 5 Times, Water 3 Times, Speedy Reader
+          (15 pages in one sitting), Night Owl (10 pages after 9 PM), and Streak Saver (maintain a
+          3-day streak).</p>
+        </div>
+        <div class="card">
+          <h3>Height &amp; progress</h3>
+          <p>Height (cm) climbs automatically as each plant matures, shown alongside its other
+          stats everywhere it appears in the UI.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- READING EXPERIENCE -->
+  <section class="section" id="reading">
+    <div class="wrap">
+      <h2 class="section-title"><span class="leaf">📖</span>Reading experience</h2>
+
+      <div class="grid grid-2" style="margin-bottom:2.5rem">
+        <div class="card">
+          <h3>Dashboard integration</h3>
+          <p>The Dashboard home theme's footer shows a live mini-sprite of your active plant
+          alongside its vitals, sized to fill the space next to your current book and reading
+          stats — no need to leave the home screen to check in on it.</p>
+        </div>
+        <div class="card">
+          <h3>Global quick actions</h3>
+          <p>Long-press shortcuts for the Back and Confirm/Menu buttons (Settings → Controls) —
+          screenshot, reading stats, sleep, file transfer, virtual pet, and more — now work from
+          <strong>anywhere in the app</strong>, not just while a book is open.</p>
+        </div>
+      </div>
+
+      <h3 style="font-family:var(--sans); color:var(--forest-dark);">Plant sleep screen</h3>
+      <p class="section-intro">
+        Putting the device to sleep with an active plant switches to <strong>"CrossPlant
+        Sleeping"</strong> — a dedicated card-based standby screen: a large plant portrait with its
+        name, growth stage, and species; a stats column (age, moisture, sunlight, nutrients,
+        health, and the time you fell asleep); a footer of active passive boosts and current
+        weather; and — space permitting — a Reading Stats card with your last book cover, total
+        time/books/pages read, and current streak. Card art varies by which plants you're growing:
+      </p>
+      <div class="sleep-gallery">
+        <figure><picture><source srcset="images/plants/sleep1.webp" type="image/webp"><img src="images/plants/sleep1.png" width="200" height="298" alt="Sleep screen: mature Monstera" loading="lazy"></picture></figure>
+        <figure><picture><source srcset="images/plants/sleep2.webp" type="image/webp"><img src="images/plants/sleep2.png" width="200" height="298" alt="Sleep screen: Alocasia and Begonia growth stack" loading="lazy"></picture></figure>
+        <figure><picture><source srcset="images/plants/sleep3.webp" type="image/webp"><img src="images/plants/sleep3.png" width="200" height="298" alt="Sleep screen: growth-stage stack" loading="lazy"></picture></figure>
+        <figure><picture><source srcset="images/plants/sleep4.webp" type="image/webp"><img src="images/plants/sleep4.png" width="200" height="298" alt="Sleep screen: flowering Begonia" loading="lazy"></picture></figure>
+        <figure><picture><source srcset="images/plants/sleep5.webp" type="image/webp"><img src="images/plants/sleep5.png" width="200" height="298" alt="Sleep screen: Alocasia and Begonia together" loading="lazy"></picture></figure>
+      </div>
+
+      <h3 style="font-family:var(--sans); color:var(--forest-dark); margin-top:2.5rem;">Boot screen</h3>
+      <p class="section-intro">
+        Boot now greets you with a 3×3 showcase grid — one column per species — at a curated mix of
+        growth stages, instead of a single logo.
+      </p>
+      <p align="center">
+        <picture><source srcset="images/plants/seed.webp" type="image/webp"><img style="display:inline-block; margin:0 6px;" src="images/plants/seed.png" width="80" height="80" alt="Seed" loading="lazy"></picture>
+        <picture><source srcset="images/plants/mon-4.webp" type="image/webp"><img style="display:inline-block; margin:0 6px;" src="images/plants/mon-4.png" width="80" height="80" alt="Monstera prized" loading="lazy"></picture>
+        <picture><source srcset="images/plants/begonia-2.webp" type="image/webp"><img style="display:inline-block; margin:0 6px;" src="images/plants/begonia-2.png" width="80" height="80" alt="Begonia leafing" loading="lazy"></picture>
+        <picture><source srcset="images/plants/alo-3.webp" type="image/webp"><img style="display:inline-block; margin:0 6px;" src="images/plants/alo-3.png" width="80" height="80" alt="Alocasia mature" loading="lazy"></picture>
+      </p>
+
+      <h3 style="font-family:var(--sans); color:var(--forest-dark); margin-top:2.5rem;">📚 Reader base <span style="color:var(--ink-faint); font-weight:400;">(from CrossInk)</span></h3>
+      <p class="section-intro">Everything CrossInk brought to crosspoint-reader carries through unchanged:</p>
+      <div class="prose">
+        <ul>
+          <li><strong>Typography</strong>: <a href="https://fonts.google.com/specimen/Lexend+Deca" target="_blank" rel="noopener">Lexend Deca</a> and <a href="https://fonts.google.com/specimen/Bitter" target="_blank" rel="noopener">Bitter</a> reader fonts — the same two typefaces this page is set in — chosen for fluency and e-ink legibility, plus a limited emoji/symbol glyph set.</li>
+          <li><strong>Themes</strong>: Dashboard, Minimal, and the original reader theme, each with matching sleep-screen modes.</li>
+          <li><strong>Reading aids</strong>: Bionic Reading, Guide Dots, Force Paragraph Indents, adjustable line spacing, and per-book render modes (<code>Default</code> / <code>Balanced</code> / <code>Light</code>) for memory-heavy EPUBs.</li>
+          <li><strong>Stats &amp; sync</strong>: Total books read, reading time, sessions, pages turned, pace — synced between devices, and now also all-time streaks feeding directly into plant evolution.</li>
+          <li><strong>Library tools</strong>: Bookmarks, clippings/highlights with <code>My Clippings.txt</code> export, recent books grid, KOReader sync, and OPDS catalog browsing.</li>
+          <li><strong>Reliability</strong>: Extensive low-memory fallback handling across EPUB parsing, layout, and caching — this firmware runs on an ESP32-C3 with no PSRAM and ~380 KB of usable RAM.</li>
+        </ul>
+      </div>
+      <p class="section-note">
+        See <a href="https://github.com/0xKnowles/CrossPlant/blob/main/CHANGELOG.md" target="_blank" rel="noopener">CHANGELOG.md</a>
+        for the full, version-by-version history of every change inherited from CrossInk plus
+        everything CrossPlant has added since.
+      </p>
+    </div>
+  </section>
+
+  <!-- HARDWARE -->
+  <section class="section alt" id="hardware">
+    <div class="wrap">
+      <h2 class="section-title"><span class="leaf">🔧</span>Hardware</h2>
+      <div class="spec-table">
+        <div class="spec-row head"><span>&nbsp;</span><span>Xteink X3</span><span>Xteink X4</span></div>
+        <div class="spec-row"><span>Display</span><span>528×792 e-ink (portrait)</span><span>800×480 e-ink (landscape)</span></div>
+        <div class="spec-row"><span>Clock</span><span>Dedicated DS3231 RTC (accurate across sleep)</span><span>Internal ESP32-C3 RTC (drifts during deep sleep)</span></div>
+        <div class="spec-row"><span>MCU</span><span>ESP32-C3, single-core RISC-V @ 160 MHz, no PSRAM</span><span>Same</span></div>
+      </div>
+      <p class="section-note">
+        Both devices ship with roughly 380 KB of usable RAM, so CrossPlant — like CrossInk before
+        it — leans on the SD card for caching rather than holding everything in memory. See
+        <a href="data-cache.html">Data Cache</a> for the <code>.crosspoint</code> layout.
+      </p>
+    </div>
+  </section>
+
+  <!-- INSTALL -->
+  <section class="section" id="install">
+    <div class="wrap">
+      <h2 class="section-title"><span class="leaf">⚙️</span>Building &amp; installing</h2>
+      <p class="section-intro">
+        CrossPlant uses <a href="https://platformio.org/" target="_blank" rel="noopener">PlatformIO</a>
+        for building and flashing. There are two firmware size variants due to flash constraints —
+        <code>tiny</code> (compact font set) and <code>xlarge</code> (largest point sizes only) —
+        plus a <code>default</code>/<code>debug</code> env for local development and a
+        <code>simulator</code> env for testing without hardware.
+      </p>
+      <pre class="code-block" data-lang="sh"><button class="copy-btn" type="button">Copy</button><code># Build + flash directly over USB-C
+pio run -e tiny --target upload
+
+# Build only (e.g. to grab firmware-tiny.bin for the web installer)
+pio run -e tiny</code></pre>
+      <p class="section-note">
+        Prebuilt <code>firmware-*.bin</code> artifacts are produced automatically by CI on every
+        push — see the
+        <a href="https://github.com/0xKnowles/CrossPlant/actions" target="_blank" rel="noopener">Actions tab</a>
+        for the latest build of any branch. Packaged GitHub Releases with ready-to-flash
+        <code>.bin</code> files are coming soon. To flash a downloaded <code>.bin</code>, use the
+        web installer or <code>esptool</code> — see <a href="installation.html">Installation</a>
+        for both paths.
+      </p>
+
+      <h3 style="font-family:var(--sans); color:var(--forest-dark); margin-top:2.5rem;">Simulator</h3>
+      <p class="section-intro">
+        To iterate without flashing hardware, build the
+        <a href="https://github.com/uxjulia/crosspoint-simulator" target="_blank" rel="noopener">device simulator</a>,
+        which renders the e-ink display in an SDL2 window:
+      </p>
+      <pre class="code-block" data-lang="sh"><button class="copy-btn" type="button">Copy</button><code>pio run -e simulator
+.pio/build/simulator/program</code></pre>
+      <p class="section-note">
+        See <a href="simulator.html">Simulator</a> for platform setup notes, keyboard controls, and
+        cache-clearing tips.
+      </p>
+    </div>
+  </section>
+
+  <!-- DOCUMENTATION -->
+  <section class="section alt" id="documentation">
+    <div class="wrap">
+      <h2 class="section-title"><span class="leaf">📄</span>Documentation</h2>
+      <p class="section-intro">
+        This landing page covers the big picture — these pages go deep on the details, each still
+        living in the full searchable docs site.
+      </p>
+      <div class="docs-grid">
+        <a class="doc-card" href="https://github.com/0xKnowles/CrossPlant/blob/main/USER_GUIDE.md" target="_blank" rel="noopener">
+          <div class="doc-name">User Guide ↗</div>
+          <p>Hardware controls, navigation, and reading features.</p>
+        </a>
+        <a class="doc-card" href="installation.html">
+          <div class="doc-name">Installation</div>
+          <p>Web installer and command-line flashing.</p>
+        </a>
+        <a class="doc-card" href="controls.html">
+          <div class="doc-name">Controls</div>
+          <p>Remapping bezel buttons and shortcuts.</p>
+        </a>
+        <a class="doc-card" href="data-cache.html">
+          <div class="doc-name">Data Cache</div>
+          <p>The <code>.crosspoint/</code> on-SD-card layout.</p>
+        </a>
+        <a class="doc-card" href="file-formats.html">
+          <div class="doc-name">File Formats</div>
+          <p>Binary cache format details.</p>
+        </a>
+        <a class="doc-card" href="simulator.html">
+          <div class="doc-name">Simulator</div>
+          <p>Running the SDL2 device simulator.</p>
+        </a>
+        <a class="doc-card" href="webserver.html">
+          <div class="doc-name">Web Server Guide</div>
+          <p>The on-device file-transfer web server.</p>
+        </a>
+        <a class="doc-card" href="webserver-endpoints.html">
+          <div class="doc-name">Webserver Endpoints</div>
+          <p>The on-device HTTP API reference.</p>
+        </a>
+        <a class="doc-card" href="troubleshooting.html">
+          <div class="doc-name">Troubleshooting</div>
+          <p>Common problems and fixes.</p>
+        </a>
+      </div>
+      <p class="section-note">
+        Reading-stats sync, Bionic Reading, i18n, font build variants, hyphenation, and more are
+        all in the sidebar of any doc page above.
+      </p>
+    </div>
+  </section>
+
+  <!-- CONTRIBUTING -->
+  <section class="section" id="contributing">
+    <div class="wrap prose">
+      <h2 class="section-title"><span class="leaf">🤝</span>Contributing</h2>
+      <p>
+        CrossPlant inherits its scope philosophy from crosspoint-reader and CrossInk: this is a
+        <em>reader</em> first, so contributions that improve reading — typography, rendering,
+        library management, legibility — are always welcome. Plant-system contributions are
+        equally welcome as long as they stay reading-driven (no idle-clicker mechanics, no features
+        that only make sense with the device left plugged in and awake). See
+        <a href="https://github.com/0xKnowles/CrossPlant/blob/main/SCOPE.md" target="_blank" rel="noopener">SCOPE.md</a>
+        before proposing something large, and
+        <a href="https://github.com/0xKnowles/CrossPlant/blob/main/GOVERNANCE.md" target="_blank" rel="noopener">GOVERNANCE.md</a>
+        for how the project is run. If you're unsure whether an idea fits, open a Discussion first.
+      </p>
+      <p>
+        For local setup, code verification, and PR guidelines, start with
+        <a href="contributing/getting-started.html">Getting Started</a>.
+      </p>
+    </div>
+  </section>
+
+  <!-- CREDITS -->
+  <section class="section alt" id="credits">
+    <div class="wrap prose">
+      <h2 class="section-title"><span class="leaf">✦</span>Credits</h2>
+      <ul>
+        <li><a href="https://github.com/crosspoint-reader/crosspoint-reader" target="_blank" rel="noopener">crosspoint-reader</a> by Dave Allie and contributors — the original firmware this entire lineage is built on.</li>
+        <li><a href="https://github.com/uxjulia/CrossInk" target="_blank" rel="noopener">CrossInk</a> by uxjulia — the typography-and-stats fork CrossPlant is directly based on.</li>
+        <li><a href="https://github.com/trilwu/crosspet" target="_blank" rel="noopener">CrossPet</a> by trilwu — origin of the reading-driven companion concept CrossPlant's plant system evolved from.</li>
+      </ul>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap footer-inner">
+    <div class="brand">
+      <img src="assets/img/favicon.svg" alt="" width="18" height="18">
+      <span>CrossPlant</span>
+    </div>
+    <p>MIT licensed, same as upstream CrossInk. Open-source firmware for the Xteink X3/X4.</p>
+    <div class="footer-links">
+      <a href="https://github.com/0xKnowles/CrossPlant" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://github.com/0xKnowles/CrossPlant/actions" target="_blank" rel="noopener">Actions / Builds</a>
+      <a href="https://github.com/0xKnowles/CrossPlant/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a>
+      <a href="#top">Back to top ↑</a>
+    </div>
+  </div>
+</footer>
+
+<script src="assets/js/script.js"></script>
+</body>
+</html>
