@@ -1,7 +1,0 @@
-.pio/
-test/test_totp
-test/host/sim
-test/host/out/
-test/host/png/
-__pycache__/
-platformio.local.ini
