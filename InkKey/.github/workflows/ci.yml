@@ -1,0 +1,82 @@
+name: CI
+
+# Two jobs:
+#  - host-tests: RFC-vector crypto tests + the full UI/vault simulation, on the
+#    runner's native g++ (fast, no embedded toolchain).
+#  - firmware: the real ESP32-C3 cross-compile for the Xteink X3 target.
+#    GitHub-hosted runners have unrestricted network, so the pioarduino
+#    platform (fetched from a GitHub release) installs cleanly here.
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  host-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: TOTP / crypto RFC vectors
+        run: |
+          cd test
+          g++ -std=c++17 -I../src -o test_totp test_totp.cpp ../src/core/Sha.cpp ../src/core/Totp.cpp
+          ./test_totp
+
+      - name: Full firmware simulation (UI + vault + console)
+        run: |
+          cd test/host
+          ./build_sim.sh
+          ./sim out
+
+      - name: Upload rendered screens
+        uses: actions/upload-artifact@v4
+        with:
+          name: simulated-screens
+          path: test/host/out/*.pbm
+
+  firmware:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Cache PlatformIO packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.platformio
+          key: ${{ runner.os }}-platformio-${{ hashFiles('platformio.ini') }}
+          restore-keys: |
+            ${{ runner.os }}-platformio-
+
+      - name: Install pioarduino PlatformIO Core
+        run: pip install -U https://github.com/pioarduino/platformio-core/archive/refs/tags/v6.1.19.zip
+
+      - name: Build X3 firmware
+        run: pio run -e xteink_x3
+
+      - name: Assert no radio code in the binary
+        run: |
+          ELF=.pio/build/xteink_x3/firmware.elf
+          NM_BIN=$(find ~/.platformio/packages -type f -name "riscv32-esp-elf-nm" | head -1)
+          test -n "$NM_BIN"
+          if "$NM_BIN" "$ELF" | grep -iE "esp_wifi_start|esp_bt_controller_enable|esp_now_init"; then
+            echo "Radio symbols found in the firmware - the air-gap guarantee is broken"
+            exit 1
+          fi
+          echo "No WiFi/BT/ESP-NOW init symbols in firmware.elf"
+
+      - name: Upload firmware binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: inkkey-x3-firmware
+          path: |
+            .pio/build/xteink_x3/firmware.bin
+            .pio/build/xteink_x3/firmware.elf
