@@ -25,8 +25,10 @@ class BookStatsActivity final : public Activity {
   int selectedEditField = 0;
   bool didChangeStats = false;
 
-  bool hasEditableBook() const { return !bookCachePath.empty() && halClock.isAvailable(); }
-  bool usesNoRtcSingleScreenLayout() const { return !halClock.isAvailable(); }
+  // Date editing and the full multi-page layout need a usable clock, not RTC hardware
+  // specifically -- RTC-less devices (X4) qualify once their system clock is set.
+  bool hasEditableBook() const { return !bookCachePath.empty() && halClock.hasValidTime(); }
+  bool usesNoRtcSingleScreenLayout() const { return !halClock.hasValidTime(); }
   void refreshAllDevicesStats();
   void saveStats();
   void cycleEditField();

@@ -465,15 +465,20 @@ void WifiSelectionActivity::checkConnectionStatus() {
 #endif
     LOG_INF("WIFI", "Connected to ssid=%s ip=%s rssi=%d", selectedSSID.c_str(), connectedIP.c_str(), WiFi.RSSI());
 
-    // Sync RTC from NTP on the first successful WiFi connection only. The DS3231
-    // drifts ~2 ppm so one sync is enough; users can force a re-sync from
-    // Settings > System > Device > Sync Date/Time Now.
-    if (halClock.isAvailable() && (!SETTINGS.clockHasBeenSynced || !SETTINGS.clockDateHasBeenSynced)) {
-      if (halClock.syncFromNTP()) {
-        SETTINGS.clockHasBeenSynced = 1;
-        SETTINGS.clockDateHasBeenSynced = 1;
-        SETTINGS.saveToFile();
-      }
+    // Sync clock from NTP. On RTC-equipped devices (X3) the DS3231 drifts ~2 ppm and keeps
+    // time across power cycles, so one sync ever is enough; users can force a re-sync from
+    // Settings > System > Device > Sync Date/Time Now. Devices with no RTC (X4) lose the
+    // clock on every power-off, so they resync once per boot instead -- otherwise the
+    // "already synced" flag would suppress the sync forever and leave day/night-dependent
+    // logic (e.g. the pet's sleep window) running on a stale restored timestamp.
+    const bool needsSync = halClock.hasBatteryBackedRtc()
+                               ? (!SETTINGS.clockHasBeenSynced || !SETTINGS.clockDateHasBeenSynced)
+                               : !halClock.hasSyncedThisSession();
+    if (needsSync && halClock.syncFromNTP() &&
+        (!SETTINGS.clockHasBeenSynced || !SETTINGS.clockDateHasBeenSynced)) {
+      SETTINGS.clockHasBeenSynced = 1;
+      SETTINGS.clockDateHasBeenSynced = 1;
+      SETTINGS.saveToFile();
     }
 
     // Save this as the last connected network - SD card operations need lock as

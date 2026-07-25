@@ -3,6 +3,8 @@
 #include <GfxRenderer.h>
 #include <I18n.h>
 
+#include <string>
+
 #include "CrossPointSettings.h"
 #include "components/UITheme.h"
 #include "fontIds.h"
@@ -90,7 +92,12 @@ void VirtualPetActivity::renderAlive() const {
 
   // --- Column coordinates ---
   const int col1X = 15;
-  const int col1W = isX3 ? 240 : 360;
+  // X4's status card is narrower (480px screen vs. X3's 528px) but was given a
+  // *wider* column than X3's, leaving only ~75px for the actions list -- not
+  // enough to fit labels like "Buy Fertilizer", which ran off the right edge of
+  // the screen entirely. 260 keeps the X4 status card's 2-column bar layout
+  // legible while giving the actions column comparable room to X3's.
+  const int col1W = isX3 ? 240 : 260;
   const int col2X = col1X + col1W + 15;
   const int col2W = pageWidth - col2X - 15;
 
@@ -394,11 +401,15 @@ void VirtualPetActivity::renderShop() const {
       snprintf(itemText, sizeof(itemText), "%s - %lu $Dew", item.name, (unsigned long)item.cost);
     }
 
+    // Item lines combine a long name with an ownership/price suffix, so clamp them to the
+    // list width rather than letting them run off the panel (and off the narrower X4 screen).
+    const std::string fittedItem = renderer.truncatedText(UI_10_FONT_ID, itemText, listW);
+
     if (selected) {
       renderer.fillRect(listX - 4, rowY - 2, listW + 8, rowH, true);
-      renderer.drawText(UI_10_FONT_ID, listX, rowY + 3, itemText, /*black=*/false);
+      renderer.drawText(UI_10_FONT_ID, listX, rowY + 3, fittedItem.c_str(), /*black=*/false);
     } else {
-      renderer.drawText(UI_10_FONT_ID, listX, rowY + 3, itemText);
+      renderer.drawText(UI_10_FONT_ID, listX, rowY + 3, fittedItem.c_str());
     }
   }
 
@@ -412,7 +423,16 @@ void VirtualPetActivity::renderShop() const {
   if (typeSelectIndex == 5) desc = "Unlocks a 2nd growing plot so you can grow another species alongside your first.";
   if (typeSelectIndex == 6) desc = "Unlocks a 3rd growing plot — grow one of each species at once.";
 
-  renderer.drawCenteredText(SMALL_FONT_ID, contentBottom - 18, desc);
+  // These descriptions are full sentences and do not fit on one line at the narrower X4
+  // width, so wrap rather than truncate (losing the second half of "what does this do"
+  // is worse than using a second line). The block grows upward so its last line stays put.
+  const auto descLines = renderer.wrappedText(SMALL_FONT_ID, desc, pageWidth - metrics.contentSidePadding * 2, 2);
+  const int descLineH = renderer.getLineHeight(SMALL_FONT_ID);
+  int descY = contentBottom - 18 - (static_cast<int>(descLines.size()) - 1) * descLineH;
+  for (const auto& line : descLines) {
+    renderer.drawCenteredText(SMALL_FONT_ID, descY, line.c_str());
+    descY += descLineH;
+  }
 
   const auto labels = mappedInput.mapLabels(tr(STR_BACK), "Buy/Toggle", tr(STR_DIR_UP), tr(STR_DIR_DOWN));
   GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
@@ -438,8 +458,11 @@ void VirtualPetActivity::renderQuests() const {
     const int rowY = listTop + i * 36;
     const auto& mission = missions[i];
 
-    // Quest Title (using SMALL_FONT_ID for compactness to prevent wrapping)
-    renderer.drawText(SMALL_FONT_ID, listX, rowY, mission.label, true, EpdFontFamily::BOLD);
+    // Quest Title (using SMALL_FONT_ID for compactness to prevent wrapping). Clamped
+    // because the labels are translated and several languages run longer than English.
+    const std::string fittedLabel =
+        renderer.truncatedText(SMALL_FONT_ID, mission.label, listW, EpdFontFamily::BOLD);
+    renderer.drawText(SMALL_FONT_ID, listX, rowY, fittedLabel.c_str(), true, EpdFontFamily::BOLD);
 
     // Progress display directly under the title
     const int barX = listX;

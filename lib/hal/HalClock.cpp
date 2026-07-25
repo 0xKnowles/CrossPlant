@@ -3,6 +3,7 @@
 #include <Logging.h>
 #include <WiFi.h>
 #include <esp_sntp.h>
+#include <sys/time.h>
 #include <time.h>
 
 #include <cassert>
@@ -25,6 +26,22 @@ namespace {
 constexpr uint16_t kBaseYear = 2000;
 constexpr const char* kMonthNames[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun",
                                        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+
+// An unset ESP32 system clock starts at the epoch, so anything before 2025-01-01 means
+// "never set" rather than a real timestamp. Matches the year >= 2025 validity check the
+// pet system applies to its own time reads.
+constexpr time_t kMinValidEpoch = 1735689600;  // 2025-01-01T00:00:00Z
+
+bool systemTimeIsValid() { return time(nullptr) >= kMinValidEpoch; }
+
+// Fills `out` with the current system-clock UTC time, or returns false when the clock
+// was never set. Used on devices with no RTC chip to back the same getters.
+bool systemTimeUtc(struct tm& out) {
+  const time_t now = time(nullptr);
+  if (now < kMinValidEpoch) return false;
+  gmtime_r(&now, &out);
+  return true;
+}
 
 bool isLeapYear(const uint16_t year) { return (year % 4 == 0 && year % 100 != 0) || year % 400 == 0; }
 
@@ -73,7 +90,8 @@ void adjustDateByDays(uint16_t& year, uint8_t& month, uint8_t& day, const int da
 
 void HalClock::begin() {
   if (!gpio.deviceIsX3()) {
-    _available = false;
+    // X4 has no RTC chip; the system clock backs every getter instead.
+    _rtcPresent = false;
     return;
   }
 
@@ -83,17 +101,17 @@ void HalClock::begin() {
   Wire.write(DS3231_SEC_REG);
   if (Wire.endTransmission(false) != 0) {
     LOG_INF("CLK", "DS3231 RTC not found");
-    _available = false;
+    _rtcPresent = false;
     return;
   }
   Wire.requestFrom(I2C_ADDR_DS3231, (uint8_t)1);
   if (Wire.available() < 1) {
-    _available = false;
+    _rtcPresent = false;
     return;
   }
   Wire.read();  // discard — just testing connectivity
 
-  _available = true;
+  _rtcPresent = true;
   LOG_INF("CLK", "DS3231 RTC found");
 
   // Prime the cache with an initial read
@@ -101,8 +119,41 @@ void HalClock::begin() {
   getTime(h, m);
 }
 
+bool HalClock::hasValidTime() const {
+  // A responding RTC chip is treated as authoritative, preserving the exact behaviour
+  // every clock-gated screen had on X3 before the system-clock fallback existed.
+  if (_rtcPresent) return true;
+  return systemTimeIsValid();
+}
+
+uint32_t HalClock::epochForPersistence() const {
+  // An RTC keeps its own time across a power cycle, so there is nothing to save for it.
+  if (_rtcPresent) return 0;
+  const time_t now = time(nullptr);
+  return now >= kMinValidEpoch ? static_cast<uint32_t>(now) : 0;
+}
+
+void HalClock::restorePersistedTime(uint32_t savedEpoch) {
+  if (_rtcPresent) return;
+  if (savedEpoch < static_cast<uint32_t>(kMinValidEpoch)) return;
+  // Deep sleep keeps the SoC's RTC timer running, so a clock that is already set is
+  // strictly fresher than anything saved before the last power-down.
+  if (systemTimeIsValid()) return;
+
+  struct timeval tv = {static_cast<time_t>(savedEpoch), 0};
+  settimeofday(&tv, nullptr);
+  LOG_INF("CLK", "System clock seeded from last saved timestamp (%lu); stale until NTP sync",
+          static_cast<unsigned long>(savedEpoch));
+}
+
 bool HalClock::getTime(uint8_t& hour, uint8_t& minute) const {
-  if (!_available) return false;
+  if (!_rtcPresent) {
+    struct tm t;
+    if (!systemTimeUtc(t)) return false;
+    hour = static_cast<uint8_t>(t.tm_hour);
+    minute = static_cast<uint8_t>(t.tm_min);
+    return true;
+  }
 
   const unsigned long now = millis();
   if (_lastPollMs != 0 && (now - _lastPollMs) < CLOCK_POLL_MS) {
@@ -182,7 +233,16 @@ bool HalClock::formatTime(char* buf, size_t bufSize, uint8_t utcOffsetQuarterHou
 }
 
 bool HalClock::getDate(uint16_t& year, uint8_t& month, uint8_t& day, uint8_t& hour, uint8_t& minute) const {
-  if (!_available) return false;
+  if (!_rtcPresent) {
+    struct tm t;
+    if (!systemTimeUtc(t)) return false;
+    year = static_cast<uint16_t>(t.tm_year + 1900);
+    month = static_cast<uint8_t>(t.tm_mon + 1);
+    day = static_cast<uint8_t>(t.tm_mday);
+    hour = static_cast<uint8_t>(t.tm_hour);
+    minute = static_cast<uint8_t>(t.tm_min);
+    return isValidDate(year, month, day);
+  }
 
   const unsigned long now = millis();
   if (_lastPollMs != 0 && (now - _lastPollMs) < CLOCK_POLL_MS && _hasCachedDate) {
@@ -304,8 +364,6 @@ bool HalClock::writeDateTimeToRTC(uint16_t year, uint8_t month, uint8_t day, uin
 }
 
 bool HalClock::syncFromNTP() {
-  if (!_available) return false;
-
   if (WiFi.status() != WL_CONNECTED) {
     LOG_ERR("CLK", "WiFi not connected, cannot sync NTP");
     return false;
@@ -326,6 +384,21 @@ bool HalClock::syncFromNTP() {
       const uint8_t month = static_cast<uint8_t>(timeinfo.tm_mon + 1);
       const uint8_t day = static_cast<uint8_t>(timeinfo.tm_mday);
       const uint8_t weekday = static_cast<uint8_t>(timeinfo.tm_wday + 1);
+
+      // configTzTime() above already set the ESP32's system clock (what time(nullptr)
+      // returns everywhere else in the firmware, e.g. the pet day/night logic),
+      // independent of any external RTC chip. Only devices with a battery-backed RTC
+      // (X3) also need it written to the chip so the time survives a full power
+      // cycle; devices without one (X4) still get a correctly synced system clock
+      // for the rest of this session, which is strictly better than never syncing.
+      _syncedThisSession = true;
+
+      if (!_rtcPresent) {
+        LOG_INF("CLK", "System clock synced to %04d-%02d-%02d %02d:%02d:%02d UTC (no RTC to persist it)", year,
+                month, day, timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
+        return true;
+      }
+
       if (writeDateTimeToRTC(year, month, day, weekday, timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec)) {
         LOG_INF("CLK", "RTC set to %04d-%02d-%02d %02d:%02d:%02d UTC", year, month, day, timeinfo.tm_hour,
                 timeinfo.tm_min, timeinfo.tm_sec);

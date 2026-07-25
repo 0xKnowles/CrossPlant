@@ -29,6 +29,10 @@ class CrossPointState {
   // renderRotatingSleepScreen). Persisted so the rotation keeps advancing across deep sleep
   // cycles instead of restarting at the same screen every time.
   uint8_t rotatingSleepScreenIndex = 0;
+  // Last known UTC Unix timestamp, saved before power-down on devices with no RTC (X4) so
+  // they boot with an approximate clock instead of 1970. Always 0 on RTC-backed devices,
+  // which keep their own time. See HalClock::epochForPersistence/restorePersistedTime.
+  uint32_t lastKnownEpoch = 0;
 
   // Returns true if idx was shown within the last checkCount picks.
   // Walks backwards from the most recently written slot.

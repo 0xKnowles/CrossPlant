@@ -1,8 +1,16 @@
 #include "PetActionMenu.h"
 
+#include <GfxRenderer.h>
 #include <I18n.h>
 
+#include <string>
+
 #include "fontIds.h"
+
+namespace {
+// Left/right padding inside the actions panel, also used as the truncation margin.
+constexpr int kLabelInsetX = 4;
+}  // namespace
 
 // ---- Navigation ---------------------------------------------------------
 
@@ -112,9 +120,13 @@ void PetActionMenu::render(GfxRenderer& renderer, const PetState& state, const P
     const PetAction action = static_cast<PetAction>(i);
     const bool available = isActionAvailable(action, state);
     const bool selected = (i == selectedIndex);
-    
+
     char label[64];
     actionLabel(action, state, farm, label, sizeof(label));
+    // Clamp to the panel: labels are translated into 26 languages and several run well
+    // past the English width, so an unclamped draw spills out of the card (and off the
+    // screen entirely on the narrower X4 panel).
+    const std::string fittedLabel = renderer.truncatedText(SMALL_FONT_ID, label, w - kLabelInsetX * 2);
 
     if (i == static_cast<int>(PetAction::DAILY_QUESTS)) {
       renderer.drawLine(x + 4, rowY - 6, x + w - 4, rowY - 6, true);
@@ -126,10 +138,10 @@ void PetActionMenu::render(GfxRenderer& renderer, const PetState& state, const P
     if (selected) {
       // Highlight selected row with an inverted rect
       renderer.fillRect(x, rowY, w, rowH);
-      renderer.drawText(SMALL_FONT_ID, x + 4, rowY + 3, label, /*invert=*/false);
+      renderer.drawText(SMALL_FONT_ID, x + kLabelInsetX, rowY + 3, fittedLabel.c_str(), /*invert=*/false);
     } else {
       // No brackets for unavailable items, draw directly as requested
-      renderer.drawText(SMALL_FONT_ID, x + 4, rowY + 3, label);
+      renderer.drawText(SMALL_FONT_ID, x + kLabelInsetX, rowY + 3, fittedLabel.c_str());
     }
   }
 }
