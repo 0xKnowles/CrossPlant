@@ -90,7 +90,12 @@ void VirtualPetActivity::renderAlive() const {
 
   // --- Column coordinates ---
   const int col1X = 15;
-  const int col1W = isX3 ? 240 : 360;
+  // X4's status card is narrower (480px screen vs. X3's 528px) but was given a
+  // *wider* column than X3's, leaving only ~75px for the actions list -- not
+  // enough to fit labels like "Buy Fertilizer", which ran off the right edge of
+  // the screen entirely. 260 keeps the X4 status card's 2-column bar layout
+  // legible while giving the actions column comparable room to X3's.
+  const int col1W = isX3 ? 240 : 260;
   const int col2X = col1X + col1W + 15;
   const int col2W = pageWidth - col2X - 15;
 

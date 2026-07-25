@@ -50,9 +50,12 @@ class HalClock {
   // Returns false if RTC is not available or the RTC date is invalid.
   bool formatDate(char* buf, size_t bufSize, uint8_t utcOffsetQuarterHoursBiased = 48) const;
 
-  // Sync the DS3231 RTC from an NTP server. Requires WiFi to be connected.
-  // Blocks for up to ~5s while waiting for SNTP response.
-  // Returns true if the RTC was successfully updated.
+  // Sync the system clock from an NTP server, and also write it to the DS3231 RTC
+  // when one is present (isAvailable()) so it survives a full power cycle.
+  // Requires WiFi to be connected. Blocks for up to ~5s while waiting for SNTP
+  // response. Returns true as soon as the system clock is synced, even on
+  // devices with no RTC to persist it (e.g. X4) -- callers that need per-boot
+  // resyncing on those devices should not gate on isAvailable().
   //
   // Debouncing (skip if already synced once) is enforced by the caller, not here,
   // so the HAL stays free of any app-layer settings dependency.

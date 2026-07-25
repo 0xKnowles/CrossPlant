@@ -304,8 +304,6 @@ bool HalClock::writeDateTimeToRTC(uint16_t year, uint8_t month, uint8_t day, uin
 }
 
 bool HalClock::syncFromNTP() {
-  if (!_available) return false;
-
   if (WiFi.status() != WL_CONNECTED) {
     LOG_ERR("CLK", "WiFi not connected, cannot sync NTP");
     return false;
@@ -326,6 +324,19 @@ bool HalClock::syncFromNTP() {
       const uint8_t month = static_cast<uint8_t>(timeinfo.tm_mon + 1);
       const uint8_t day = static_cast<uint8_t>(timeinfo.tm_mday);
       const uint8_t weekday = static_cast<uint8_t>(timeinfo.tm_wday + 1);
+
+      // configTzTime() above already set the ESP32's system clock (what time(nullptr)
+      // returns everywhere else in the firmware, e.g. the pet day/night logic),
+      // independent of any external RTC chip. Only devices with a battery-backed RTC
+      // (X3) also need it written to the chip so the time survives a full power
+      // cycle; devices without one (X4) still get a correctly synced system clock
+      // for the rest of this session, which is strictly better than never syncing.
+      if (!_available) {
+        LOG_INF("CLK", "System clock synced to %04d-%02d-%02d %02d:%02d:%02d UTC (no RTC to persist it)", year,
+                month, day, timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
+        return true;
+      }
+
       if (writeDateTimeToRTC(year, month, day, weekday, timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec)) {
         LOG_INF("CLK", "RTC set to %04d-%02d-%02d %02d:%02d:%02d UTC", year, month, day, timeinfo.tm_hour,
                 timeinfo.tm_min, timeinfo.tm_sec);
