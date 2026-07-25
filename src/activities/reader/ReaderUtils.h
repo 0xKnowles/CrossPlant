@@ -42,7 +42,7 @@ inline void applyOrientation(GfxRenderer& renderer, const uint8_t orientation) {
   renderer.setOrientation(toRendererOrientation(orientation));
 }
 
-inline bool shouldShowTopClockStatusBar() { return halClock.isAvailable() && SETTINGS.shouldShowClockInReader(); }
+inline bool shouldShowTopClockStatusBar() { return halClock.hasValidTime() && SETTINGS.shouldShowClockInReader(); }
 
 inline bool readerDarkModeEnabled() { return SETTINGS.readerDarkMode != 0; }
 

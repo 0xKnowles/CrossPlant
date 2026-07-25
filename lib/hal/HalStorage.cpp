@@ -156,10 +156,13 @@ bool HalStorage::writeFile(const char* path, const String& content) {
 bool HalStorage::ensureDirectoryExists(const char* path) { HAL_STORAGE_WRAPPED_CALL(ensureDirectoryExists, path); }
 
 void HalStorage::installDateTimeCallback(const uint8_t* utcOffsetQuarterHoursBiased) {
-  if (!halClock.isAvailable()) return;
+  // Installed unconditionally: storageDateTimeCallback() already falls back to a fixed
+  // date whenever the clock cannot answer, and the clock can start answering later in the
+  // session (an RTC-less device syncing over NTP). Gating on clock availability at boot
+  // would permanently stick those devices on the fallback timestamp.
   clockUtcOffsetQ = utcOffsetQuarterHoursBiased;
   FsDateTime::setCallback(storageDateTimeCallback);
-  LOG_INF("SD", "Installed RTC-backed SD timestamp callback");
+  LOG_INF("SD", "Installed clock-backed SD timestamp callback");
 }
 
 class HalFile::Impl {

@@ -75,7 +75,8 @@ uint32_t dayIndexSince2000(const uint16_t year, const uint8_t month, const uint8
 }
 
 bool formatKindleAddedOn(char* buf, const size_t bufSize) {
-  if (!buf || bufSize == 0 || !halClock.isAvailable()) return false;
+  // getDateTime() below already fails when the time is unknown; this just avoids the work.
+  if (!buf || bufSize == 0 || !halClock.hasValidTime()) return false;
 
   uint16_t year = 0;
   uint8_t month = 0;

@@ -894,7 +894,7 @@ inline std::vector<SettingInfo> buildGroupedDisplaySettingsList(const std::vecto
 
   displaySettings.push_back(SettingInfo::Submenu(StrId::STR_DISPLAY_SLEEP_SCREEN, SettingAction::DisplaySleepScreen));
   addDisplaySetting(StrId::STR_HIDE_BATTERY);
-  if (halClock.isAvailable()) {
+  if (halClock.hasValidTime()) {
     addDisplaySetting(StrId::STR_HIDE_CLOCK);
   }
   addDisplaySetting(StrId::STR_REFRESH_FREQ);
@@ -948,11 +948,13 @@ inline std::vector<SettingInfo> buildSystemDeviceSettingsList(const std::vector<
   addSettingByName(settings, allSettings, StrId::STR_DEVICE_NAME);
   addSettingByName(settings, allSettings, StrId::STR_TIME_TO_SLEEP);
   settings.push_back(SettingInfo::Action(StrId::STR_LANGUAGE, SettingAction::Language));
-  if (halClock.isAvailable()) {
+  if (halClock.hasValidTime()) {
     addSettingByName(settings, allSettings, StrId::STR_CLOCK_FORMAT);
     addSettingByName(settings, allSettings, StrId::STR_CLOCK_UTC_OFFSET);
-    settings.push_back(SettingInfo::Action(StrId::STR_CLOCK_SYNC_NOW, SettingAction::ClockSync));
   }
+  // Always offer the manual sync. On devices with no RTC (X4) the clock starts unset, so
+  // gating this on having a valid time would hide the one control that can establish one.
+  settings.push_back(SettingInfo::Action(StrId::STR_CLOCK_SYNC_NOW, SettingAction::ClockSync));
   return settings;
 }
 
@@ -980,7 +982,7 @@ inline std::vector<SettingInfo> buildSystemReadingStatsSettingsList(const std::v
 inline std::vector<SettingInfo> buildSystemGlobalStatsSettingsList(const std::vector<SettingInfo>& allSettings) {
   std::vector<SettingInfo> settings;
   settings.reserve(3);
-  if (halClock.isAvailable()) {
+  if (halClock.hasValidTime()) {
     addSettingByName(settings, allSettings, StrId::STR_AUTO_BACKUP_STATS);
   }
   settings.push_back(SettingInfo::Action(StrId::STR_BACKUP_NOW, SettingAction::BackupStats));

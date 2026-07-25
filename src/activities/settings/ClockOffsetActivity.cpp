@@ -197,7 +197,7 @@ void ClockOffsetActivity::render(RenderLock&&) {
   drawField(minutesStr, x, minutesBoxW, FIELD_MINUTES);
 
   // Live preview of the resulting wall-clock time, so users can verify against a watch.
-  if (halClock.isAvailable()) {
+  if (halClock.hasValidTime()) {
     char timeBuf[9];
     const uint8_t encoded = encodeOffset(sign, hours, minutesQuarter);
     if (halClock.formatTime(timeBuf, sizeof(timeBuf), encoded, SETTINGS.clockFormat == 1)) {

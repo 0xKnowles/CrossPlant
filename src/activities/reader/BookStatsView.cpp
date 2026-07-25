@@ -90,7 +90,9 @@ int sectionCardHeight(const StatsLayout& layout, const int rowCount) {
          (rowCount - 1) * rowStride;
 }
 
-bool shouldShowRtcBasedStats() { return halClock.isAvailable(); }
+// Named for the RTC because that used to be the only clock source; what these stats
+// actually need is a usable date, which RTC-less devices also have once synced.
+bool shouldShowRtcBasedStats() { return halClock.hasValidTime(); }
 
 int noRtcCardBaseHeight(const StatsLayout& layout) { return layout.globalCardH; }
 

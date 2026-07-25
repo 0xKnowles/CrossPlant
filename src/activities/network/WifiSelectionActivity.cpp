@@ -27,13 +27,6 @@ bool sConnectionAttemptLoggingActive = false;
 bool sWifiEventLoggingRegistered = false;
 #endif
 
-// Devices with no RTC (e.g. X4) can't persist a synced clock across a power cycle, so
-// the system clock resets every boot and needs a fresh NTP sync each time WiFi becomes
-// available -- unlike RTC-equipped devices, which only ever need to sync once. This
-// runtime-only flag (not saved to SD) tracks that per-boot sync so it doesn't refire on
-// every WiFi reconnect within the same session.
-bool sSyncedThisBootWithoutRtc = false;
-
 std::string getDisplayMacAddress() {
   uint8_t mac[6] = {};
 
@@ -472,24 +465,20 @@ void WifiSelectionActivity::checkConnectionStatus() {
 #endif
     LOG_INF("WIFI", "Connected to ssid=%s ip=%s rssi=%d", selectedSSID.c_str(), connectedIP.c_str(), WiFi.RSSI());
 
-    // Sync clock from NTP. On RTC-equipped devices (X3) the DS3231 drifts ~2 ppm so
-    // one sync ever is enough; users can force a re-sync from Settings > System >
-    // Device > Sync Date/Time Now. Devices with no RTC (X4) have nothing to persist
-    // the clock across a power cycle, so the system clock resets every boot -- sync
-    // once per boot session instead of only once ever, or day/night-dependent logic
-    // (e.g. the pet's sleep window) would be stuck using stale time forever.
-    if (halClock.isAvailable()) {
-      if (!SETTINGS.clockHasBeenSynced || !SETTINGS.clockDateHasBeenSynced) {
-        if (halClock.syncFromNTP()) {
-          SETTINGS.clockHasBeenSynced = 1;
-          SETTINGS.clockDateHasBeenSynced = 1;
-          SETTINGS.saveToFile();
-        }
-      }
-    } else if (!sSyncedThisBootWithoutRtc) {
-      if (halClock.syncFromNTP()) {
-        sSyncedThisBootWithoutRtc = true;
-      }
+    // Sync clock from NTP. On RTC-equipped devices (X3) the DS3231 drifts ~2 ppm and keeps
+    // time across power cycles, so one sync ever is enough; users can force a re-sync from
+    // Settings > System > Device > Sync Date/Time Now. Devices with no RTC (X4) lose the
+    // clock on every power-off, so they resync once per boot instead -- otherwise the
+    // "already synced" flag would suppress the sync forever and leave day/night-dependent
+    // logic (e.g. the pet's sleep window) running on a stale restored timestamp.
+    const bool needsSync = halClock.hasBatteryBackedRtc()
+                               ? (!SETTINGS.clockHasBeenSynced || !SETTINGS.clockDateHasBeenSynced)
+                               : !halClock.hasSyncedThisSession();
+    if (needsSync && halClock.syncFromNTP() &&
+        (!SETTINGS.clockHasBeenSynced || !SETTINGS.clockDateHasBeenSynced)) {
+      SETTINGS.clockHasBeenSynced = 1;
+      SETTINGS.clockDateHasBeenSynced = 1;
+      SETTINGS.saveToFile();
     }
 
     // Save this as the last connected network - SD card operations need lock as

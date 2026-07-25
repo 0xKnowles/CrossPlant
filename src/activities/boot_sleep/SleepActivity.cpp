@@ -834,7 +834,7 @@ void SleepActivity::renderPetSleepScreen() const {
   char sleepVal[48] = "Slept soundly";
   uint16_t year;
   uint8_t month, day, hour, minute;
-  if (halClock.isAvailable() && halClock.getDateTime(year, month, day, hour, minute)) {
+  if (halClock.getDateTime(year, month, day, hour, minute)) {
     // getDateTime() returns the raw UTC RTC time (see HalClock.h); apply the user's configured
     // offset the same way ReadingStatsUtils/ClippingsManager do, or this always shows UTC instead
     // of the wall-clock time the "REST TIME" label promises.
@@ -1044,7 +1044,7 @@ void SleepActivity::renderReadingStatsSleepScreen() const {
     progressPercent = RecentBookProgress::loadPercent(recentBookForPath(path));
   }
 
-  if (!halClock.isAvailable()) {
+  if (!halClock.hasValidTime()) {
     const GlobalReadingStats deviceStats = GlobalReadingStats::load();
     const bool hasSyncedStats = GlobalReadingStats::hasSyncedStats();
     const GlobalReadingStats allDevicesStats =

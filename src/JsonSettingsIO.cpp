@@ -119,6 +119,7 @@ bool JsonSettingsIO::saveState(const CrossPointState& s, const char* path) {
   doc["pendingClippingIndex"] = s.pendingClippingIndex;
   doc["showBootScreen"] = s.showBootScreen;
   doc["rotatingSleepScreenIndex"] = s.rotatingSleepScreenIndex;
+  doc["lastKnownEpoch"] = s.lastKnownEpoch;
 
   String json;
   serializeJson(doc, json);
@@ -161,6 +162,7 @@ bool JsonSettingsIO::loadState(CrossPointState& s, const char* json) {
   s.pendingClippingIndex = doc["pendingClippingIndex"] | static_cast<uint16_t>(UINT16_MAX);
   s.showBootScreen = doc["showBootScreen"] | true;
   s.rotatingSleepScreenIndex = doc["rotatingSleepScreenIndex"] | static_cast<uint8_t>(0);
+  s.lastKnownEpoch = doc["lastKnownEpoch"] | static_cast<uint32_t>(0);
   return true;
 }
 

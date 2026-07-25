@@ -4,6 +4,7 @@
 #include <Epub.h>
 #include <FsHelpers.h>
 #include <GfxRenderer.h>
+#include <HalClock.h>
 #include <HalGPIO.h>
 #include <HalStorage.h>
 #include <I18n.h>
@@ -251,7 +252,10 @@ void drawDashboardStats(const GfxRenderer& renderer, const Rect& coverRect, cons
                         const float progressPercent, const bool black = true) {
   const int rightX = renderer.getScreenWidth() - contentInset(renderer) - (gpio.deviceIsX3() ? kPairInwardShiftX3 : 0);
   const int blockH = statsBlockHeight(renderer);
-  const bool showRtcStats = gpio.deviceIsX3();
+  // The extra date-derived row (daily average) needs a usable clock, not X3 specifically:
+  // an RTC-less device that has synced can compute it too, and the row count below adapts
+  // either way. Reads as "can we date these stats", which is what the rows actually need.
+  const bool showRtcStats = halClock.hasValidTime();
   const int rowCount = showRtcStats ? kStatsRowCount : kStatsRowCountX4;
   const BookReadingStats emptyStats{};
   const BookReadingStats& bookStats = stats != nullptr ? *stats : emptyStats;

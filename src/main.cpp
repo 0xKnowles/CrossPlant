@@ -687,6 +687,14 @@ void enterDeepSleep(bool fromTimeout) {
        SETTINGS.quickResumeSleepScreen == CrossPointSettings::QUICK_RESUME_SLEEP_SCREEN::QUICK_RESUME_AFTER_TIMEOUT);
   APP_STATE.showBootScreen = !isQuickResumeSleep;
 
+  // Save the current clock so RTC-less devices (X4) can seed an approximate time at the
+  // next cold boot. Returns 0 when there is nothing worth saving (RTC-backed device, or
+  // the time is still unknown) -- keep the previous value in that case rather than
+  // clobbering a good timestamp with a zero.
+  if (const uint32_t clockEpoch = halClock.epochForPersistence(); clockEpoch != 0) {
+    APP_STATE.lastKnownEpoch = clockEpoch;
+  }
+
   APP_STATE.saveToFile();
 
   // Commit to sleeping before goToSleep() runs the outgoing activity's onExit():
@@ -700,7 +708,11 @@ void enterDeepSleep(bool fromTimeout) {
     delay(POST_SLEEP_SCREEN_SETTLE_MS);
   }
 
-  if (gpio.deviceIsX3() && SETTINGS.autoBackupStats != 0) {
+  // Backups are keyed by date, so they need a usable clock rather than specific hardware:
+  // this was X3-only back when the DS3231 was the only clock source, which silently
+  // excluded every X4. getCurrentLocalReadingStatsDateTime() still guards the case where
+  // the time is not known yet.
+  if (halClock.hasValidTime() && SETTINGS.autoBackupStats != 0) {
     ReadingStatsDateTime now;
     if (getCurrentLocalReadingStatsDateTime(now) && !backupGlobalStats(false)) {
       LOG_ERR("MAIN", "Automatic reading-stats backup failed before deep sleep");
@@ -852,8 +864,12 @@ void setup() {
   HalSystem::checkPanic();
 
   SETTINGS.loadFromFile();
-  Storage.installDateTimeCallback(&SETTINGS.clockUtcOffsetQ);
+  // Load state before installing the SD timestamp callback: it carries the last-known-good
+  // clock for devices with no RTC (X4), and seeding that first means files written during
+  // the rest of boot get plausible timestamps instead of the 1980 fallback.
   APP_STATE.loadFromFile();
+  halClock.restorePersistedTime(APP_STATE.lastKnownEpoch);
+  Storage.installDateTimeCallback(&SETTINGS.clockUtcOffsetQ);
   RECENT_BOOKS.loadFromFile();
   I18N.setLanguage(static_cast<Language>(SETTINGS.language));
   KOREADER_STORE.loadFromFile();
